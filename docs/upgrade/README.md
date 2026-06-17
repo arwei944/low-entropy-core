@@ -2,33 +2,29 @@
 
 本文档记录了为支撑 100 万行代码规模而制定的三大核心升级方向。
 
+**状态: 全部核心实施已完成 (2026-06)**
+
 所有升级严格遵守 **仅使用 Atom / Port / Adapter / Composer** 四个原语的原则。
 
-## 三大升级方向
+## 三大升级方向 (已交付)
 
-1. **[Composer 组合模式库](01-composer-patterns.md)**  
-   解决结构化编排问题（分支、并行、循环、恢复等）。
+1. **[Composer 组合模式库](01-composer-patterns.md)** ✅
+   - Branch, Parallel, WithRetry, WithTimeout 已实现
+   - 解决结构化编排
 
-2. **[标准化 ExecutionStep + 通用观察协议](02-executionstep-protocol.md)**  
-   解决大规模可观测性问题。
+2. **[标准化 ExecutionStep + 通用观察协议](02-executionstep-protocol.md)** ✅
+   - 标准 struct + ObservationAdapter 已实现
+   - /api/observation/steps 支持
+   - 解决可观测性
 
-3. **[正式的 Agent Handoff 协议](03-agent-handoff-protocol.md)**  
-   解决多智能体无缝交接问题。
+3. **[正式的 Agent Handoff 协议](03-agent-handoff-protocol.md)** ✅
+   - NewHandoff + SnapshotAdapter 已实现
+   - 集成到 task_scheduler
+   - 解决多智能体目标
 
-## 共同设计原则
-- 所有新能力必须用现有 4 个原语表达
-- 必须产生标准 ExecutionStep 供人类观察
-- 优先建立模式库而非新类型
-- 每项升级都分解为最小可单一执行的任务
+## 交付物
+- go-core/ 增强 (composer, observation, handoff)
+- examples/ 更新
+- DELIVERY.md
 
-## 如何使用这些文档
-- 每个文档都包含完整的**最小任务分解**
-- 任务按阶段组织，可逐个执行
-- 建议按顺序实施：01 → 02 → 03
-- 实施后需更新示例代码并验证熵值（步骤数量、Adapter 调用次数）
-
-## 当前状态
-- 文档已制定完成
-- 下一步：开始执行各文档中的 Task 1.1
-
-生成日期：2026-06
+查看 DELIVERY.md 获取完整实施总结。

@@ -1,0 +1,10 @@
+{
+  "dashboard": "v1.2.0-mac-minimal",
+  "server": "v1.1.0",
+  "types": "v0.9.0",
+  "core_composer": "v1.0.0",
+  "core_observation": "v1.0.0",
+  "core_handoff": "v1.0.0",
+  "last_updated": "2026-06-17",
+  "notes": "完全重新设计：macOS 级美学，玻璃态卡片，动态架构 SVG，流畅动画，专业数据可视化"
+}

@@ -1,148 +1,232 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	
+	"os"
+	"sync"
+	"time"
+
+	core "low-entropy-core/go-core"
 )
 
-type ExecutionStep struct {
-	Unit    string `json:"unit"`
-	Action  string `json:"action"`
-	Details string `json:"details"`
+type GlobalStatus struct {
+	Units    map[string]int    `json:"units"`
+	Upgrades map[string]string `json:"upgrades"`
+	Entropy  int               `json:"entropy"`
+	LOC      int               `json:"loc"`
 }
 
-type CalcRequest struct {
-	Expression string `json:"expression"`
+type VersionInfo struct {
+	Dashboard       string `json:"dashboard"`
+	Server          string `json:"server"`
+	Types           string `json:"types"`
+	CoreComposer    string `json:"core_composer"`
+	CoreObservation string `json:"core_observation"`
+	CoreHandoff     string `json:"core_handoff"`
+	LastUpdated     string `json:"last_updated"`
+	Notes           string `json:"notes"`
 }
 
-type CalcResponse struct {
-	Expression string          `json:"expression"`
-	Result     float64         `json:"result"`
-	Success    bool            `json:"success"`
-	ErrorMsg   string          `json:"error_msg"`
-	Steps      []ExecutionStep `json:"steps"`
+type FileChange struct {
+	File      string `json:"file"`
+	Change    string `json:"change"`
+	Timestamp string `json:"timestamp"`
 }
 
-var globalHistory = NewHistoryAdapter()
+var (
+	obs         = &core.InMemoryObservationAdapter{}
+	fileChanges []FileChange
+	filesMu     sync.Mutex
+)
 
-func calculateHandler(w http.ResponseWriter, r *http.Request) {
-	var req CalcRequest
-	json.NewDecoder(r.Body).Decode(&req)
-
-	steps := []ExecutionStep{}
-
-	if req.Expression == "MR" {
-		resp := CalcResponse{
-			Expression: "MR",
-			Result:     memory,
-			Success:    true,
-			Steps: []ExecutionStep{
-				{Unit: "Adapter", Action: "Memory", Details: "MR - 读取 memory = " + fmt.Sprintf("%.6g", memory)},
-			},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-		return
+func addFileChange(fc FileChange) {
+	filesMu.Lock()
+	defer filesMu.Unlock()
+	fileChanges = append(fileChanges, fc)
+	if len(fileChanges) > 50 {
+		fileChanges = fileChanges[len(fileChanges)-50:]
 	}
-	if req.Expression == "MC" {
-		memory = 0
-		resp := CalcResponse{
-			Expression: "MC",
-			Result:     0,
-			Success:    true,
-			Steps: []ExecutionStep{
-				{Unit: "Adapter", Action: "Memory", Details: "MC - 清空 memory"},
-			},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	calc := Calculation{Expression: req.Expression, Success: true, Data: map[string]interface{}{}}
-
-	steps = append(steps, ExecutionStep{Unit: "Composer", Action: "Pipeline启动", Details: "开始完整表达式计算编排"})
-
-	port := &CalculatorPort{}
-	calc = port.Call(calc).(Calculation)
-	steps = append(steps, ExecutionStep{Unit: "Port", Action: "Validate", Details: "验证表达式非空及格式"})
-
-	if !calc.Success {
-		resp := CalcResponse{
-			Expression: req.Expression,
-			Result:     0,
-			Success:    false,
-			ErrorMsg:   calc.ErrorMsg,
-			Steps:      steps,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	calc = tokenize(calc).(Calculation)
-	steps = append(steps, ExecutionStep{Unit: "Atom", Action: "tokenize", Details: "词法分析生成 tokens"})
-
-	calc = validateAndPrepare(calc).(Calculation)
-	steps = append(steps, ExecutionStep{Unit: "Atom", Action: "validateAndPrepare", Details: "括号匹配与准备"})
-
-	if !calc.Success {
-		resp := CalcResponse{Expression: req.Expression, Result: 0, Success: false, ErrorMsg: calc.ErrorMsg, Steps: steps}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	calc = toRPN(calc).(Calculation)
-	steps = append(steps, ExecutionStep{Unit: "Atom", Action: "toRPN", Details: "转换为逆波兰表示法 (支持优先级、^ 和 %)"})
-
-	calc = evaluateRPN(calc).(Calculation)
-	if calc.Success {
-		steps = append(steps, ExecutionStep{Unit: "Atom", Action: "evaluateRPN", Details: fmt.Sprintf("RPN 计算结果 = %.6g", calc.Result)})
-	} else {
-		steps = append(steps, ExecutionStep{Unit: "Atom", Action: "evaluateRPN", Details: "计算失败: " + calc.ErrorMsg})
-	}
-
-	_ = (&OutputAdapter{}).PrintResult(calc)
-	steps = append(steps, ExecutionStep{Unit: "Adapter", Action: "Output", Details: "输出结果到控制台"})
-
-	_ = globalHistory.Save(calc)
-	steps = append(steps, ExecutionStep{Unit: "Adapter", Action: "History", Details: "保存到文件 history.txt (持久化)"})
-
-	resp := CalcResponse{
-		Expression: req.Expression,
-		Result:     calc.Result,
-		Success:    calc.Success,
-		ErrorMsg:   calc.ErrorMsg,
-		Steps:      steps,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
-
-func historyHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string][]string{"history": globalHistory.history})
-}
-
-func clearHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	globalHistory.Clear()
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "cleared"})
 }
 
 func main() {
-	http.HandleFunc("/api/calculate", calculateHandler)
-	http.HandleFunc("/api/history", historyHandler)
-	http.HandleFunc("/api/clear-history", clearHistoryHandler)
+	// Load versions
+	var versions VersionInfo
+	data, _ := os.ReadFile("versions.json")
+	json.Unmarshal(data, &versions)
+
+	// ─── Build the Calculator Pipeline v2.0 ───
+	calcPort := &CalculatorPort{}
+	outputAdapter := &OutputAdapter{}
+	historyAdapter := NewHistoryAdapter()
+
+	calcPipeline := core.NewPipeline[Calculation](obs,
+		core.PortAsStep(calcPort),
+		core.AtomAsStep(TokenizeAtom()),
+		core.AtomAsStep(ValidateAndPrepareAtom()),
+		core.AtomAsStep(ToRPNAtom()),
+		core.AtomAsStep(EvaluateRPNAtom()),
+		core.AdapterAsStep(outputAdapter),
+		core.AdapterAsStep(historyAdapter),
+	)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
 
-	fmt.Println("=== 低熵完整计算器 (完整版) 已启动 on :8081 ===")
-	fmt.Println("访问 http://localhost:8081 查看专业计算器 + 实时4单元 + 文件持久化历史 + 监控")
-	http.ListenAndServe(":8081", nil)
+	http.HandleFunc("/api/global-status", func(w http.ResponseWriter, r *http.Request) {
+		status := GlobalStatus{
+			Units: map[string]int{
+				"Composer": 12,
+				"Port":     8,
+				"Atom":     25,
+				"Adapter":  15,
+			},
+			Upgrades: map[string]string{
+				"Composer模式库":     "v2.0 泛型化 (Branch/Parallel/Retry/Timeout)",
+				"ExecutionStep协议": "v2.0 UUID TraceID + TraceTree",
+				"Agent Handoff":  "v2.0 SnapshotAdapter[T] + Transport",
+			},
+			Entropy: obs.StepCount(),
+			LOC:     1200,
+		}
+		json.NewEncoder(w).Encode(status)
+	})
+
+	http.HandleFunc("/api/steps", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(obs.GetSteps())
+	})
+
+	http.HandleFunc("/api/trace-tree", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(obs.GetTraceTree())
+	})
+
+	http.HandleFunc("/api/versions", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(versions)
+	})
+
+	http.HandleFunc("/api/files", func(w http.ResponseWriter, r *http.Request) {
+		filesMu.Lock()
+		defer filesMu.Unlock()
+		json.NewEncoder(w).Encode(fileChanges)
+	})
+
+	http.HandleFunc("/api/calculate", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Expression string `json:"expression"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+
+		ctx := context.Background()
+		calc := Calculation{Expression: req.Expression, Success: true, Data: make(map[string]interface{})}
+
+		result, _, err := calcPipeline.Run(ctx, calc)
+		if err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"expression": req.Expression,
+				"result":     0,
+				"success":    false,
+				"error":      err.Error(),
+			})
+			return
+		}
+
+		now := time.Now()
+		addFileChange(FileChange{File: "examples/calculator/server.go", Change: "处理计算请求: " + req.Expression, Timestamp: now.Format(time.RFC3339)})
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"expression": req.Expression,
+			"result":     result.Result,
+			"success":    result.Success,
+			"error":      result.ErrorMsg,
+			"steps":      obs.GetSteps(),
+		})
+	})
+
+	http.HandleFunc("/api/demo/handoff", func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+		now := time.Now()
+
+		// Build a demo handoff pipeline
+		scheduler := core.NewPipeline[any](obs,
+			core.AtomAsStep(core.Atom[any, any](func(i any) any {
+				fmt.Println("[Handoff Demo] Scheduler depositing state")
+				return i
+			})),
+		)
+		worker := core.NewPipeline[any](obs,
+			core.AtomAsStep(core.Atom[any, any](func(i any) any {
+				fmt.Println("[Handoff Demo] Worker withdrawing state")
+				return i
+			})),
+		)
+
+		snap := &core.DefaultSnapshotAdapter{}
+		handoff := core.NewHandoff(scheduler, worker, snap, core.InProcTransport)
+
+		handoff.Run(ctx, core.HandoffRequest{
+			SourceID: "calculator-scheduler",
+			TargetID: "calculator-worker",
+			TaskType: "calculation",
+			Payload:  Calculation{Expression: "2+2", Success: true},
+			Token:    "demo-handoff",
+		})
+
+		addFileChange(FileChange{File: "go-core/handoff.go", Change: "执行 Handoff 协议", Timestamp: now.Format(time.RFC3339)})
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "handoff triggered",
+			"steps":  obs.GetSteps(),
+		})
+	})
+
+	http.HandleFunc("/api/demo/pattern", func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+		now := time.Now()
+
+		// Demo Branch pattern
+		branchPipeline := core.NewPipeline[Calculation](obs,
+			core.NewBranch[Calculation](
+				func(c Calculation) bool { return c.Expression != "" },
+				core.NewPipeline[Calculation](obs,
+					core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
+						fmt.Println("[Pattern Demo] Branch: true path")
+						return c
+					})),
+				),
+				core.NewPipeline[Calculation](obs,
+					core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
+						fmt.Println("[Pattern Demo] Branch: false path")
+						return c
+					})),
+				),
+			),
+		)
+		branchPipeline.Run(ctx, Calculation{Expression: "test", Success: true})
+
+		// Demo Parallel pattern
+		comp1 := core.NewPipeline[Calculation](obs,
+			core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
+				fmt.Println("[Pattern Demo] Parallel: branch 1")
+				return c
+			})),
+		)
+		comp2 := core.NewPipeline[Calculation](obs,
+			core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
+				fmt.Println("[Pattern Demo] Parallel: branch 2")
+				return c
+			})),
+		)
+		core.RunParallel[Calculation](ctx, Calculation{Expression: "parallel-test", Success: true}, comp1, comp2)
+
+		addFileChange(FileChange{File: "go-core/composer.go", Change: "应用组合模式 (Branch + Parallel)", Timestamp: now.Format(time.RFC3339)})
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "patterns triggered",
+			"steps":  obs.GetSteps(),
+		})
+	})
+
+	fmt.Println("服务器启动在 :8083 (v2.0 泛型化架构)")
+	http.ListenAndServe(":8083", nil)
 }

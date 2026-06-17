@@ -80,3 +80,14 @@ MIT License
 每个文档都包含详细的**最小可执行任务分解**。
 
 查看完整索引： [docs/upgrade/README.md](docs/upgrade/README.md)
+
+## 三大升级已全部完成交付 (2026-06)
+
+详见 docs/upgrade/DELIVERY.md 和 docs/upgrade/README.md
+
+核心实现:
+- Composer 模式库 (Branch, Parallel 等)
+- 标准化 ExecutionStep + 观察协议
+- Agent Handoff 协议
+
+所有符合 4 单元低熵原则。

@@ -1,104 +1,150 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"./go-core"  // 相对路径，便于从项目根目录直接运行
 	"time"
+
+	core "low-entropy-core/go-core"
 )
 
-// 短期目标示例：中等规模任务调度系统
-// 完全使用 4 个单元实现：Atom, Port, Adapter, Composer
-
-// 任务状态
+// Task represents a scheduled task.
 type Task struct {
 	ID     string
-	Status string // "pending", "running", "completed", "failed"
+	Status string
 	Data   map[string]interface{}
 }
 
-// Atom: 状态转换
-func transitionState(input interface{}) interface{} {
-	task := input.(Task)
-	switch task.Status {
-	case "pending":
-		task.Status = "running"
-	case "running":
-		task.Status = "completed"
+// ─── Atom: pure state transition ───
+
+func transitionState() core.Atom[Task, Task] {
+	return func(t Task) Task {
+		if t.Status == "pending" {
+			t.Status = "running"
+		}
+		return t
 	}
-	fmt.Printf("[Atom] 任务 %s 状态 -> %s\n", task.ID, task.Status)
-	return task
 }
 
-// Atom: 分配资源
-func allocateResource(input interface{}) interface{} {
-	task := input.(Task)
-	task.Data["resource"] = "cpu-1"
-	fmt.Printf("[Atom] 为 %s 分配资源\n", task.ID)
-	return task
-}
+// ─── Port: validation gateway ───
 
-// Port: 任务验证契约
 type TaskPort struct{}
 
-func (p *TaskPort) Call(input interface{}) interface{} {
-	task := input.(Task)
-	if task.ID == "" {
-		return map[string]interface{}{"error": "invalid task"}
+func (p *TaskPort) Validate(ctx context.Context, input Task) (Task, error) {
+	if input.ID == "" {
+		return input, &core.StepError{Code: "INVALID_TASK", Message: "task ID is required", Recoverable: false}
 	}
-	return task
+	return input, nil
 }
 
-// Adapter: 持久化（唯一副作用）
+// ─── Adapter: persistence side effect ───
+
 type PersistenceAdapter struct{}
 
-func (a *PersistenceAdapter) Save(input interface{}) interface{} {
-	task := input.(Task)
-	fmt.Printf("[Adapter] 持久化任务 %s 状态: %s\n", task.ID, task.Status)
-	return task
-}
-
-// Adapter: 日志
-type LogAdapter struct{}
-
-func (l *LogAdapter) Log(msg string) {
-	fmt.Printf("[Log] %s\n", msg)
+func (a *PersistenceAdapter) Execute(ctx context.Context, input Task) (Task, error) {
+	fmt.Printf("[Adapter] Persisted task %s status: %s\n", input.ID, input.Status)
+	return input, nil
 }
 
 func main() {
-	fmt.Println("=== 任务调度系统示例（纯 4 单元实现） ===")
+	fmt.Println("=== Task Scheduler v2.0 — 4 Primitives + Patterns + Handoff + Observation ===")
+	ctx := context.Background()
 
-	validatePort := &TaskPort{}
-	persist := &PersistenceAdapter{}
-	log := &LogAdapter{}
+	// ─── Build Steps ───
 
-	// 使用 Composer 构建调度流程
-	scheduler := core.NewPipeline(
-		func(i interface{}) interface{} {
-			// 通过 Port 验证
-			return validatePort.Call(i)
-		},
-		transitionState,     // Atom
-		allocateResource,    // Atom
-		func(i interface{}) interface{} {
-			// 持久化
-			return persist.Save(i)
-		},
+	validate := core.PortAsStep(&TaskPort{})
+	transition := core.AtomAsStep(transitionState())
+	persist := core.AdapterAsStep(&PersistenceAdapter{})
+
+	// ─── Base Pipeline ───
+	obs := &core.InMemoryObservationAdapter{}
+	base := core.NewPipeline[Task](obs, validate, transition, persist)
+
+	// ─── Branch Pattern ───
+	branchStep := core.NewBranch[Task](
+		func(t Task) bool { return t.Status == "pending" },
+		base, // truePath: process the task
+		core.NewPipeline[Task](obs, core.AtomAsStep(core.Atom[Task, Task](func(t Task) Task {
+			fmt.Printf("[Branch] Skipping task %s (status=%s)\n", t.ID, t.Status)
+			return t
+		}))), // falsePath: skip
+	)
+	branchPipeline := core.NewPipeline[Task](obs, branchStep)
+
+	// ─── WithRetry Pattern ───
+	retryConfig := core.RetryConfig{
+		MaxAttempts: 3,
+		BaseDelay:   50 * time.Millisecond,
+		MaxDelay:    1 * time.Second,
+		Multiplier:  2.0,
+	}
+	retryComp := core.WithRetry[Task](branchPipeline, retryConfig)
+
+	// ─── WithTimeout Pattern ───
+	timeoutComp := core.WithTimeout[Task](retryComp, 5*time.Second)
+
+	// ─── Handoff: Scheduler → Worker ───
+	scheduler := core.NewPipeline[any](obs,
+		core.AtomAsStep(core.Atom[any, any](func(i any) any {
+			fmt.Println("[Composer] Scheduler preparing handoff")
+			return i
+		})),
 	)
 
-	// 创建初始任务
-	initialTask := Task{
-		ID:     "task-042",
-		Status: "pending",
-		Data:   map[string]interface{}{},
+	worker := core.NewPipeline[any](obs,
+		core.AtomAsStep(core.Atom[any, any](func(i any) any {
+			fmt.Println("[Composer] Worker processing after handoff")
+			return i
+		})),
+	)
+
+	snap := &core.DefaultSnapshotAdapter{}
+	handoff := core.NewHandoff(scheduler, worker, snap, core.InProcTransport)
+
+	// ─── Execute ───
+
+	// 1. Run a task through the pipeline
+	task := Task{ID: "task-042", Status: "pending", Data: map[string]interface{}{}}
+	result, steps, err := timeoutComp.Run(ctx, task)
+	if err != nil {
+		fmt.Printf("Pipeline error: %v\n", err)
 	}
+	fmt.Printf("Result: %+v\n", result)
+	fmt.Printf("Steps recorded: %d\n", len(steps))
 
-	log.Log("开始调度任务")
+	// 2. Run a skipped task (Branch false path)
+	task2 := Task{ID: "task-043", Status: "completed", Data: map[string]interface{}{}}
+	result2, steps2, err2 := timeoutComp.Run(ctx, task2)
+	if err2 != nil {
+		fmt.Printf("Pipeline error: %v\n", err2)
+	}
+	fmt.Printf("Skipped result: %+v\n", result2)
+	fmt.Printf("Steps recorded: %d\n", len(steps2))
 
-	// 执行
-	final := scheduler.Run(initialTask).(Task)
+	// 3. Handoff demo
+	handoffResult, handoffSteps, handoffErr := handoff.Run(ctx, core.HandoffRequest{
+		SourceID: "scheduler",
+		TargetID: "worker",
+		TaskType: "task",
+		Payload:  task,
+		Token:    "handoff-001",
+	})
+	if handoffErr != nil {
+		fmt.Printf("Handoff error: %v\n", handoffErr)
+	}
+	fmt.Printf("Handoff result: %+v\n", handoffResult)
+	fmt.Printf("Handoff steps: %d\n", len(handoffSteps))
 
-	log.Log("调度完成")
+	// ─── Observation: Trace Tree ───
+	fmt.Println("\n=== Observation X-Ray ===")
+	fmt.Printf("Total steps in observation store: %d\n", obs.StepCount())
 
-	fmt.Printf("\n最终任务状态: %+v\n", final)
-	time.Sleep(100 * time.Millisecond)
+	tree := obs.GetTraceTree()
+	fmt.Printf("Trace tree roots: %d, total nodes: %d\n", len(tree.Roots), tree.TotalNodes())
+
+	// Print all steps
+	for i, s := range obs.GetSteps() {
+		fmt.Printf("  [%d] %s/%s | %s | %dms | trace=%s\n",
+			i, s.Unit, s.Action, s.Details, s.DurationMs, s.TraceID[:8])
+	}
 }

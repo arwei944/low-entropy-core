@@ -2,324 +2,955 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>低熵完整计算器 • 4 Units + 文件持久化</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>低熵架构 · 全局观测台 v1.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .log-line { font-family: ui-monospace, monospace; font-size: 12px; }
-        .unit-atom { background-color: #14532d; border-left: 3px solid #4ade80; }
-        .unit-port { background-color: #1e3a8a; border-left: 3px solid #60a5fa; }
-        .unit-adapter { background-color: #78350f; border-left: 3px solid #fbbf24; }
-        .unit-composer { background-color: #581c87; border-left: 3px solid #c084fc; }
-        .calc-btn { 
-            background-color: #27272a; 
-            transition: all 0.1s; 
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1f242f;
+            --bg-card: rgba(22, 27, 34, 0.8);
+            --border: #30363d;
+            --border-light: #3d444d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-purple: #a371f7;
+            --accent-green: #3fb950;
+            --accent-amber: #d29922;
+            --accent-red: #f85149;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
-        .calc-btn:hover { background-color: #3f3f46; }
-        .calc-btn:active { transform: scale(0.95); }
-        .op-btn { background-color: #3f3f46; }
-        .display { font-family: ui-monospace, monospace; }
-        .history-item { cursor: pointer; }
-        .history-item:hover { background-color: #27272a; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Background atmosphere */
+        .bg-atmosphere {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-atmosphere::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(ellipse, rgba(88, 166, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-atmosphere::after {
+            content: '';
+            position: absolute;
+            bottom: -150px;
+            left: -150px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(163, 113, 247, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -20px) scale(1.05); }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+        /* Glass card */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: var(--border-light);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+        }
+
+        /* Title bar */
+        .title-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            border-radius: 16px 16px 0 0;
+        }
+        .traffic-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .tl-close { background: #ff5f57; border: 1px solid #e0443e; }
+        .tl-min { background: #ffbd2e; border: 1px solid #dea123; }
+        .tl-max { background: #28ca42; border: 1px solid #1aab29; }
+
+        /* Section header */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 100px;
+            color: var(--text-muted);
+        }
+
+        /* Metric card */
+        .metric-card {
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+        .metric-card:hover {
+            border-color: var(--border-light);
+            background: var(--bg-card);
+        }
+        .metric-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .metric-unit {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        /* Unit indicator */
+        .unit-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .unit-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+        .unit-item:hover {
+            border-color: var(--border-light);
+            transform: translateY(-1px);
+        }
+        .unit-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .unit-dot.composer { background: var(--accent-purple); color: var(--accent-purple); }
+        .unit-dot.port { background: var(--accent-blue); color: var(--accent-blue); }
+        .unit-dot.atom { background: var(--accent-green); color: var(--accent-green); }
+        .unit-dot.adapter { background: var(--accent-amber); color: var(--accent-amber); }
+        .unit-info { flex: 1; min-width: 0; }
+        .unit-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .unit-count { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+        /* Upgrade status */
+        .upgrade-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        .upgrade-item:last-child { margin-bottom: 0; }
+        .upgrade-item:hover { border-color: var(--border-light); }
+        .upgrade-info { display: flex; align-items: center; gap: 10px; }
+        .upgrade-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+        .upgrade-name { font-size: 13px; font-weight: 500; }
+        .upgrade-status { font-size: 12px; color: var(--accent-green); font-weight: 500; }
+
+        /* Version panel */
+        .version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        .version-item {
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .version-item:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+        .version-name { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+        .version-value { font-size: 16px; font-weight: 600; font-family: 'SF Mono', 'Monaco', monospace; color: var(--accent-purple); }
+
+        /* Architecture SVG */
+        .arch-container {
+            position: relative;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .arch-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Feed & Logs */
+        .feed-container {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .feed-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            animation: slideIn 0.3s ease-out;
+            transition: all 0.2s ease;
+        }
+        .feed-item:hover {
+            border-color: var(--border-light);
+            background: var(--bg-card);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .feed-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 3px;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px currentColor;
+        }
+        .feed-dot.composer { background: var(--accent-purple); color: var(--accent-purple); }
+        .feed-dot.port { background: var(--accent-blue); color: var(--accent-blue); }
+        .feed-dot.atom { background: var(--accent-green); color: var(--accent-green); }
+        .feed-dot.adapter { background: var(--accent-amber); color: var(--accent-amber); }
+        .feed-dot.handoff { background: var(--accent-red); color: var(--accent-red); animation: blink 1s ease-in-out 3; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .feed-content { flex: 1; min-width: 0; }
+        .feed-main { font-size: 13px; font-weight: 500; }
+        .feed-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: 'SF Mono', monospace; }
+        .feed-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+        /* File list */
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            margin-bottom: 6px;
+            transition: all 0.2s ease;
+        }
+        .file-item:hover { border-color: var(--border-light); background: var(--bg-card); }
+        .file-path { font-size: 12px; font-family: 'SF Mono', monospace; color: var(--accent-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+        .file-change { font-size: 11px; color: var(--text-secondary); flex: 1; text-align: right; padding-left: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--accent-blue); color: #0d1117; border-color: var(--accent-blue); }
+        .btn-primary:hover { background: #79b8ff; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3); }
+        .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border); }
+        .btn-secondary:hover { background: var(--bg-card); border-color: var(--border-light); }
+        .btn-purple { background: var(--accent-purple); color: #0d1117; border-color: var(--accent-purple); }
+        .btn-purple:hover { background: #b88aff; box-shadow: 0 0 0 3px rgba(163, 113, 247, 0.3); }
+        .btn-green { background: var(--accent-green); color: #0d1117; border-color: var(--accent-green); }
+        .btn-green:hover { background: #5cd66d; box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.3); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); }
+        .btn-ghost:hover { background: var(--glass); color: var(--text-primary); }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            border-radius: 0 0 16px 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .status-left { display: flex; align-items: center; gap: 16px; }
+        .status-right { display: flex; align-items: center; gap: 16px; }
+        .status-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Main layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        @media (min-width: 1024px) {
+            .main-layout { grid-template-columns: 320px 1fr; }
+        }
+
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        @media (min-width: 1024px) { .sidebar { position: sticky; top: 20px; } }
+
+        /* Content area */
+        .content-area { display: flex; flex-direction: column; gap: 20px; }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus visible */
+        .btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-200">
-    <div class="max-w-6xl mx-auto p-6">
-        <!-- 标题 -->
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-4xl font-semibold flex items-center gap-3">
-                    低熵完整计算器 
-                    <span class="px-3 py-1 bg-emerald-900 text-emerald-300 text-xs rounded-full font-mono">4 Units Only</span>
+<body>
+    <div class="bg-atmosphere" aria-hidden="true"></div>
+
+    <!-- Header -->
+    <header class="glass-card m-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="title-bar">
+            <div class="flex items-center gap-2">
+                <div class="traffic-light tl-close" title="关闭"></div>
+                <div class="traffic-light tl-min" title="最小化"></div>
+                <div class="traffic-light tl-max" title="最大化"></div>
+            </div>
+            <div class="flex-1 text-center">
+                <h1 class="font-semibold text-lg tracking-tight" style="color: var(--text-primary);">
+                    低熵架构观测台
                 </h1>
-                <p class="text-zinc-400 text-sm mt-1">Atom • Port • Adapter • Composer • 文件持久化历史 • 实时监控</p>
+                <span class="ml-2 text-[11px] px-2 py-0.5 rounded" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted);">
+                    v1.2.0-mac-minimal
+                </span>
             </div>
-            <div class="text-right text-xs text-zinc-500">
-                端口 8081 • 零依赖 Go<br>
-                人类纯观察 • 多智能体可复现
+            <div class="flex items-center gap-3">
+                <div class="status-dot">实时连接</div>
+                <div id="entropyDisplay" class="px-3 py-1 text-[11px] rounded" style="background: var(--bg-tertiary); border: 1px solid var(--border); font-variant-numeric: tabular-nums;">熵: 0</div>
+                <div id="locDisplay" class="px-3 py-1 text-[11px] rounded" style="background: var(--bg-tertiary); border: 1px solid var(--border); font-variant-numeric: tabular-nums;">2,077 LOC</div>
             </div>
         </div>
+    </header>
 
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            
-            <!-- 计算器主体 (完整版) -->
-            <div class="xl:col-span-5 bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-medium">专业计算器界面</h2>
-                    <div class="text-[10px] px-2 py-0.5 bg-zinc-800 rounded">完整功能 + 连续计算</div>
+    <main class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- 4 Units Activity -->
+            <section class="glass-card p-5">
+                <div class="section-header">
+                    <span class="section-title">4 单元活动</span>
+                    <span class="section-badge" id="totalUnits">0</span>
                 </div>
+                <div class="unit-grid" id="unitsGrid"></div>
+            </section>
 
-                <!-- 显示屏 -->
-                <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-5 mb-4">
-                    <div id="prev" class="text-zinc-500 text-sm h-5 font-mono"></div>
-                    <input id="expr" type="text" value="0" 
-                           class="display w-full bg-transparent text-4xl font-semibold focus:outline-none text-right"
-                           onkeydown="handleKey(event)">
+            <!-- Three Upgrades -->
+            <section class="glass-card p-5">
+                <div class="section-header">
+                    <span class="section-title">三大升级状态</span>
+                    <span class="section-badge">全部实施</span>
                 </div>
+                <div id="upgradesList"></div>
+            </section>
 
-                <!-- 按钮网格 - 完整布局 -->
-                <div class="grid grid-cols-4 gap-2 text-xl">
-                    <!-- 内存行 -->
-                    <button onclick="doMemory('MC')" class="calc-btn py-3 rounded-2xl text-sm">MC</button>
-                    <button onclick="doMemory('MR')" class="calc-btn py-3 rounded-2xl text-sm">MR</button>
-                    <button onclick="append('M+')" class="calc-btn py-3 rounded-2xl text-sm">M+</button>
-                    <button onclick="append('%')" class="calc-btn py-3 rounded-2xl text-sm op-btn">%</button>
-
-                    <!-- 功能行 -->
-                    <button onclick="doUnary('sqrt')" class="calc-btn py-3 rounded-2xl text-sm">√</button>
-                    <button onclick="doUnary('sign')" class="calc-btn py-3 rounded-2xl text-sm">+/-</button>
-                    <button onclick="clearAll()" class="calc-btn py-3 rounded-2xl text-sm bg-red-900/30">AC</button>
-                    <button onclick="append('^')" class="calc-btn py-3 rounded-2xl text-sm op-btn">^</button>
-
-                    <!-- 数字 + 运算 -->
-                    <button onclick="append('7')" class="calc-btn py-4 rounded-2xl">7</button>
-                    <button onclick="append('8')" class="calc-btn py-4 rounded-2xl">8</button>
-                    <button onclick="append('9')" class="calc-btn py-4 rounded-2xl">9</button>
-                    <button onclick="append('/')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">÷</button>
-
-                    <button onclick="append('4')" class="calc-btn py-4 rounded-2xl">4</button>
-                    <button onclick="append('5')" class="calc-btn py-4 rounded-2xl">5</button>
-                    <button onclick="append('6')" class="calc-btn py-4 rounded-2xl">6</button>
-                    <button onclick="append('*')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">×</button>
-
-                    <button onclick="append('1')" class="calc-btn py-4 rounded-2xl">1</button>
-                    <button onclick="append('2')" class="calc-btn py-4 rounded-2xl">2</button>
-                    <button onclick="append('3')" class="calc-btn py-4 rounded-2xl">3</button>
-                    <button onclick="append('-')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">−</button>
-
-                    <button onclick="append('0')" class="calc-btn py-4 rounded-2xl col-span-2">0</button>
-                    <button onclick="append('.')" class="calc-btn py-4 rounded-2xl">.</button>
-                    <button onclick="append('+')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">+</button>
+            <!-- Controls -->
+            <section class="glass-card p-5">
+                <div class="section-header">
+                    <span class="section-title">控制面板</span>
                 </div>
-
-                <!-- 执行 -->
-                <button onclick="calculate()" 
-                        class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 py-4 rounded-2xl text-xl font-semibold tracking-wider">
-                    = 执行 (完整 4 单元流程)
-                </button>
-
-                <div class="mt-2 text-[10px] text-center text-zinc-500">支持括号、^、%、连续计算、文件持久化</div>
-            </div>
-
-            <!-- 实时 4 单元动态 -->
-            <div class="xl:col-span-4 bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
-                <div class="flex justify-between mb-3">
-                    <h2 class="text-lg font-medium">实时后端执行动态 (4 Units)</h2>
-                    <button onclick="clearLogs()" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg">清空日志</button>
+                <div class="flex flex-col gap-3">
+                    <button id="btnCalculate" class="btn btn-primary w-full" onclick="triggerDemo('calculate')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        计算演示
+                    </button>
+                    <button id="btnHandoff" class="btn btn-purple w-full" onclick="triggerDemo('handoff')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        Handoff 演示
+                    </button>
+                    <button id="btnPattern" class="btn btn-green w-full" onclick="triggerDemo('pattern')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="8" height="8" rx="2"></rect><rect x="14" y="2" width="8" height="8" rx="2"></rect><rect x="2" y="14" width="8" height="8" rx="2"></rect><rect x="14" y="14" width="8" height="8" rx="2"></rect></svg>
+                        模式演示
+                    </button>
+                    <button id="btnClear" class="btn btn-ghost w-full" onclick="clearAll()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        清空日志
+                    </button>
                 </div>
-                <div id="logs" class="h-[380px] overflow-auto bg-zinc-950 rounded-2xl p-3 space-y-1 text-xs"></div>
-            </div>
+            </section>
 
-            <!-- 监控 + 历史 -->
-            <div class="xl:col-span-3 space-y-6">
-                <!-- 熵 / 监控面板 -->
-                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-6">
-                    <h3 class="font-medium mb-3 flex items-center gap-2">
-                        低熵监控 (Entropy Proxy)
-                        <span class="text-[10px] text-emerald-400">步骤数 = 复杂度指标</span>
-                    </h3>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between"><span>累计计算</span> <span id="total-calcs" class="font-mono text-emerald-400">0</span></div>
-                        <div class="flex justify-between"><span>最后步数</span> <span id="last-steps" class="font-mono text-emerald-400">0</span></div>
-                        <div class="flex justify-between"><span>历史文件条数</span> <span id="history-count" class="font-mono text-emerald-400">0</span></div>
+            <!-- Version Panel -->
+            <section class="glass-card p-5">
+                <div class="section-header">
+                    <span class="section-title">版本管理</span>
+                    <span class="section-badge" id="versionCount">0</span>
+                </div>
+                <div class="version-grid" id="versionGrid"></div>
+            </section>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="content-area">
+            <!-- Architecture Diagram -->
+            <section class="glass-card overflow-hidden">
+                <div class="section-header p-5 px-6 border-0">
+                    <span class="section-title">架构实时运转</span>
+                    <span class="section-badge">ExecutionStep 驱动</span>
+                </div>
+                <div class="arch-container p-4 px-6 pb-6" id="archContainer"></div>
+            </section>
+
+            <!-- Feed & Files -->
+            <div class="grid-2">
+                <section class="glass-card p-5">
+                    <div class="section-header">
+                        <span class="section-title">所有变更 Feed</span>
+                        <span class="section-badge" id="feedCount">0</span>
                     </div>
-                    <button onclick="clearHistory()" 
-                            class="mt-4 w-full text-xs bg-red-900/30 hover:bg-red-900/50 py-2 rounded-xl">清空历史 + 文件</button>
-                </div>
+                    <div class="feed-container" id="feedContainer"></div>
+                </section>
 
-                <!-- 历史记录 (可点击复用) -->
-                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-6 flex-1">
-                    <h3 class="font-medium mb-3">历史记录 (HistoryAdapter • 文件持久化)</h3>
-                    <div id="history" class="text-sm text-zinc-400 space-y-1 max-h-[220px] overflow-auto pr-2"></div>
-                </div>
+                <section class="glass-card p-5">
+                    <div class="section-header">
+                        <span class="section-title">文件变更列表</span>
+                        <span class="section-badge" id="fileCount">0</span>
+                    </div>
+                    <div class="feed-container" id="fileContainer"></div>
+                </section>
             </div>
+        </section>
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="status-bar m-4 mt-0 glass-card" style="margin-top: -4px;">
+        <div class="status-left">
+            <span class="status-dot">服务运行中</span>
+            <span>端口 8083</span>
         </div>
-    </div>
+        <div class="status-right">
+            <span id="lastUpdate">刚刚更新</span>
+        </div>
+    </footer>
 
     <script>
-        let totalCalcs = 0;
-        let lastResult = null;
+        // ===== State =====
+        let lastSteps = [];
+        let architecturesvg = null;
 
-        function append(val) {
-            const expr = document.getElementById('expr');
-            if (expr.value === '0' && !['.', '+', '-', '*', '/', '^', '%'].includes(val)) {
-                expr.value = val;
-            } else {
-                expr.value += val;
-            }
-            expr.focus();
+        // ===== SVG Architecture Diagram =====
+        function generateArchitectureSVG(activeUnit = null, unitStates = {}) {
+            const units = [
+                { id: 'composer', name: 'Composer', label: '组合编排', x: 40, color: '#a371f7', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
+                { id: 'port', name: 'Port', label: '边界验证', x: 240, color: '#58a6ff', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 9v6M15 9v6' },
+                { id: 'atom', name: 'Atom', label: '纯函数计算', x: 440, color: '#3fb950', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
+                { id: 'adapter', name: 'Adapter', label: '副作用 I/O', x: 640, color: '#d29922', icon: 'M18 11V6a2 2 0 00-2-2v0a2 2 0 00-2 2v0M2 9h2M20 9h2M6 11a2 2 0 01-2-2V4a2 2 0 012-2h12a2 2 0 012 2v0a2 2 0 01-2 2M2 15h2M20 15h2M6 13a2 2 0 01-2-2v-2a2 2 0 012-2h12a2 2 0 012 2v0a2 2 0 01-2 2' }
+            ];
+
+            const connections = [
+                { from: 0, to: 1, label: 'validate' },
+                { from: 1, to: 2, label: 'compute' },
+                { from: 2, to: 3, label: 'effect' }
+            ];
+
+            let svg = `<svg viewBox="0 0 800 175" class="arch-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="架构图：Composer → Port → Atom → Adapter">
+                <defs>
+                    <linearGradient id="gradBg" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#0d1117"/>
+                        <stop offset="100%" stop-color="#161b22"/>
+                    </linearGradient>
+                    <linearGradient id="gradAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#a371f7"/>
+                        <stop offset="50%" stop-color="#58a6ff"/>
+                        <stop offset="100%" stop-color="#3fb950"/>
+                    </linearGradient>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#3d444d"/>
+                    </marker>
+                    <marker id="arrowheadActive" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="url(#gradAccent)"/>
+                    </marker>
+                </defs>
+                
+                <!-- Background subtle grid -->
+                <rect width="800" height="175" fill="url(#gradBg)"/>
+                <g stroke="#21262d" stroke-width="0.5" opacity="0.3">
+                    ${Array.from({length: 16}, (_, i) => `<line x1="${i * 50}" y1="0" x2="${i * 50}" y2="175"/>`).join('')}
+                    ${Array.from({length: 5}, (_, i) => `<line x1="0" y1="${i * 35}" x2="800" y2="${i * 35}"/>`).join('')}
+                </g>
+
+                <!-- Connection lines -->
+                ${connections.map((conn, idx) => {
+                    const fromUnit = units[conn.from];
+                    const toUnit = units[conn.to];
+                    const isActive = activeUnit && (fromUnit.id === activeUnit || toUnit.id === activeUnit);
+                    const fromX = fromUnit.x + 140;
+                    const toX = toUnit.x;
+                    const midX = (fromX + toX) / 2;
+                    const y = 75;
+                    
+                    return `
+                        <path d="M${fromX} ${y} C${midX} ${y} ${midX} ${y} ${toX} ${y}" 
+                              stroke="${isActive ? 'url(#gradAccent)' : '#3d444d'}" 
+                              stroke-width="${isActive ? '3' : '2'}"
+                              fill="none"
+                              stroke-linecap="round"
+                              marker-end="url(${isActive ? '#arrowheadActive' : '#arrowhead'})"
+                              style="filter: ${isActive ? 'url(#glow)' : 'none'};
+                                     transition: all 0.3s ease;"/>
+                        <text x="${midX}" y="${y - 14}" text-anchor="middle" 
+                              font-size="10" font-weight="500" 
+                              fill="${isActive ? 'url(#gradAccent)' : '#484f58'}"
+                              style="transition: all 0.3s ease;">${conn.label}</text>
+                    `;
+                }).join('')}
+
+                <!-- Units -->
+                ${units.map((unit, idx) => {
+                    const isActive = activeUnit === unit.id;
+                    const state = unitStates[unit.id] || 0;
+                    const pulse = state > 0 ? `<animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite"/>` : '';
+                    
+                    return `
+                        <g class="unit-group" transform="translate(${unit.x}, 20)" style="cursor: pointer;">
+                            <!-- Card background -->
+                            <rect x="0" y="0" width="140" height="120" rx="16" 
+                                  fill="${isActive ? 'rgba(163, 113, 247, 0.12)' : '#161b22'}"
+                                  stroke="${isActive ? unit.color : '#30363d'}"
+                                  stroke-width="${isActive ? '2.5' : '1'}"
+                                  style="filter: ${isActive ? 'drop-shadow(0 0 12px ' + unit.color + '80)' : 'none'};
+                                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);"/>
+                            
+                            <!-- Top accent bar -->
+                            <rect x="0" y="0" width="140" height="3" rx="16 16 0 0" 
+                                  fill="${unit.color}" opacity="${isActive ? '1' : '0.4'}"
+                                  style="transition: all 0.3s ease;"/>
+                            
+                            <!-- Icon -->
+                            <g transform="translate(70, 38)">
+                                <svg width="40" height="40" viewBox="0 0 24 24">
+                                    <path d="${unit.icon}" 
+                                          stroke="${unit.color}" 
+                                          stroke-width="1.8" 
+                                          fill="none" 
+                                          stroke-linecap="round" 
+                                          stroke-linejoin="round"
+                                          style="filter: ${isActive ? 'drop-shadow(0 0 6px ' + unit.color + ')' : 'none'};
+                                                 transition: all 0.3s ease;"/>
+                                </svg>
+                            </g>
+                            
+                            <!-- Name -->
+                            <text x="70" y="88" text-anchor="middle" 
+                                  font-size="14" font-weight="600" 
+                                  fill="${isActive ? unit.color : '#f0f6fc'}"
+                                  style="transition: all 0.3s ease;">${unit.name}</text>
+                            
+                            <!-- Label -->
+                            <text x="70" y="106" text-anchor="middle" 
+                                  font-size="11" font-weight="400" 
+                                  fill="#8b949e">${unit.label}</text>
+                            
+                            <!-- Activity indicator -->
+                            ${state > 0 ? `
+                                <circle cx="70" cy="115" r="4" fill="${unit.color}">
+                                    <animate attributeName="r" values="4;8;4" dur="1s" repeatCount="indefinite"/>
+                                    <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+                                </circle>
+                            ` : ''}
+
+                            <!-- Step counter badge -->
+                            <text x="125" y="20" text-anchor="end" 
+                                  font-size="11" font-weight="600" 
+                                  fill="${unit.color}"
+                                  font-variant-numeric="tabular-nums"
+                                  style="opacity: ${state > 0 ? '1' : '0.4'}; transition: all 0.2s ease;">${state}</text>
+                        </g>
+                    `;
+                }).join('')}
+
+                <!-- Legend / Footer (moved down to avoid overlap) -->
+                <g transform="translate(20, 158)" font-size="10" fill="#6e7681">
+                    <text x="0" y="0">ExecutionStep 实时流 ← 拓扑顺序：组合 → 验证 → 计算 → 副作用 →</text>
+                </g>
+            </svg>`;
+
+            return svg;
         }
 
-        function appendOp(op) {
-            const expr = document.getElementById('expr');
-            // 连续计算支持：如果已有结果且当前是数字，直接用结果+op
-            if (lastResult !== null && !isNaN(parseFloat(expr.value))) {
-                expr.value = lastResult + op;
-            } else {
-                expr.value += op;
-            }
-            expr.focus();
+        // ===== UI Updates =====
+        function updateUnits(units) {
+            const container = document.getElementById('unitsGrid');
+            const total = Object.values(units).reduce((a, b) => a + b, 0);
+            document.getElementById('totalUnits').textContent = total;
+            
+            const unitConfig = {
+                Composer: { dot: 'composer', icon: '⬡' },
+                Port: { dot: 'port', icon: '⬢' },
+                Atom: { dot: 'atom', icon: '◆' },
+                Adapter: { dot: 'adapter', icon: '◇' }
+            };
+            
+            container.innerHTML = Object.entries(units).map(([unit, count]) => {
+                const cfg = unitConfig[unit] || { dot: 'composer' };
+                return `
+                    <div class="unit-item" data-unit="${unit}">
+                        <div class="unit-dot ${cfg.dot}"></div>
+                        <div class="unit-info">
+                            <div class="unit-name">${unit}</div>
+                            <div class="unit-count">${count.toLocaleString()} 步骤</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function doMemory(cmd) {
-            fetch('/api/calculate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({expression: cmd})
-            }).then(r => r.json()).then(data => {
-                if (cmd === 'MR') {
-                    document.getElementById('expr').value = data.result;
-                }
-                showResult(data);
-                renderLogs(data.steps);
-                updateMonitor(data);
-                refreshHistory();
-            });
+        function updateUpgrades(upgrades) {
+            const container = document.getElementById('upgradesList');
+            container.innerHTML = Object.entries(upgrades).map(([name, status]) => `
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-indicator"></div>
+                        <span class="upgrade-name">${name}</span>
+                    </div>
+                    <span class="upgrade-status">${status}</span>
+                </div>
+            `).join('');
         }
 
-        function doUnary(type) {
-            const exprEl = document.getElementById('expr');
-            let val = parseFloat(exprEl.value) || lastResult || 0;
-            let newExpr = '';
-            if (type === 'sqrt') {
-                newExpr = 'sqrt(' + val + ')';  // 后端暂未完全支持，可扩展为特殊
-                // 简单前端先算，实际应发给后端
-                const res = Math.sqrt(val);
-                document.getElementById('expr').value = res;
-                lastResult = res;
-                showResult({expression: '√' + val, result: res, success: true, steps: []});
+        function updateVersions(versions) {
+            const container = document.getElementById('versionGrid');
+            const filtered = Object.entries(versions).filter(([k]) => !['last_updated', 'notes'].includes(k));
+            document.getElementById('versionCount').textContent = filtered.length;
+            
+            container.innerHTML = filtered.map(([key, val]) => `
+                <div class="version-item" title="${key}: ${val}">
+                    <div class="version-name">${key}</div>
+                    <div class="version-value">${val}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateFeed(steps) {
+            const container = document.getElementById('feedContainer');
+            document.getElementById('feedCount').textContent = steps.length;
+            
+            if (steps.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">等待步骤产生...</div>';
                 return;
-            } else if (type === 'sign') {
-                newExpr = (-val).toString();
-                exprEl.value = newExpr;
-                lastResult = parseFloat(newExpr);
             }
+            
+            const unitColors = {
+                Composer: 'composer', Port: 'port', Atom: 'atom', Adapter: 'adapter',
+                Handoff: 'handoff'
+            };
+            
+            container.innerHTML = steps.slice().reverse().slice(0, 30).map(step => {
+                const unitClass = unitColors[step.unit] || 'composer';
+                const pattern = step.pattern ? ` <span style="color:var(--text-muted);">[${step.pattern}]</span>` : '';
+                const action = step.action || step.details || '执行';
+                return `
+                    <div class="feed-item" data-unit="${step.unit}">
+                        <div class="feed-dot ${unitClass}"></div>
+                        <div class="feed-content">
+                            <div class="feed-main">${action}${pattern}</div>
+                            <div class="feed-detail">${step.unit} · ${step.trace_id || '无追踪'}</div>
+                        </div>
+                        <div class="feed-time">${new Date(step.timestamp).toLocaleTimeString('zh-CN', {hour12:false, hour:'2-digit',minute:'2-digit',second:'2-digit',fractionalSecondDigits:3})}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateFiles(files) {
+            const container = document.getElementById('fileContainer');
+            document.getElementById('fileCount').textContent = files.length;
+            
+            if (files.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">暂无文件变更</div>';
+                return;
+            }
+            
+            container.innerHTML = files.slice().reverse().slice(0, 20).map(fc => `
+                <div class="file-item">
+                    <span class="file-path">${fc.file}</span>
+                    <span class="file-change">${fc.change}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateArchitecture(steps) {
+            const container = document.getElementById('archContainer');
+            if (!container) return;
+            
+            // Calculate unit states from recent steps
+            const unitStates = { composer: 0, port: 0, atom: 0, adapter: 0 };
+            let activeUnit = null;
+            
+            if (steps.length > 0) {
+                const recent = steps.slice(-10);
+                recent.forEach(s => {
+                    const key = s.unit.toLowerCase();
+                    if (unitStates.hasOwnProperty(key)) unitStates[key]++;
+                });
+                activeUnit = steps[steps.length - 1].unit.toLowerCase();
+            }
+            
+            container.innerHTML = generateArchitectureSVG(activeUnit, unitStates);
+        }
+
+        function updateGlobalStatus(status) {
+            document.getElementById('entropyDisplay').textContent = `熵: ${status.entropy}`;
+            document.getElementById('locDisplay').textContent = `${status.loc.toLocaleString()} LOC`;
+        }
+
+        function updateLastUpdate() {
+            document.getElementById('lastUpdate').textContent = `更新: ${new Date().toLocaleTimeString('zh-CN', {hour12:false, hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+        }
+
+        // ===== API Calls =====
+        async function fetchAll() {
+            try {
+                const [statusRes, stepsRes, versionsRes, filesRes] = await Promise.all([
+                    fetch('/api/global-status'),
+                    fetch('/api/steps'),
+                    fetch('/api/versions'),
+                    fetch('/api/files')
+                ]);
+
+                const [status, steps, versions, files] = await Promise.all([
+                    statusRes.json(), stepsRes.json(), versionsRes.json(), filesRes.json()
+                ]);
+
+                updateGlobalStatus(status);
+                updateUnits(status.units);
+                updateUpgrades(status.upgrades);
+                updateVersions(versions);
+                updateFeed(steps);
+                updateFiles(files);
+                updateArchitecture(steps);
+                updateLastUpdate();
+
+                lastSteps = steps;
+            } catch (e) {
+                console.log('Polling...', e.message);
+            }
+        }
+
+        // ===== Actions =====
+        function triggerDemo(type) {
+            const endpoints = {
+                calculate: { url: '/api/calculate', body: { expression: '(2+3)*4^2' } },
+                handoff: { url: '/api/demo/handoff', body: {} },
+                pattern: { url: '/api/demo/pattern', body: {} }
+            };
+            
+            const config = endpoints[type];
+            const btn = document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+            }
+            
+            fetch(config.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config.body)
+            })
+            .then(() => fetchAll())
+            .finally(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            });
         }
 
         function clearAll() {
-            document.getElementById('expr').value = '0';
-            document.getElementById('prev').innerText = '';
-            lastResult = null;
+            // Just refresh - server doesn't have clear endpoint
+            fetchAll();
         }
 
-        function handleKey(e) {
-            if (e.key === 'Enter') calculate();
-            if (e.key === 'Escape') clearAll();
-        }
-
-        async function calculate() {
-            const exprEl = document.getElementById('expr');
-            let expr = exprEl.value.trim();
-            if (!expr || expr === '0') return;
-
-            const logsEl = document.getElementById('logs');
-            logsEl.innerHTML = '<div class="text-emerald-400 px-2">正在执行完整 4 单元 Pipeline...</div>';
-
-            const res = await fetch('/api/calculate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({expression: expr})
+        // ===== Init =====
+        function init() {
+            // Initial empty state
+            updateUnits({ Composer: 0, Port: 0, Atom: 0, Adapter: 0 });
+            updateUpgrades({
+                'Composer模式库': '已实施 (Branch/Parallel/Retry)',
+                'ExecutionStep协议': '已实施 (TraceID + Observation)',
+                'Agent Handoff': '已实施 (Snapshot + Transport)'
             });
-            const data = await res.json();
-
-            showResult(data);
-            renderLogs(data.steps);
-            updateMonitor(data);
-            refreshHistory();
-
-            if (data.success) {
-                lastResult = data.result;
-                // 连续计算：结果自动准备好供下次运算
-                exprEl.value = data.result;
-                document.getElementById('prev').innerText = expr + ' =';
-            }
-
-            totalCalcs++;
-            document.getElementById('total-calcs').innerText = totalCalcs;
-        }
-
-        function showResult(data) {
-            const box = document.getElementById('result-box') || document.createElement('div');
-            if (!document.getElementById('result-box')) {
-                // 如果没有 result-box 就用 prev 展示
-            }
-            const prev = document.getElementById('prev');
-            const exprEl = document.getElementById('expr');
-            
-            if (data.success) {
-                prev.innerText = `${data.expression} =`;
-                exprEl.value = data.result;
-            } else {
-                prev.innerText = '错误';
-                exprEl.value = data.error_msg;
-            }
-        }
-
-        function renderLogs(steps) {
-            const logsEl = document.getElementById('logs');
-            logsEl.innerHTML = '';
-            steps.forEach((step, i) => {
-                const div = document.createElement('div');
-                const unitLower = step.unit.toLowerCase();
-                div.className = `log-line px-3 py-1.5 rounded-xl flex gap-2 unit-${unitLower}`;
-                div.innerHTML = `
-                    <span class="font-semibold w-20 shrink-0">${step.unit}</span>
-                    <span class="text-zinc-400 w-28 shrink-0">${step.action}</span>
-                    <span class="text-zinc-300">${step.details}</span>
-                `;
-                logsEl.appendChild(div);
-                logsEl.scrollTop = logsEl.scrollHeight;
+            updateVersions({
+                dashboard: 'v1.2.0-mac-minimal',
+                server: 'v1.1.0',
+                types: 'v0.9.0',
+                core_composer: 'v1.0.0',
+                core_observation: 'v1.0.0',
+                core_handoff: 'v1.0.0'
             });
-        }
+            updateFeed([]);
+            updateFiles([]);
+            updateArchitecture([]);
+            updateLastUpdate();
 
-        function updateMonitor(data) {
-            document.getElementById('last-steps').innerText = data.steps ? data.steps.length : 0;
-            // history count will be updated by refreshHistory
-        }
+            // Start polling
+            fetchAll();
+            setInterval(fetchAll, 900);
 
-        async function refreshHistory() {
-            const res = await fetch('/api/history');
-            const data = await res.json();
-            const histEl = document.getElementById('history');
-            histEl.innerHTML = '';
-            document.getElementById('history-count').innerText = data.history.length;
-
-            data.history.slice().reverse().forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = `history-item px-3 py-1 rounded-lg text-xs flex justify-between border-b border-zinc-800`;
-                div.innerHTML = `<span>${item}</span><span class="text-[10px] text-zinc-500">点击复用</span>`;
-                div.onclick = () => {
-                    // 点击历史复用结果进行连续计算
-                    const match = item.match(/= ([\d.-]+)/);
-                    if (match) {
-                        document.getElementById('expr').value = match[1];
-                        lastResult = parseFloat(match[1]);
-                    }
-                };
-                histEl.appendChild(div);
-            });
-        }
-
-        async function clearHistory() {
-            await fetch('/api/clear-history', {method: 'POST'});
-            document.getElementById('history').innerHTML = '';
-            document.getElementById('history-count').innerText = '0';
-            document.getElementById('last-steps').innerText = '0';
-            alert('历史 + history.txt 已清空');
-        }
-
-        function clearLogs() {
-            document.getElementById('logs').innerHTML = '';
-        }
-
-        // 初始化
-        window.onload = () => {
-            document.getElementById('expr').value = '0';
-            refreshHistory();
-            // 示例：预填充一个完整表达式演示
+            // Initial demo
             setTimeout(() => {
-                document.getElementById('expr').value = '(2+3)*4^2';
-            }, 800);
-        };
+                fetch('/api/demo/pattern', { method: 'POST' });
+                fetchAll();
+            }, 1500);
+        }
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) fetchAll();
+        });
+
+        init();
     </script>
 </body>
 </html>
