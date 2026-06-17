@@ -68,3 +68,15 @@ MIT License
 ---
 
 **项目目标**：为 1 亿行代码规模的后端系统提供一个熵值永不增长的底层基础。
+
+## 架构升级路线图（100万行规模模拟）
+
+为支撑大规模系统，我们已制定三大核心升级文档（严格遵守 4 原语）：
+
+- [Composer 组合模式库](docs/upgrade/01-composer-patterns.md)
+- [标准化 ExecutionStep + 通用观察协议](docs/upgrade/02-executionstep-protocol.md)
+- [正式的 Agent Handoff 协议](docs/upgrade/03-agent-handoff-protocol.md)
+
+每个文档都包含详细的**最小可执行任务分解**。
+
+查看完整索引： [docs/upgrade/README.md](docs/upgrade/README.md)
