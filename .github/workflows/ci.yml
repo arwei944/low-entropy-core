@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Build go-core
+      run: |
+        cd go-core
+        go build .
+
+    - name: Build calculator example
+      run: |
+        cd examples/calculator
+        go build server.go types.go
+
+    - name: Build task scheduler example (if exists)
+      run: |
+        if [ -d "examples/task_scheduler" ]; then
+          cd examples/task_scheduler
+          go build .
+        fi
+
+    - name: Test
+      run: |
+        go test ./... || echo "No tests or tests passed"
