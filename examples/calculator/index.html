@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>低熵完整计算器 • 4 Units + 文件持久化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .log-line { font-family: ui-monospace, monospace; font-size: 12px; }
+        .unit-atom { background-color: #14532d; border-left: 3px solid #4ade80; }
+        .unit-port { background-color: #1e3a8a; border-left: 3px solid #60a5fa; }
+        .unit-adapter { background-color: #78350f; border-left: 3px solid #fbbf24; }
+        .unit-composer { background-color: #581c87; border-left: 3px solid #c084fc; }
+        .calc-btn { 
+            background-color: #27272a; 
+            transition: all 0.1s; 
+        }
+        .calc-btn:hover { background-color: #3f3f46; }
+        .calc-btn:active { transform: scale(0.95); }
+        .op-btn { background-color: #3f3f46; }
+        .display { font-family: ui-monospace, monospace; }
+        .history-item { cursor: pointer; }
+        .history-item:hover { background-color: #27272a; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <div class="max-w-6xl mx-auto p-6">
+        <!-- 标题 -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-4xl font-semibold flex items-center gap-3">
+                    低熵完整计算器 
+                    <span class="px-3 py-1 bg-emerald-900 text-emerald-300 text-xs rounded-full font-mono">4 Units Only</span>
+                </h1>
+                <p class="text-zinc-400 text-sm mt-1">Atom • Port • Adapter • Composer • 文件持久化历史 • 实时监控</p>
+            </div>
+            <div class="text-right text-xs text-zinc-500">
+                端口 8081 • 零依赖 Go<br>
+                人类纯观察 • 多智能体可复现
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            
+            <!-- 计算器主体 (完整版) -->
+            <div class="xl:col-span-5 bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-medium">专业计算器界面</h2>
+                    <div class="text-[10px] px-2 py-0.5 bg-zinc-800 rounded">完整功能 + 连续计算</div>
+                </div>
+
+                <!-- 显示屏 -->
+                <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-5 mb-4">
+                    <div id="prev" class="text-zinc-500 text-sm h-5 font-mono"></div>
+                    <input id="expr" type="text" value="0" 
+                           class="display w-full bg-transparent text-4xl font-semibold focus:outline-none text-right"
+                           onkeydown="handleKey(event)">
+                </div>
+
+                <!-- 按钮网格 - 完整布局 -->
+                <div class="grid grid-cols-4 gap-2 text-xl">
+                    <!-- 内存行 -->
+                    <button onclick="doMemory('MC')" class="calc-btn py-3 rounded-2xl text-sm">MC</button>
+                    <button onclick="doMemory('MR')" class="calc-btn py-3 rounded-2xl text-sm">MR</button>
+                    <button onclick="append('M+')" class="calc-btn py-3 rounded-2xl text-sm">M+</button>
+                    <button onclick="append('%')" class="calc-btn py-3 rounded-2xl text-sm op-btn">%</button>
+
+                    <!-- 功能行 -->
+                    <button onclick="doUnary('sqrt')" class="calc-btn py-3 rounded-2xl text-sm">√</button>
+                    <button onclick="doUnary('sign')" class="calc-btn py-3 rounded-2xl text-sm">+/-</button>
+                    <button onclick="clearAll()" class="calc-btn py-3 rounded-2xl text-sm bg-red-900/30">AC</button>
+                    <button onclick="append('^')" class="calc-btn py-3 rounded-2xl text-sm op-btn">^</button>
+
+                    <!-- 数字 + 运算 -->
+                    <button onclick="append('7')" class="calc-btn py-4 rounded-2xl">7</button>
+                    <button onclick="append('8')" class="calc-btn py-4 rounded-2xl">8</button>
+                    <button onclick="append('9')" class="calc-btn py-4 rounded-2xl">9</button>
+                    <button onclick="append('/')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">÷</button>
+
+                    <button onclick="append('4')" class="calc-btn py-4 rounded-2xl">4</button>
+                    <button onclick="append('5')" class="calc-btn py-4 rounded-2xl">5</button>
+                    <button onclick="append('6')" class="calc-btn py-4 rounded-2xl">6</button>
+                    <button onclick="append('*')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">×</button>
+
+                    <button onclick="append('1')" class="calc-btn py-4 rounded-2xl">1</button>
+                    <button onclick="append('2')" class="calc-btn py-4 rounded-2xl">2</button>
+                    <button onclick="append('3')" class="calc-btn py-4 rounded-2xl">3</button>
+                    <button onclick="append('-')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">−</button>
+
+                    <button onclick="append('0')" class="calc-btn py-4 rounded-2xl col-span-2">0</button>
+                    <button onclick="append('.')" class="calc-btn py-4 rounded-2xl">.</button>
+                    <button onclick="append('+')" class="calc-btn py-4 rounded-2xl text-2xl op-btn">+</button>
+                </div>
+
+                <!-- 执行 -->
+                <button onclick="calculate()" 
+                        class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 py-4 rounded-2xl text-xl font-semibold tracking-wider">
+                    = 执行 (完整 4 单元流程)
+                </button>
+
+                <div class="mt-2 text-[10px] text-center text-zinc-500">支持括号、^、%、连续计算、文件持久化</div>
+            </div>
+
+            <!-- 实时 4 单元动态 -->
+            <div class="xl:col-span-4 bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
+                <div class="flex justify-between mb-3">
+                    <h2 class="text-lg font-medium">实时后端执行动态 (4 Units)</h2>
+                    <button onclick="clearLogs()" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded-lg">清空日志</button>
+                </div>
+                <div id="logs" class="h-[380px] overflow-auto bg-zinc-950 rounded-2xl p-3 space-y-1 text-xs"></div>
+            </div>
+
+            <!-- 监控 + 历史 -->
+            <div class="xl:col-span-3 space-y-6">
+                <!-- 熵 / 监控面板 -->
+                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-6">
+                    <h3 class="font-medium mb-3 flex items-center gap-2">
+                        低熵监控 (Entropy Proxy)
+                        <span class="text-[10px] text-emerald-400">步骤数 = 复杂度指标</span>
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>累计计算</span> <span id="total-calcs" class="font-mono text-emerald-400">0</span></div>
+                        <div class="flex justify-between"><span>最后步数</span> <span id="last-steps" class="font-mono text-emerald-400">0</span></div>
+                        <div class="flex justify-between"><span>历史文件条数</span> <span id="history-count" class="font-mono text-emerald-400">0</span></div>
+                    </div>
+                    <button onclick="clearHistory()" 
+                            class="mt-4 w-full text-xs bg-red-900/30 hover:bg-red-900/50 py-2 rounded-xl">清空历史 + 文件</button>
+                </div>
+
+                <!-- 历史记录 (可点击复用) -->
+                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-6 flex-1">
+                    <h3 class="font-medium mb-3">历史记录 (HistoryAdapter • 文件持久化)</h3>
+                    <div id="history" class="text-sm text-zinc-400 space-y-1 max-h-[220px] overflow-auto pr-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let totalCalcs = 0;
+        let lastResult = null;
+
+        function append(val) {
+            const expr = document.getElementById('expr');
+            if (expr.value === '0' && !['.', '+', '-', '*', '/', '^', '%'].includes(val)) {
+                expr.value = val;
+            } else {
+                expr.value += val;
+            }
+            expr.focus();
+        }
+
+        function appendOp(op) {
+            const expr = document.getElementById('expr');
+            // 连续计算支持：如果已有结果且当前是数字，直接用结果+op
+            if (lastResult !== null && !isNaN(parseFloat(expr.value))) {
+                expr.value = lastResult + op;
+            } else {
+                expr.value += op;
+            }
+            expr.focus();
+        }
+
+        function doMemory(cmd) {
+            fetch('/api/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({expression: cmd})
+            }).then(r => r.json()).then(data => {
+                if (cmd === 'MR') {
+                    document.getElementById('expr').value = data.result;
+                }
+                showResult(data);
+                renderLogs(data.steps);
+                updateMonitor(data);
+                refreshHistory();
+            });
+        }
+
+        function doUnary(type) {
+            const exprEl = document.getElementById('expr');
+            let val = parseFloat(exprEl.value) || lastResult || 0;
+            let newExpr = '';
+            if (type === 'sqrt') {
+                newExpr = 'sqrt(' + val + ')';  // 后端暂未完全支持，可扩展为特殊
+                // 简单前端先算，实际应发给后端
+                const res = Math.sqrt(val);
+                document.getElementById('expr').value = res;
+                lastResult = res;
+                showResult({expression: '√' + val, result: res, success: true, steps: []});
+                return;
+            } else if (type === 'sign') {
+                newExpr = (-val).toString();
+                exprEl.value = newExpr;
+                lastResult = parseFloat(newExpr);
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('expr').value = '0';
+            document.getElementById('prev').innerText = '';
+            lastResult = null;
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter') calculate();
+            if (e.key === 'Escape') clearAll();
+        }
+
+        async function calculate() {
+            const exprEl = document.getElementById('expr');
+            let expr = exprEl.value.trim();
+            if (!expr || expr === '0') return;
+
+            const logsEl = document.getElementById('logs');
+            logsEl.innerHTML = '<div class="text-emerald-400 px-2">正在执行完整 4 单元 Pipeline...</div>';
+
+            const res = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({expression: expr})
+            });
+            const data = await res.json();
+
+            showResult(data);
+            renderLogs(data.steps);
+            updateMonitor(data);
+            refreshHistory();
+
+            if (data.success) {
+                lastResult = data.result;
+                // 连续计算：结果自动准备好供下次运算
+                exprEl.value = data.result;
+                document.getElementById('prev').innerText = expr + ' =';
+            }
+
+            totalCalcs++;
+            document.getElementById('total-calcs').innerText = totalCalcs;
+        }
+
+        function showResult(data) {
+            const box = document.getElementById('result-box') || document.createElement('div');
+            if (!document.getElementById('result-box')) {
+                // 如果没有 result-box 就用 prev 展示
+            }
+            const prev = document.getElementById('prev');
+            const exprEl = document.getElementById('expr');
+            
+            if (data.success) {
+                prev.innerText = `${data.expression} =`;
+                exprEl.value = data.result;
+            } else {
+                prev.innerText = '错误';
+                exprEl.value = data.error_msg;
+            }
+        }
+
+        function renderLogs(steps) {
+            const logsEl = document.getElementById('logs');
+            logsEl.innerHTML = '';
+            steps.forEach((step, i) => {
+                const div = document.createElement('div');
+                const unitLower = step.unit.toLowerCase();
+                div.className = `log-line px-3 py-1.5 rounded-xl flex gap-2 unit-${unitLower}`;
+                div.innerHTML = `
+                    <span class="font-semibold w-20 shrink-0">${step.unit}</span>
+                    <span class="text-zinc-400 w-28 shrink-0">${step.action}</span>
+                    <span class="text-zinc-300">${step.details}</span>
+                `;
+                logsEl.appendChild(div);
+                logsEl.scrollTop = logsEl.scrollHeight;
+            });
+        }
+
+        function updateMonitor(data) {
+            document.getElementById('last-steps').innerText = data.steps ? data.steps.length : 0;
+            // history count will be updated by refreshHistory
+        }
+
+        async function refreshHistory() {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const histEl = document.getElementById('history');
+            histEl.innerHTML = '';
+            document.getElementById('history-count').innerText = data.history.length;
+
+            data.history.slice().reverse().forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = `history-item px-3 py-1 rounded-lg text-xs flex justify-between border-b border-zinc-800`;
+                div.innerHTML = `<span>${item}</span><span class="text-[10px] text-zinc-500">点击复用</span>`;
+                div.onclick = () => {
+                    // 点击历史复用结果进行连续计算
+                    const match = item.match(/= ([\d.-]+)/);
+                    if (match) {
+                        document.getElementById('expr').value = match[1];
+                        lastResult = parseFloat(match[1]);
+                    }
+                };
+                histEl.appendChild(div);
+            });
+        }
+
+        async function clearHistory() {
+            await fetch('/api/clear-history', {method: 'POST'});
+            document.getElementById('history').innerHTML = '';
+            document.getElementById('history-count').innerText = '0';
+            document.getElementById('last-steps').innerText = '0';
+            alert('历史 + history.txt 已清空');
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        // 初始化
+        window.onload = () => {
+            document.getElementById('expr').value = '0';
+            refreshHistory();
+            // 示例：预填充一个完整表达式演示
+            setTimeout(() => {
+                document.getElementById('expr').value = '(2+3)*4^2';
+            }, 800);
+        };
+    </script>
+</body>
+</html>

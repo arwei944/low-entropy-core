@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>低熵计算器 • 实时后端动态</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .log-line { font-family: ui-monospace, monospace; font-size: 13px; }
+        .unit-atom { background-color: #14532d; border-left: 3px solid #4ade80; }
+        .unit-port { background-color: #1e3a8a; border-left: 3px solid #60a5fa; }
+        .unit-adapter { background-color: #78350f; border-left: 3px solid #fbbf24; }
+        .unit-composer { background-color: #581c87; border-left: 3px solid #c084fc; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <div class="max-w-5xl mx-auto p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <h1 class="text-4xl font-semibold">低熵计算器</h1>
+            <span class="px-3 py-1 bg-emerald-900 text-emerald-300 text-xs rounded-full">4 Units Only</span>
+        </div>
+        <p class="text-zinc-400 mb-8">前端调用 → 后端严格使用 Atom / Port / Adapter / Composer → 实时展示执行轨迹</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- 计算器 -->
+            <div class="lg:col-span-2 bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
+                <h2 class="text-lg font-medium mb-6 text-zinc-300">计算器界面</h2>
+                
+                <input id="expr" type="text" placeholder="输入表达式，例如 15 * 3" 
+                       class="w-full bg-zinc-800 border border-zinc-700 focus:border-emerald-500 rounded-2xl px-5 py-4 text-2xl mb-4"
+                       onkeydown="if(event.key==='Enter') calculate()">
+
+                <div class="grid grid-cols-4 gap-2 mb-6">
+                    <button onclick="appendOp('+')" class="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-2xl">+</button>
+                    <button onclick="appendOp('-')" class="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-2xl">-</button>
+                    <button onclick="appendOp('*')" class="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-2xl">×</button>
+                    <button onclick="appendOp('/')" class="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-2xl">÷</button>
+                </div>
+
+                <button onclick="calculate()" 
+                        class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 text-lg font-semibold rounded-2xl">
+                    执行计算
+                </button>
+
+                <div id="result-box" class="mt-6 p-5 bg-zinc-950 rounded-2xl text-2xl font-mono min-h-[72px] flex items-center"></div>
+            </div>
+
+            <!-- 实时后端动态 -->
+            <div class="lg:col-span-3 bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
+                <div class="flex justify-between mb-4">
+                    <h2 class="text-lg font-medium">实时后端执行动态</h2>
+                    <button onclick="clearLogs()" class="text-xs bg-zinc-800 px-3 py-1 rounded-lg hover:bg-zinc-700">清空</button>
+                </div>
+                <div id="logs" class="h-[320px] overflow-auto bg-zinc-950 rounded-2xl p-4 space-y-1.5 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- 历史 -->
+        <div class="mt-6 bg-zinc-900 border border-zinc-700 rounded-3xl p-6">
+            <h3 class="font-medium mb-3">历史记录（History Adapter）</h3>
+            <div id="history" class="text-sm text-zinc-400"></div>
+        </div>
+    </div>
+
+    <script>
+        async function calculate() {
+            const expr = document.getElementById('expr').value.trim();
+            if (!expr) return;
+
+            const logsEl = document.getElementById('logs');
+            logsEl.innerHTML = '<div class="text-emerald-400 px-2">正在执行后端流程...</div>';
+
+            const res = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({expression: expr})
+            });
+            const data = await res.json();
+
+            // 显示结果
+            const resultBox = document.getElementById('result-box');
+            if (data.success) {
+                resultBox.innerHTML = `<span class="text-emerald-400">${data.expression} = <span class="font-semibold">${data.result}</span></span>`;
+            } else {
+                resultBox.innerHTML = `<span class="text-red-400">错误: ${data.error_msg}</span>`;
+            }
+
+            // 逐步显示后端动态
+            logsEl.innerHTML = '';
+            for (const step of data.steps) {
+                const div = document.createElement('div');
+                const colorClass = `unit-${step.unit.toLowerCase()}`;
+                div.className = `log-line px-3 py-2 rounded-xl flex items-start gap-3 ${colorClass}`;
+                div.innerHTML = `
+                    <span class="font-semibold w-[78px] shrink-0">${step.unit}</span>
+                    <span class="text-zinc-400 w-36 shrink-0">${step.action}</span>
+                    <span class="text-zinc-300">${step.details}</span>
+                `;
+                logsEl.appendChild(div);
+                logsEl.scrollTop = logsEl.scrollHeight;
+                await new Promise(r => setTimeout(r, 160)); // 模拟实时
+            }
+
+            loadHistory();
+        }
+
+        function appendOp(op) {
+            const input = document.getElementById('expr');
+            input.value = input.value.trim() + ' ' + op + ' ';
+            input.focus();
+        }
+
+        async function loadHistory() {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const el = document.getElementById('history');
+            if (data.history && data.history.length) {
+                el.innerHTML = data.history.map((h,i) => `<div class="py-0.5">${i+1}. ${h}</div>`).join('');
+            } else {
+                el.innerHTML = '<span class="text-zinc-500">暂无记录</span>';
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        window.onload = () => {
+            loadHistory();
+            document.getElementById('expr').focus();
+        }
+    </script>
+</body>
+</html>
