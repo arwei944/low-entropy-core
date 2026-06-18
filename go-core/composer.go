@@ -1,3 +1,11 @@
+// Package core — Composer (第四原语) + 流处理 (v4.0)
+//
+// 合并自: composer.go + stream.go
+//
+// 包含:
+//   - Composer / Pipeline / Branch / Parallel / WithRetry / WithTimeout / Map: 编排模式
+//   - Stream / StreamMap / StreamFilter / StreamReduce: 流处理原语
+//   - Window / WindowByTime / Merge / Split / Collect / FromSlice / ToSlice: 流操作
 package core
 
 import (
@@ -7,36 +15,25 @@ import (
 	"time"
 )
 
-// ──────────────────────────────────────────────
-// Composer — the fourth primitive (orchestration)
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 1: Composer — 第四原语 (编排引擎)
+// ============================================================================
 
 // Composer is the fourth primitive: the orchestration engine.
-// It composes Steps into pipelines, branches, parallel executions,
-// and other coordination patterns. A Composer is itself composable —
-// Composers can be nested inside other Composers.
-//
-// Every Composer emits ExecutionSteps for full observability.
 type Composer[T any] interface {
-	// Run executes the composed workflow with the given input.
-	// Returns the result, all execution steps recorded, and any error.
 	Run(ctx context.Context, input T) (T, []ExecutionStep, error)
 }
 
-// ──────────────────────────────────────────────
-// Pipeline — linear step chain (default Composer)
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 2: Pipeline — 线性步骤链
+// ============================================================================
 
 // Pipeline is a linear chain of Steps that transform T → T.
-// It is the default Composer implementation. Each step's output
-// becomes the next step's input. Observation is recorded at every step.
 type Pipeline[T any] struct {
 	steps []Step[T, T]
 	obs   ObservationAdapter
 }
 
-// NewPipeline creates a Pipeline with the given observation adapter and steps.
-// If obs is nil, a NoOpObservationAdapter is used.
 func NewPipeline[T any](obs ObservationAdapter, steps ...Step[T, T]) *Pipeline[T] {
 	if obs == nil {
 		obs = &NoOpObservationAdapter{}
@@ -44,19 +41,14 @@ func NewPipeline[T any](obs ObservationAdapter, steps ...Step[T, T]) *Pipeline[T
 	return &Pipeline[T]{steps: steps, obs: obs}
 }
 
-// Run executes all steps in sequence, recording each as an ExecutionStep.
-// If any step fails, execution stops and the error is returned along with
-// all steps recorded up to that point.
 func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
 	steps := make([]ExecutionStep, 0, len(p.steps))
 	result := input
 
-	// Generate a trace ID for the entire pipeline run
 	traceID := string(NewTraceID())
 	parentSpanID := string(NewSpanID())
 
 	for i, step := range p.steps {
-		// Check context cancellation before each step
 		select {
 		case <-ctx.Done():
 			errStep := NewExecutionStepWithTrace(parentSpanID, step.UnitType(), "execute", "cancelled before step", "")
@@ -68,17 +60,15 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 		default:
 		}
 
-		// Execute the step with timing
 		start := time.Now()
 		output, err := step.Execute(ctx, result)
 		elapsed := time.Since(start)
 
-		// Build the execution step record
 		es := NewExecutionStepWithTrace(parentSpanID, step.UnitType(), "execute", "pipeline step", "")
 		es.TraceID = traceID
 		es.DurationMs = elapsed.Milliseconds()
 		es.Metadata = map[string]interface{}{
-			"step_index": i,
+			"step_index":  i,
 			"total_steps": len(p.steps),
 		}
 
@@ -98,7 +88,6 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 		steps = append(steps, es)
 		result = output
 
-		// Check context after step completion (catches timeout during long steps)
 		select {
 		case <-ctx.Done():
 			cancelStep := NewExecutionStepWithTrace(parentSpanID, "Composer", "cancelled", "context done after step", "")
@@ -115,65 +104,53 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 	return result, steps, nil
 }
 
-// AddStep appends a step to the pipeline. Returns the pipeline for chaining.
 func (p *Pipeline[T]) AddStep(step Step[T, T]) *Pipeline[T] {
 	p.steps = append(p.steps, step)
 	return p
 }
 
-// StepCount returns the number of steps in the pipeline.
 func (p *Pipeline[T]) StepCount() int {
 	return len(p.steps)
 }
 
-// ──────────────────────────────────────────────
-// Branch — conditional routing pattern
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 3: Branch — 条件路由
+// ============================================================================
 
-// BranchStep routes execution based on a condition. If the condition
-// evaluates to true, the truePath is executed; otherwise the falsePath.
-// Both paths must produce the same type T.
-type BranchStep[T any] struct {
+// NewBranch 创建条件分支 Composer。
+// 根据 condition 的结果选择执行 truePath 或 falsePath。
+// 子 Composer 的 ExecutionStep 被正确收集到父级。
+func NewBranch[T any](condition func(T) bool, truePath, falsePath Composer[T]) Composer[T] {
+	return &branchComposer[T]{
+		condition: condition,
+		truePath:  truePath,
+		falsePath: falsePath,
+	}
+}
+
+type branchComposer[T any] struct {
 	condition func(T) bool
 	truePath  Composer[T]
 	falsePath Composer[T]
 }
 
-// NewBranch creates a conditional branch step.
-// condition is evaluated on the current input; the matching path is executed.
-func NewBranch[T any](condition func(T) bool, truePath, falsePath Composer[T]) Step[T, T] {
-	return StepFunc[T, T]{
-		execute: func(ctx context.Context, input T) (T, error) {
-			if condition(input) {
-				result, steps, err := truePath.Run(ctx, input)
-				// Propagate steps upward (they'll be captured by the parent composer)
-				_ = steps
-				return result, err
-			}
-			result, steps, err := falsePath.Run(ctx, input)
-			_ = steps
-			return result, err
-		},
-		unitType: "Branch",
+func (b *branchComposer[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
+	if b.condition(input) {
+		return b.truePath.Run(ctx, input)
 	}
+	return b.falsePath.Run(ctx, input)
 }
 
-// ──────────────────────────────────────────────
-// Parallel — true concurrent execution pattern
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 4: Parallel — 并行执行
+// ============================================================================
 
-// ParallelResults holds the results of parallel execution.
-// Each result is indexed by its position in the input.
 type ParallelResults[T any] struct {
-	Results []T                `json:"results"`
-	Errors  []error            `json:"errors,omitempty"`
-	Steps   [][]ExecutionStep  `json:"steps,omitempty"`
+	Results []T
+	Errors  []error
+	Steps   [][]ExecutionStep
 }
 
-// RunParallel executes multiple Composers concurrently using goroutines.
-// Each Composer receives the same input and runs independently.
-// Results are collected in order. This is a true parallel implementation
-// using sync.WaitGroup, not sequential simulation.
 func RunParallel[T any](ctx context.Context, input T, composers ...Composer[T]) (ParallelResults[T], []ExecutionStep, error) {
 	if len(composers) == 0 {
 		return ParallelResults[T]{}, nil, nil
@@ -198,13 +175,11 @@ func RunParallel[T any](ctx context.Context, input T, composers ...Composer[T]) 
 		}(i, c)
 	}
 
-	// Wait for all goroutines to complete, then close the channel
 	go func() {
 		wg.Wait()
 		close(resultCh)
 	}()
 
-	// Collect results in order
 	results := make([]T, len(composers))
 	errs := make([]error, len(composers))
 	allSteps := make([][]ExecutionStep, len(composers))
@@ -219,7 +194,6 @@ func RunParallel[T any](ctx context.Context, input T, composers ...Composer[T]) 
 		}
 	}
 
-	// Flatten all steps
 	flatSteps := make([]ExecutionStep, 0)
 	for _, s := range allSteps {
 		flatSteps = append(flatSteps, s...)
@@ -233,19 +207,17 @@ func RunParallel[T any](ctx context.Context, input T, composers ...Composer[T]) 
 	return ParallelResults[T]{Results: results, Errors: errs, Steps: allSteps}, flatSteps, finalErr
 }
 
-// ──────────────────────────────────────────────
-// WithRetry — exponential backoff retry pattern
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 5: WithRetry — 指数退避重试
+// ============================================================================
 
-// RetryConfig configures the retry behavior.
 type RetryConfig struct {
-	MaxAttempts int           // maximum number of attempts (including the first)
-	BaseDelay   time.Duration // initial delay before first retry
-	MaxDelay    time.Duration // maximum delay between retries
-	Multiplier  float64       // exponential backoff multiplier
+	MaxAttempts int
+	BaseDelay   time.Duration
+	MaxDelay    time.Duration
+	Multiplier  float64
 }
 
-// DefaultRetryConfig returns a sensible default retry configuration.
 func DefaultRetryConfig() RetryConfig {
 	return RetryConfig{
 		MaxAttempts: 3,
@@ -255,14 +227,8 @@ func DefaultRetryConfig() RetryConfig {
 	}
 }
 
-// WithRetry wraps a Composer with retry logic using exponential backoff.
-// On failure, it waits for an increasing delay before retrying.
-// Non-recoverable StepErrors are not retried.
 func WithRetry[T any](comp Composer[T], config RetryConfig) Composer[T] {
-	return &retryComposer[T]{
-		inner:  comp,
-		config: config,
-	}
+	return &retryComposer[T]{inner: comp, config: config}
 }
 
 type retryComposer[T any] struct {
@@ -275,7 +241,6 @@ func (r *retryComposer[T]) Run(ctx context.Context, input T) (T, []ExecutionStep
 	var lastErr error
 
 	for attempt := 0; attempt < r.config.MaxAttempts; attempt++ {
-		// Check context before each attempt
 		select {
 		case <-ctx.Done():
 			return input, allSteps, ctx.Err()
@@ -291,12 +256,10 @@ func (r *retryComposer[T]) Run(ctx context.Context, input T) (T, []ExecutionStep
 
 		lastErr = err
 
-		// Don't retry non-recoverable errors
 		if se, ok := err.(*StepError); ok && !se.Recoverable {
 			return result, allSteps, err
 		}
 
-		// Don't wait on the last attempt
 		if attempt < r.config.MaxAttempts-1 {
 			delay := r.computeDelay(attempt)
 			select {
@@ -319,18 +282,12 @@ func (r *retryComposer[T]) computeDelay(attempt int) time.Duration {
 	return time.Duration(delay)
 }
 
-// ──────────────────────────────────────────────
-// WithTimeout — timeout pattern using context
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 6: WithTimeout — 超时
+// ============================================================================
 
-// WithTimeout wraps a Composer with a timeout. If execution exceeds
-// the duration, the context is cancelled and the operation fails.
-// This is a true timeout implementation using context.WithTimeout.
 func WithTimeout[T any](comp Composer[T], timeout time.Duration) Composer[T] {
-	return &timeoutComposer[T]{
-		inner:   comp,
-		timeout: timeout,
-	}
+	return &timeoutComposer[T]{inner: comp, timeout: timeout}
 }
 
 type timeoutComposer[T any] struct {
@@ -344,9 +301,6 @@ func (t *timeoutComposer[T]) Run(ctx context.Context, input T) (T, []ExecutionSt
 
 	result, steps, err := t.inner.Run(ctx, input)
 
-	// If the context deadline exceeded, wrap it as a StepError.
-	// This handles both cases: inner returned err due to deadline, or
-	// inner completed but deadline was exceeded during execution.
 	if ctx.Err() != nil {
 		se := &StepError{
 			Code:        "TIMEOUT",
@@ -359,17 +313,12 @@ func (t *timeoutComposer[T]) Run(ctx context.Context, input T) (T, []ExecutionSt
 	return result, steps, err
 }
 
-// ──────────────────────────────────────────────
-// Map — transform Composer output type
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 7: Map — 类型转换
+// ============================================================================
 
-// Map transforms the output of a Composer using a mapping function.
-// This allows composing pipelines that change types.
 func Map[T, U any](comp Composer[T], mapper func(T) U) Composer[U] {
-	return &mapComposer[T, U]{
-		inner:  comp,
-		mapper: mapper,
-	}
+	return &mapComposer[T, U]{inner: comp, mapper: mapper}
 }
 
 type mapComposer[T, U any] struct {
@@ -378,11 +327,7 @@ type mapComposer[T, U any] struct {
 }
 
 func (m *mapComposer[T, U]) Run(ctx context.Context, input U) (U, []ExecutionStep, error) {
-	// We need to go from U to T, run the inner, then map back
-	// This is a simplified version — in practice, you'd need a reverse mapper
-	// For now, we handle the case where T == U (identity) or use type assertion
 	var tInput T
-	// Attempt type conversion if T and U are the same underlying type
 	if any(input) == nil {
 		result, steps, err := m.inner.Run(ctx, tInput)
 		if err != nil {
@@ -391,17 +336,303 @@ func (m *mapComposer[T, U]) Run(ctx context.Context, input U) (U, []ExecutionSte
 		}
 		return m.mapper(result), steps, nil
 	}
-	// For different types, this is a limitation — use with care
 	var zero U
 	return zero, nil, &StepError{Code: "MAP_ERROR", Message: "Map requires same input type or nil input", Recoverable: false}
 }
 
-// ──────────────────────────────────────────────
-// Compose — create a Composer from a single Step
-// ──────────────────────────────────────────────
+// ============================================================================
+// SECTION 8: Compose — 单步包装
+// ============================================================================
 
-// Compose wraps a single Step as a Composer.
-// Useful for composing simple operations into larger workflows.
 func Compose[T any](obs ObservationAdapter, step Step[T, T]) Composer[T] {
 	return NewPipeline[T](obs, step)
+}
+
+// ============================================================================
+// SECTION 9: Stream — 流处理原语
+// ============================================================================
+
+const defaultBufferSize = 100
+
+// StreamConfig configures stream processing.
+type StreamConfig struct {
+	BufferSize int
+}
+
+// StreamMap applies a function to each element in the stream.
+func StreamMap[In, Out any](input <-chan In, fn func(In) Out) <-chan Out {
+	output := make(chan Out, defaultBufferSize)
+	go func() {
+		defer close(output)
+		for v := range input {
+			output <- fn(v)
+		}
+	}()
+	return output
+}
+
+// StreamFilter filters elements that don't satisfy the predicate.
+func StreamFilter[T any](input <-chan T, predicate func(T) bool) <-chan T {
+	output := make(chan T, defaultBufferSize)
+	go func() {
+		defer close(output)
+		for v := range input {
+			if predicate(v) {
+				output <- v
+			}
+		}
+	}()
+	return output
+}
+
+// StreamReduce aggregates all elements into a single value.
+func StreamReduce[T, R any](input <-chan T, initial R, fn func(R, T) R) R {
+	result := initial
+	for v := range input {
+		result = fn(result, v)
+	}
+	return result
+}
+
+// Window collects elements into windows of a given size.
+func Window[T any](input <-chan T, size int) <-chan []T {
+	output := make(chan []T, defaultBufferSize)
+	go func() {
+		defer close(output)
+		window := make([]T, 0, size)
+		for v := range input {
+			window = append(window, v)
+			if len(window) == size {
+				output <- window
+				window = make([]T, 0, size)
+			}
+		}
+		if len(window) > 0 {
+			output <- window
+		}
+	}()
+	return output
+}
+
+// WindowByTime collects elements within a time window.
+func WindowByTime[T any](input <-chan T, duration time.Duration) <-chan []T {
+	output := make(chan []T, defaultBufferSize)
+	go func() {
+		defer close(output)
+		window := make([]T, 0)
+		ticker := time.NewTicker(duration)
+		defer ticker.Stop()
+
+		flush := func() {
+			if len(window) > 0 {
+				output <- window
+				window = make([]T, 0)
+			}
+		}
+
+		for {
+			select {
+			case v, ok := <-input:
+				if !ok {
+					flush()
+					return
+				}
+				window = append(window, v)
+			case <-ticker.C:
+				flush()
+			}
+		}
+	}()
+	return output
+}
+
+// Merge merges multiple input channels into one.
+func Merge[T any](inputs ...<-chan T) <-chan T {
+	output := make(chan T, defaultBufferSize)
+	var wg sync.WaitGroup
+	wg.Add(len(inputs))
+
+	for _, input := range inputs {
+		go func(ch <-chan T) {
+			defer wg.Done()
+			for v := range ch {
+				output <- v
+			}
+		}(input)
+	}
+
+	go func() {
+		wg.Wait()
+		close(output)
+	}()
+
+	return output
+}
+
+// Split splits a single channel into multiple based on a function.
+func Split[T any](input <-chan T, fn func(T) int, n int) []<-chan T {
+	outputs := make([]chan T, n)
+	result := make([]<-chan T, n)
+	for i := 0; i < n; i++ {
+		ch := make(chan T, defaultBufferSize)
+		outputs[i] = ch
+		result[i] = ch
+	}
+
+	go func() {
+		defer func() {
+			for _, ch := range outputs {
+				close(ch)
+			}
+		}()
+		for v := range input {
+			idx := fn(v)
+			if idx < 0 {
+				idx = 0
+			}
+			if idx >= n {
+				idx = n - 1
+			}
+			outputs[idx] <- v
+		}
+	}()
+
+	return result
+}
+
+// Collect collects all elements from a channel into a slice.
+func Collect[T any](input <-chan T) []T {
+	if input == nil {
+		return nil
+	}
+	var result []T
+	for v := range input {
+		result = append(result, v)
+	}
+	return result
+}
+
+// FromSlice creates a stream from a slice.
+func FromSlice[T any](items []T) <-chan T {
+	output := make(chan T, defaultBufferSize)
+	go func() {
+		defer close(output)
+		for _, item := range items {
+			output <- item
+		}
+	}()
+	return output
+}
+
+// ToSlice collects stream elements into a slice (alias for Collect).
+func ToSlice[T any](input <-chan T) []T {
+	return Collect(input)
+}
+
+// ============================================================================
+// SECTION 10: FanOut — 扇出广播
+// ============================================================================
+
+// FanOut 将输入广播到多个 Composer 并行执行，收集所有结果。
+// 任一分支失败则整体失败。
+type FanOut[T any] struct {
+	branches []Composer[T]
+	obs      ObservationAdapter
+}
+
+// NewFanOut 创建扇出编排器。
+func NewFanOut[T any](obs ObservationAdapter, branches ...Composer[T]) *FanOut[T] {
+	return &FanOut[T]{branches: branches, obs: obs}
+}
+
+func (fo *FanOut[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
+	type branchResult struct {
+		steps []ExecutionStep
+		err   error
+	}
+	results := make([]branchResult, len(fo.branches))
+	var wg sync.WaitGroup
+	for i, b := range fo.branches {
+		wg.Add(1)
+		go func(idx int, branch Composer[T]) {
+			defer wg.Done()
+			_, s, e := branch.Run(ctx, input)
+			results[idx] = branchResult{s, e}
+		}(i, b)
+	}
+	wg.Wait()
+
+	var allSteps []ExecutionStep
+	for _, br := range results {
+		allSteps = append(allSteps, br.steps...)
+		if br.err != nil {
+			return input, allSteps, br.err
+		}
+	}
+	return input, allSteps, nil
+}
+
+// ============================================================================
+// SECTION 11: Debounce — 防抖
+// ============================================================================
+
+// Debounce 防抖编排器：在静默期内忽略重复调用，仅执行最后一次。
+type Debounce[T any] struct {
+	inner    Composer[T]
+	interval time.Duration
+	lastCall time.Time
+	mu       sync.Mutex
+}
+
+// NewDebounce 创建防抖编排器。
+func NewDebounce[T any](inner Composer[T], interval time.Duration) *Debounce[T] {
+	return &Debounce[T]{inner: inner, interval: interval}
+}
+
+func (db *Debounce[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
+	db.mu.Lock()
+	if time.Since(db.lastCall) < db.interval {
+		db.mu.Unlock()
+		return input, nil, nil // 跳过：静默期内
+	}
+	db.lastCall = time.Now()
+	db.mu.Unlock()
+	return db.inner.Run(ctx, input)
+}
+
+// ============================================================================
+// SECTION 12: Throttle — 节流
+// ============================================================================
+
+// Throttle 节流编排器：限制调用频率，确保相邻调用间隔不小于 interval。
+type Throttle[T any] struct {
+	inner    Composer[T]
+	interval time.Duration
+	lastCall time.Time
+	mu       sync.Mutex
+}
+
+// NewThrottle 创建节流编排器。
+func NewThrottle[T any](inner Composer[T], interval time.Duration) *Throttle[T] {
+	return &Throttle[T]{inner: inner, interval: interval}
+}
+
+func (th *Throttle[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
+	th.mu.Lock()
+	elapsed := time.Since(th.lastCall)
+	if elapsed < th.interval {
+		waitTime := th.interval - elapsed
+		th.mu.Unlock()
+		select {
+		case <-time.After(waitTime):
+		case <-ctx.Done():
+			return input, nil, ctx.Err()
+		}
+	} else {
+		th.mu.Unlock()
+	}
+	th.mu.Lock()
+	th.lastCall = time.Now()
+	th.mu.Unlock()
+	return th.inner.Run(ctx, input)
 }

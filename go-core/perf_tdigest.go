@@ -119,8 +119,10 @@ func (td *TDigest) Add(value float64) {
 }
 
 // maxWeight 计算给定总数下单个质心的最大权重。
+// 标准 t-digest 公式：maxWeight = 4 * n / compression
+// 确保质心均匀分布在整个数据范围内，避免中位数附近的精度损失。
 func (td *TDigest) maxWeight(n int64) float64 {
-	return td.compression * float64(n) / float64(2*int(td.compression))
+	return 4.0 * float64(n) / td.compression
 }
 
 // weightedMerge 计算两个值的加权平均。
@@ -398,7 +400,6 @@ func NewAnomalyAutoLabeler() *AnomalyAutoLabeler {
 // p99 和 errorRate 是当前窗口的值。
 func (l *AnomalyAutoLabeler) UpdateBaseline(p99, errorRate float64) {
 	l.sampleCount++
-	n := float64(l.sampleCount)
 
 	// EMA 更新 P99 均值
 	if l.sampleCount == 1 {

@@ -1,33 +1,39 @@
-// Package core — 依赖图守卫 + 快照摘要 (v4.0)
+// Package core — 依赖图守卫 + 架构守卫 + 快照摘要 (v4.0)
 //
-// 本文件包含：
-//   - DependencyGuard：Pipeline 依赖图循环检测
-//   - SnapshotSummaryStore：Handoff 快照摘要存储
-//   - ArchitectureGuard 性能优化（哈希集合查找）
+// 合并自: guardian_dependency.go + guardian_architecture.go
 //
-// 所有类型均为线程安全，使用 ShardedLock 和 atomic 操作。
+// 包含:
+//   - DependencyGraph: Pipeline 依赖图 (DFS 循环检测, Kahn 拓扑排序, 冗余检测)
+//   - DependencyGuard: 依赖分析包装器
+//   - SnapshotSummaryStore: Handoff 快照摘要存储
+//   - InMemorySnapshotStore: 内存快照摘要存储
+//   - ArchitectureGuard: 架构合规检查 (Port)
+//   - typeSet / GlobalPrimitiveTypeSet: 类型白名单 (O(1) 查找)
+//
+// 所有类型均为线程安全。
 package core
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
-// =============================================================================
-// DependencyGuard — 循环依赖检测 (T4.1)
-// =============================================================================
+// ============================================================================
+// SECTION 1: DependencyGraph — 循环依赖检测
+// ============================================================================
 
 // DependencyGraph 表示 Pipeline 之间的依赖关系。
 // 使用 DFS 染色算法检测循环依赖，O(V+E) 时间复杂度。
 type DependencyGraph struct {
 	mu    sync.RWMutex
-	edges map[string]map[string]bool // from -> set of to
+	edges map[string]map[string]bool
 	nodes map[string]bool
 }
 
-// NewDependencyGraph 创建依赖图。
 func NewDependencyGraph() *DependencyGraph {
 	return &DependencyGraph{
 		edges: make(map[string]map[string]bool),
@@ -35,11 +41,9 @@ func NewDependencyGraph() *DependencyGraph {
 	}
 }
 
-// AddEdge 添加一条依赖边（from 依赖 to）。
 func (g *DependencyGraph) AddEdge(from, to string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-
 	if g.edges[from] == nil {
 		g.edges[from] = make(map[string]bool)
 	}
@@ -48,11 +52,9 @@ func (g *DependencyGraph) AddEdge(from, to string) {
 	g.nodes[to] = true
 }
 
-// RemoveEdge 移除一条依赖边。
 func (g *DependencyGraph) RemoveEdge(from, to string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-
 	if g.edges[from] != nil {
 		delete(g.edges[from], to)
 		if len(g.edges[from]) == 0 {
@@ -61,9 +63,7 @@ func (g *DependencyGraph) RemoveEdge(from, to string) {
 	}
 }
 
-// DetectCycles 检测依赖图中的循环依赖。
-// 使用 DFS 三色标记算法（白/灰/黑）。
-// 返回所有检测到的循环路径。
+// DetectCycles 检测依赖图中的循环依赖 (DFS 三色标记).
 func (g *DependencyGraph) DetectCycles() [][]string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -86,7 +86,6 @@ func (g *DependencyGraph) DetectCycles() [][]string {
 		for neighbor := range g.edges[node] {
 			switch colors[neighbor] {
 			case gray:
-				// 找到循环
 				cycleStart := -1
 				for i, n := range path {
 					if n == neighbor {
@@ -124,13 +123,11 @@ func (g *DependencyGraph) DetectCycles() [][]string {
 	return cycles
 }
 
-// TopologicalSort 拓扑排序（Kahn 算法）。
-// 如果存在循环依赖，返回 nil。
+// TopologicalSort 拓扑排序 (Kahn 算法).
 func (g *DependencyGraph) TopologicalSort() []string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 
-	// 计算入度
 	inDegree := make(map[string]int)
 	for node := range g.nodes {
 		inDegree[node] = 0
@@ -141,7 +138,6 @@ func (g *DependencyGraph) TopologicalSort() []string {
 		}
 	}
 
-	// 入度为 0 的节点入队
 	queue := make([]string, 0)
 	for node := range g.nodes {
 		if inDegree[node] == 0 {
@@ -163,25 +159,22 @@ func (g *DependencyGraph) TopologicalSort() []string {
 		}
 	}
 
-	// 如果结果数量不等于节点数，存在循环
 	if len(result) != len(g.nodes) {
 		return nil
 	}
 	return result
 }
 
-// DetectRedundant 检测冗余依赖（A→B→C 且 A→C 直接存在）。
+// DetectRedundant 检测冗余依赖 (A→B→C 且 A→C 直接存在).
 func (g *DependencyGraph) DetectRedundant() []DependencyEdge {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 
 	var redundant []DependencyEdge
-	// 计算传递闭包
 	reachable := g.transitiveClosure()
 
 	for from := range g.edges {
 		for to := range g.edges[from] {
-			// 检查是否存在间接路径
 			for intermediate := range g.nodes {
 				if intermediate == from || intermediate == to {
 					continue
@@ -199,7 +192,6 @@ func (g *DependencyGraph) DetectRedundant() []DependencyEdge {
 	return redundant
 }
 
-// transitiveClosure 计算传递闭包（Floyd-Warshall 简化版）。
 func (g *DependencyGraph) transitiveClosure() map[string]map[string]bool {
 	reachable := make(map[string]map[string]bool)
 	for node := range g.nodes {
@@ -210,7 +202,6 @@ func (g *DependencyGraph) transitiveClosure() map[string]map[string]bool {
 			reachable[from][to] = true
 		}
 	}
-	// Floyd-Warshall
 	for k := range g.nodes {
 		for i := range g.nodes {
 			for j := range g.nodes {
@@ -227,10 +218,10 @@ func (g *DependencyGraph) transitiveClosure() map[string]map[string]bool {
 type DependencyEdge struct {
 	From         string
 	To           string
-	Intermediate string // 仅冗余依赖时有值
+	Intermediate string
 }
 
-// DetectIslands 检测孤岛（无入度且无出度的节点）。
+// DetectIslands 检测孤岛 (无入度且无出度的节点).
 func (g *DependencyGraph) DetectIslands() []string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -254,26 +245,24 @@ func (g *DependencyGraph) DetectIslands() []string {
 	return islands
 }
 
-// =============================================================================
-// DependencyViolation — 依赖违规
-// =============================================================================
+// ============================================================================
+// SECTION 2: DependencyGuard — 依赖分析包装器
+// ============================================================================
 
 // DependencyViolation 表示依赖图中的违规。
 type DependencyViolation struct {
-	Type        string // cycle, redundant, island
+	Type        string
 	Description string
 	Nodes       []string
 	DetectedAt  time.Time
 }
 
 // DependencyGuard 包装依赖图，提供完整的依赖分析。
-// 集成到 ArchitectureGuard 中，用于检测 Pipeline 依赖问题。
 type DependencyGuard struct {
 	graph      *DependencyGraph
 	violations atomic.Value // []DependencyViolation
 }
 
-// NewDependencyGuard 创建依赖守卫。
 func NewDependencyGuard() *DependencyGuard {
 	dg := &DependencyGuard{
 		graph: NewDependencyGraph(),
@@ -282,21 +271,17 @@ func NewDependencyGuard() *DependencyGuard {
 	return dg
 }
 
-// AddPipelineDependency 注册一条 Pipeline 依赖。
 func (dg *DependencyGuard) AddPipelineDependency(from, to string) {
 	dg.graph.AddEdge(from, to)
 }
 
-// RemovePipelineDependency 移除一条 Pipeline 依赖。
 func (dg *DependencyGuard) RemovePipelineDependency(from, to string) {
 	dg.graph.RemoveEdge(from, to)
 }
 
-// Analyze 分析依赖图，返回所有违规。
 func (dg *DependencyGuard) Analyze() []DependencyViolation {
 	var violations []DependencyViolation
 
-	// 循环依赖检测
 	cycles := dg.graph.DetectCycles()
 	for _, cycle := range cycles {
 		violations = append(violations, DependencyViolation{
@@ -307,7 +292,6 @@ func (dg *DependencyGuard) Analyze() []DependencyViolation {
 		})
 	}
 
-	// 冗余依赖检测
 	redundant := dg.graph.DetectRedundant()
 	for _, r := range redundant {
 		violations = append(violations, DependencyViolation{
@@ -318,7 +302,6 @@ func (dg *DependencyGuard) Analyze() []DependencyViolation {
 		})
 	}
 
-	// 孤岛检测
 	islands := dg.graph.DetectIslands()
 	for _, island := range islands {
 		violations = append(violations, DependencyViolation{
@@ -333,7 +316,6 @@ func (dg *DependencyGuard) Analyze() []DependencyViolation {
 	return violations
 }
 
-// GetViolations 返回最近的违规列表。
 func (dg *DependencyGuard) GetViolations() []DependencyViolation {
 	v := dg.violations.Load()
 	if v == nil {
@@ -342,16 +324,15 @@ func (dg *DependencyGuard) GetViolations() []DependencyViolation {
 	return v.([]DependencyViolation)
 }
 
-// =============================================================================
-// SnapshotSummaryStore — 快照摘要存储 (T4.3)
-// =============================================================================
+// ============================================================================
+// SECTION 3: SnapshotSummaryStore — Handoff 快照摘要存储
+// ============================================================================
 
 // HandoffSnapshotSummary 是 Handoff 时的快照摘要。
-// 包含 Pipeline 状态的关键信息，用于快速恢复和审计对比。
 type HandoffSnapshotSummary struct {
 	PipelineID  string    `json:"pipeline_id"`
 	StepCount   int       `json:"step_count"`
-	StateHash   string    `json:"state_hash"`   // SHA256 of step sequence
+	StateHash   string    `json:"state_hash"`
 	Timestamp   time.Time `json:"timestamp"`
 	Version     int64     `json:"version"`
 	Description string    `json:"description,omitempty"`
@@ -367,12 +348,11 @@ type SnapshotSummaryStore interface {
 
 // InMemorySnapshotStore 是内存中的快照摘要存储。
 type InMemorySnapshotStore struct {
-	mu       sync.RWMutex
-	snapshots map[string][]HandoffSnapshotSummary // pipelineID -> summaries
-	latest   map[string]int64                     // pipelineID -> latest version
+	mu        sync.RWMutex
+	snapshots map[string][]HandoffSnapshotSummary
+	latest    map[string]int64
 }
 
-// NewInMemorySnapshotStore 创建内存快照摘要存储。
 func NewInMemorySnapshotStore() *InMemorySnapshotStore {
 	return &InMemorySnapshotStore{
 		snapshots: make(map[string][]HandoffSnapshotSummary),
@@ -380,26 +360,21 @@ func NewInMemorySnapshotStore() *InMemorySnapshotStore {
 	}
 }
 
-// Save 保存快照摘要。
 func (s *InMemorySnapshotStore) Save(summary HandoffSnapshotSummary) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	s.snapshots[summary.PipelineID] = append(s.snapshots[summary.PipelineID], summary)
 	s.latest[summary.PipelineID] = summary.Version
 	return nil
 }
 
-// Load 加载指定版本的快照。
 func (s *InMemorySnapshotStore) Load(pipelineID string, version int64) (*HandoffSnapshotSummary, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	snapshots, ok := s.snapshots[pipelineID]
 	if !ok {
 		return nil, fmt.Errorf("snapshot not found for pipeline %s", pipelineID)
 	}
-
 	for _, snap := range snapshots {
 		if snap.Version == version {
 			return &snap, nil
@@ -408,7 +383,6 @@ func (s *InMemorySnapshotStore) Load(pipelineID string, version int64) (*Handoff
 	return nil, fmt.Errorf("snapshot version %d not found for pipeline %s", version, pipelineID)
 }
 
-// List 返回指定 Pipeline 的所有快照摘要。
 func (s *InMemorySnapshotStore) List(pipelineID string) ([]HandoffSnapshotSummary, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -417,22 +391,20 @@ func (s *InMemorySnapshotStore) List(pipelineID string) ([]HandoffSnapshotSummar
 
 // SnapshotDiff 表示两个快照之间的差异。
 type SnapshotDiff struct {
-	PipelineID  string
-	FromVersion int64
-	ToVersion   int64
+	PipelineID    string
+	FromVersion   int64
+	ToVersion     int64
 	StepCountDiff int
-	HashChanged bool
-	AddedSteps   int
-	RemovedSteps int
+	HashChanged   bool
+	AddedSteps    int
+	RemovedSteps  int
 	ModifiedSteps int
 }
 
-// Compare 比较两个快照摘要的差异。
 func (s *InMemorySnapshotStore) Compare(a, b *HandoffSnapshotSummary) *SnapshotDiff {
 	if a == nil || b == nil {
 		return nil
 	}
-
 	diff := &SnapshotDiff{
 		PipelineID:    a.PipelineID,
 		FromVersion:   a.Version,
@@ -440,7 +412,6 @@ func (s *InMemorySnapshotStore) Compare(a, b *HandoffSnapshotSummary) *SnapshotD
 		StepCountDiff: b.StepCount - a.StepCount,
 		HashChanged:   a.StateHash != b.StateHash,
 	}
-
 	if a.StepCount != b.StepCount {
 		if b.StepCount > a.StepCount {
 			diff.AddedSteps = b.StepCount - a.StepCount
@@ -448,21 +419,120 @@ func (s *InMemorySnapshotStore) Compare(a, b *HandoffSnapshotSummary) *SnapshotD
 			diff.RemovedSteps = a.StepCount - b.StepCount
 		}
 	}
-
 	return diff
 }
 
-// =============================================================================
-// ArchitectureGuard 性能优化 — 哈希集合查找 (T4.4)
-// =============================================================================
+// ============================================================================
+// SECTION 4: ArchitectureGuard — 架构合规检查 (Port)
+// ============================================================================
+
+// ArchitectureInput contains data for architecture compliance checking.
+type ArchitectureInput struct {
+	Pipelines       []PipelineDescriptor
+	SchemaChanges   []SchemaChange
+	NewDependencies []string
+	ConfigChanges   []string
+}
+
+// ArchitectureAlert is the output of the architecture guard.
+type ArchitectureAlert struct {
+	Violations                int
+	NonPrimitiveTypes         []string
+	UncheckedSchemaChanges    []string
+	NewDependencies           []string
+	UnauthorizedConfigChanges []string
+	Message                   string
+}
+
+// allowedPatterns is the set of patterns that conform to the 4-primitive model.
+var allowedPatterns = map[string]bool{
+	"pipeline": true, "branch": true, "parallel": true, "timeout": true,
+	"retry": true, "circuit_breaker": true, "fallback": true, "bulkhead": true,
+	"rate_limit": true, "handoff": true, "scheduler": true, "match": true,
+	"config_change": true, "resilience_chain": true,
+}
+
+// ArchitectureGuard is a Port that checks architecture compliance.
+type ArchitectureGuard struct{}
+
+func NewArchitectureGuard() *ArchitectureGuard {
+	return &ArchitectureGuard{}
+}
+
+func (g *ArchitectureGuard) Validate(ctx context.Context, input ArchitectureInput) (ArchitectureAlert, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	select {
+	case <-ctx.Done():
+		return ArchitectureAlert{}, ctx.Err()
+	default:
+	}
+
+	var alert ArchitectureAlert
+	alert.NonPrimitiveTypes = checkNonPrimitiveTypes(input.Pipelines)
+	alert.UncheckedSchemaChanges = checkUncheckedSchemaChanges(input.SchemaChanges)
+	alert.NewDependencies = append([]string{}, input.NewDependencies...)
+	alert.UnauthorizedConfigChanges = append([]string{}, input.ConfigChanges...)
+	alert.Violations = len(alert.NonPrimitiveTypes) + len(alert.UncheckedSchemaChanges) +
+		len(alert.NewDependencies) + len(alert.UnauthorizedConfigChanges)
+	alert.Message = buildArchAlertMessage(alert)
+	return alert, nil
+}
+
+func checkNonPrimitiveTypes(pipelines []PipelineDescriptor) []string {
+	var violations []string
+	for _, p := range pipelines {
+		for _, pattern := range p.Patterns {
+			if !allowedPatterns[pattern] {
+				violations = append(violations,
+					fmt.Sprintf("pipeline %q uses non-primitive pattern %q", p.Name, pattern))
+			}
+		}
+	}
+	return violations
+}
+
+func checkUncheckedSchemaChanges(changes []SchemaChange) []string {
+	var violations []string
+	for _, ch := range changes {
+		if ch.Breaking {
+			violations = append(violations,
+				fmt.Sprintf("field %q: %s — %s", ch.Field, ch.Kind, ch.Detail))
+		}
+	}
+	return violations
+}
+
+func buildArchAlertMessage(alert ArchitectureAlert) string {
+	if alert.Violations == 0 {
+		return "architecture compliance check passed — no violations detected"
+	}
+	var parts []string
+	if len(alert.NonPrimitiveTypes) > 0 {
+		parts = append(parts, fmt.Sprintf("non-primitive types: %s", strings.Join(alert.NonPrimitiveTypes, "; ")))
+	}
+	if len(alert.UncheckedSchemaChanges) > 0 {
+		parts = append(parts, fmt.Sprintf("unchecked schema changes: %s", strings.Join(alert.UncheckedSchemaChanges, "; ")))
+	}
+	if len(alert.NewDependencies) > 0 {
+		parts = append(parts, fmt.Sprintf("new dependencies: %s", strings.Join(alert.NewDependencies, ", ")))
+	}
+	if len(alert.UnauthorizedConfigChanges) > 0 {
+		parts = append(parts, fmt.Sprintf("unauthorized config changes: %s", strings.Join(alert.UnauthorizedConfigChanges, ", ")))
+	}
+	return fmt.Sprintf("architecture violations (%d total): %s", alert.Violations, strings.Join(parts, " | "))
+}
+
+// ============================================================================
+// SECTION 5: typeSet — 哈希集合查找 (O(1))
+// ============================================================================
 
 // typeSet 用于 O(1) 类型白名单查找，替代线性扫描。
-// 预构建的哈希集合，查找 O(1) 而非 O(n)。
 type typeSet struct {
 	names map[string]bool
 }
 
-// newTypeSet 从类型名称列表创建哈希集合。
 func newTypeSet(names []string) *typeSet {
 	ts := &typeSet{names: make(map[string]bool, len(names))}
 	for _, n := range names {
@@ -471,23 +541,18 @@ func newTypeSet(names []string) *typeSet {
 	return ts
 }
 
-// contains 检查类型是否在白名单中（O(1)）。
 func (ts *typeSet) contains(name string) bool {
 	return ts.names[name]
 }
 
 // buildPrimitiveTypeSet 构建四原语类型的白名单。
-// 包含所有标准 Atom/Port/Adapter/Composer 以及 v4.0 新增类型。
 func buildPrimitiveTypeSet() *typeSet {
 	primitives := []string{
-		// 核心类型
 		"Atom", "Port", "Adapter", "Composer",
 		"Step", "StepFunc", "StepError",
 		"ExecutionStep", "CompactExecutionStep", "TraceID", "SpanID", "CompactTraceID",
-		// Composer 类型
 		"Pipeline", "Branch", "Parallel", "Retry", "Timeout", "Map",
 		"FastPipeline", "FastComposer",
-		// 观测类型
 		"ObservationAdapter", "InMemoryObservationAdapter", "NoOpObservationAdapter",
 		"ShardedObservationAdapter", "ObservationPipeline", "ObservationAPI",
 		"StepStore", "InMemoryStepStore", "ShardedStepStore", "ShardedIndexedStepStore",
@@ -495,19 +560,15 @@ func buildPrimitiveTypeSet() *typeSet {
 		"Aggregator", "AggregatorConfig", "AggregateResult",
 		"IncrementalAggregator", "ShardedAggregator",
 		"Sampler", "SamplingPolicy", "RateSampler", "ErrorAlwaysSampler", "CompositeSampler",
-		// 韧性类型
 		"CircuitBreaker", "RateLimiter", "Bulkhead", "Fallback", "ResilienceChain",
 		"ResilienceConfig", "ShardedRateLimiter",
 		"CircuitState", "CircuitClosed", "CircuitOpen", "CircuitHalfOpen",
-		// 安全类型
 		"Capability", "CapabilityStore", "InMemoryCapabilityStore",
 		"AuditEntry", "AuditTrail", "InMemoryAuditTrail",
 		"MerkleAuditChain", "MerkleProof", "MerkleEntry",
-		// 事件溯源
 		"EventEnvelope", "EventStore", "EventBus", "EventBus_Subscription",
 		"Projection", "ProjectionInput", "ProjectionOutput", "ProjectionHandler",
 		"PublishResult", "EventHandler",
-		// 守卫类型
 		"EntropyWatcher", "EntropySnapshot", "EntropyAlert", "EntropyLevel",
 		"TransparencyWatcher", "TransparencyInput", "TransparencyAlert",
 		"DriftDetector", "DriftInput", "DriftOutput",
@@ -520,42 +581,27 @@ func buildPrimitiveTypeSet() *typeSet {
 		"AdaptiveThresholdEngine", "AdaptiveThresholdConfig",
 		"MultiDimensionEntropySnapshot", "MultiDimensionEntropyCollector",
 		"DependencyGuard", "DependencyGraph", "DependencyViolation",
-		// 流处理
 		"Stream", "StreamConfig", "StreamMap", "StreamFilter", "StreamReduce",
 		"Window", "WindowByTime", "Merge", "Split", "Collect", "FromSlice",
-		// 幂等
 		"IdempotentPort", "IdempotentStore", "InMemoryIdempotentStore",
 		"IdempotentRequest", "IdempotentResult",
-		// 租户
 		"TenantID", "TenantContext", "TenantRequest", "TenantIsolationPort",
-		// 事务
 		"TransactionContext", "SagaStep", "SagaComposer",
-		// 降级
 		"DegradationManager", "DegradationMode",
-		// 配置
 		"Config", "ConfigBuilder", "ConfigHotReload",
-		// Handoff
 		"HandoffManager", "HandoffStrategy", "HandoffSnapshot", "HandoffCheckpoint",
-		// 调度
 		"AgentPool", "AgentPoolConfig", "AgentWorker", "AgentTask",
 		"Scheduler", "SchedulerComposer", "SchedulerConfig",
-		// Schema
 		"SchemaRegistry", "SchemaMigration", "SchemaVersion",
-		// 架构注册
 		"ArchitectureRegistry", "ArchitectureRegistryEntry", "PipelineDescriptor",
-		// 端口契约
 		"PortContract", "PortContractResult",
-		// 熵值度量
 		"EntropyMetrics", "EntropyMetricsResult",
-		// 快照
 		"HandoffSnapshotSummary", "SnapshotSummaryStore", "InMemorySnapshotStore",
 		"SnapshotDiff",
-		// 性能核心
 		"ShardedLock", "AtomicState", "BatchedUUIDGen",
 		"StepMetadataPool", "StepSlicePool", "StringBuilderPool", "HashPool",
 		"TDigest", "DistributionDriftDetector", "DistributionDriftResult",
 		"AnomalyAutoLabeler", "AnomalyLabelType",
-		// 分布式韧性
 		"GlobalCircuitBreaker", "FederatedDegradationManager",
 		"DistributedRateLimiter", "HealthCheckResponse",
 	}

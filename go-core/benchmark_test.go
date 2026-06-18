@@ -18,10 +18,10 @@ import (
 // =============================================================================
 
 func BenchmarkPipeline_100Steps(b *testing.B) {
-	pipeline := NewPipeline[int]("bench_pipeline_100")
+	pipeline := NewPipeline[int](nil)
 	for i := 0; i < 100; i++ {
 		atom := Atom[int, int](func(n int) int { return n + 1 })
-		pipeline.AddStep(AtomAsStep(atom, fmt.Sprintf("step_%d", i)))
+		pipeline.AddStep(AtomAsStep[int, int](atom))
 	}
 
 	b.ResetTimer()
@@ -71,8 +71,8 @@ func BenchmarkObservation_10KGoroutines(b *testing.B) {
 				steps := []ExecutionStep{
 					{
 						Timestamp:  time.Now(),
-						TraceID:    NewTraceID().String(),
-						SpanID:     NewSpanID().String(),
+						TraceID:    string(NewTraceID()),
+						SpanID:     string(NewSpanID()),
 						Unit:       "Atom",
 						Action:     "test",
 						DurationMs: 1,
@@ -217,8 +217,8 @@ func BenchmarkTDigest_Quantile(b *testing.B) {
 // =============================================================================
 
 func BenchmarkCircuitBreaker_Atomic(b *testing.B) {
-	inner := NewPipeline[int]("inner")
-	inner.AddStep(AtomAsStep(Atom[int, int](func(n int) int { return n + 1 }), "inc"))
+	inner := NewPipeline[int](nil)
+	inner.AddStep(AtomAsStep[int, int](Atom[int, int](func(n int) int { return n + 1 })))
 	cb := NewCircuitBreaker[int](inner, 5, 30*time.Second)
 
 	b.ResetTimer()
@@ -232,8 +232,8 @@ func BenchmarkCircuitBreaker_Atomic(b *testing.B) {
 // =============================================================================
 
 func BenchmarkRateLimiter_Atomic(b *testing.B) {
-	inner := NewPipeline[int]("inner")
-	inner.AddStep(AtomAsStep(Atom[int, int](func(n int) int { return n + 1 }), "inc"))
+	inner := NewPipeline[int](nil)
+	inner.AddStep(AtomAsStep[int, int](Atom[int, int](func(n int) int { return n + 1 })))
 	rl := NewRateLimiter[int](inner, 10000, 10000)
 
 	b.ResetTimer()

@@ -11,6 +11,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sync"
@@ -160,18 +161,20 @@ func (gcb *GlobalCircuitBreaker) broadcastStateChange(serviceName, newState stri
 	if gcb.eventBus == nil {
 		return
 	}
+	payload := map[string]interface{}{
+		"service":      serviceName,
+		"state":        newState,
+		"failure_rate": failureRate,
+		"timestamp":    time.Now(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
 	event := EventEnvelope{
-		EventID:   getGlobalUUIDGen().NextString(),
-		EventType: "circuit_breaker.state_change",
-		AggregateID: serviceName,
-		Payload: map[string]interface{}{
-			"service":      serviceName,
-			"state":        newState,
-			"failure_rate": failureRate,
-			"timestamp":    time.Now(),
-		},
-		Version:   1,
-		Timestamp: time.Now(),
+		EventID:      getGlobalUUIDGen().NextString(),
+		EventType:    "circuit_breaker.state_change",
+		AggregateID:   serviceName,
+		EventData:    payloadBytes,
+		Version:      1,
+		Timestamp:    time.Now(),
 	}
 	gcb.eventBus.Execute(context.Background(), event)
 }
@@ -224,19 +227,21 @@ func NewFederatedDegradationManager(instanceID string, inner *DegradationManager
 func (fdm *FederatedDegradationManager) ProposeDegradation(mode DegradationMode, totalInstances int) string {
 	proposalID := fmt.Sprintf("degrade_%s_%d", fdm.instanceID, time.Now().UnixNano())
 
+	payload := map[string]interface{}{
+		"proposal_id":     proposalID,
+		"mode":            string(mode),
+		"proposer":        fdm.instanceID,
+		"total_instances": totalInstances,
+		"timestamp":       time.Now(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
 	event := EventEnvelope{
-		EventID:     getGlobalUUIDGen().NextString(),
-		EventType:   "degradation.proposed",
-		AggregateID: fdm.instanceID,
-		Payload: map[string]interface{}{
-			"proposal_id":     proposalID,
-			"mode":            string(mode),
-			"proposer":        fdm.instanceID,
-			"total_instances": totalInstances,
-			"timestamp":       time.Now(),
-		},
-		Version:   1,
-		Timestamp: time.Now(),
+		EventID:      getGlobalUUIDGen().NextString(),
+		EventType:    "degradation.proposed",
+		AggregateID:  fdm.instanceID,
+		EventData:    payloadBytes,
+		Version:      1,
+		Timestamp:    time.Now(),
 	}
 	fdm.eventBus.Execute(context.Background(), event)
 
@@ -307,18 +312,20 @@ func (fdm *FederatedDegradationManager) broadcastDegradationConfirmation(proposa
 		eventType = "degradation.rejected"
 	}
 
+	payload := map[string]interface{}{
+		"proposal_id": proposalID,
+		"mode":        string(mode),
+		"confirmed":   confirmed,
+		"timestamp":   time.Now(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
 	event := EventEnvelope{
-		EventID:     getGlobalUUIDGen().NextString(),
-		EventType:   eventType,
-		AggregateID: fdm.instanceID,
-		Payload: map[string]interface{}{
-			"proposal_id": proposalID,
-			"mode":        string(mode),
-			"confirmed":   confirmed,
-			"timestamp":   time.Now(),
-		},
-		Version:   1,
-		Timestamp: time.Now(),
+		EventID:      getGlobalUUIDGen().NextString(),
+		EventType:    eventType,
+		AggregateID:   fdm.instanceID,
+		EventData:    payloadBytes,
+		Version:      1,
+		Timestamp:    time.Now(),
 	}
 	fdm.eventBus.Execute(context.Background(), event)
 }

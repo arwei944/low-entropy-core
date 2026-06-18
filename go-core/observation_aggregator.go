@@ -636,7 +636,6 @@ func (sa *ShardedAggregator) GetResults() []AggregateResult {
 	for key, d := range merged {
 		count := mergedCounts[key]
 		errCount := mergedErrors[key]
-		errorRate := float64(errCount) / float64(max(count, 1))
 
 		r := AggregateResult{
 			WindowDuration: key,

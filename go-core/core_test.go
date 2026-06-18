@@ -318,14 +318,17 @@ func TestBranch_TruePath(t *testing.T) {
 		falsePath,
 	)
 
-	pipeline := NewPipeline[int](obs, branch)
-	result, _, err := pipeline.Run(ctx, 5)
+	result, steps, err := branch.Run(ctx, 5)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// 5 > 0 → true path: 5 * 10 = 50
 	if result != 50 {
 		t.Errorf("expected 50, got %d", result)
+	}
+	// 验证子步骤被收集
+	if len(steps) == 0 {
+		t.Error("expected child steps to be collected, got 0")
 	}
 }
 
@@ -346,14 +349,16 @@ func TestBranch_FalsePath(t *testing.T) {
 		falsePath,
 	)
 
-	pipeline := NewPipeline[int](obs, branch)
-	result, _, err := pipeline.Run(ctx, -5)
+	result, steps, err := branch.Run(ctx, -5)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// -5 <= 0 → false path: -5 * -1 = 5
 	if result != 5 {
 		t.Errorf("expected 5, got %d", result)
+	}
+	if len(steps) == 0 {
+		t.Error("expected child steps to be collected, got 0")
 	}
 }
 
@@ -379,8 +384,7 @@ func TestBranch_ErrorPropagation(t *testing.T) {
 		okPath,
 	)
 
-	pipeline := NewPipeline[int](obs, branch)
-	_, _, err := pipeline.Run(ctx, 10)
+	_, _, err := branch.Run(ctx, 10)
 	if err == nil {
 		t.Fatal("expected error from true path, got nil")
 	}
@@ -1037,24 +1041,28 @@ func TestIntegration_BranchWithPipeline(t *testing.T) {
 		standardProcess,
 	)
 
-	pipeline := NewPipeline[string](obs, branch)
-
 	// Test priority path
-	result, _, err := pipeline.Run(ctx, "this-is-a-long-message")
+	result, steps, err := branch.Run(ctx, "this-is-a-long-message")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if result != "PRI:this-is-a-long-message:URGENT" {
 		t.Errorf("unexpected result: '%s'", result)
 	}
+	if len(steps) == 0 {
+		t.Error("expected child steps, got 0")
+	}
 
 	// Test standard path
-	result2, _, err2 := pipeline.Run(ctx, "short")
+	result2, steps2, err2 := branch.Run(ctx, "short")
 	if err2 != nil {
 		t.Fatalf("unexpected error: %v", err2)
 	}
 	if result2 != "STD:short" {
 		t.Errorf("unexpected result: '%s'", result2)
+	}
+	if len(steps2) == 0 {
+		t.Error("expected child steps, got 0")
 	}
 }
 
