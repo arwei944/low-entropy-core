@@ -164,7 +164,7 @@ func main() {
 		)
 
 		snap := &core.DefaultSnapshotAdapter{}
-		handoff := core.NewHandoff(scheduler, worker, snap, core.InProcTransport)
+		handoff := core.NewHandoff(scheduler, worker, snap, core.InProcTransport, obs)
 
 		handoff.Run(ctx, core.HandoffRequest{
 			SourceID: "calculator-scheduler",
@@ -186,24 +186,22 @@ func main() {
 		now := time.Now()
 
 		// Demo Branch pattern
-		branchPipeline := core.NewPipeline[Calculation](obs,
-			core.NewBranch[Calculation](
-				func(c Calculation) bool { return c.Expression != "" },
-				core.NewPipeline[Calculation](obs,
-					core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
-						fmt.Println("[Pattern Demo] Branch: true path")
-						return c
-					})),
-				),
-				core.NewPipeline[Calculation](obs,
-					core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
-						fmt.Println("[Pattern Demo] Branch: false path")
-						return c
-					})),
-				),
+		branch := core.NewBranch[Calculation](
+			func(c Calculation) bool { return c.Expression != "" },
+			core.NewPipeline[Calculation](obs,
+				core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
+					fmt.Println("[Pattern Demo] Branch: true path")
+					return c
+				})),
+			),
+			core.NewPipeline[Calculation](obs,
+				core.AtomAsStep(core.Atom[Calculation, Calculation](func(c Calculation) Calculation {
+					fmt.Println("[Pattern Demo] Branch: false path")
+					return c
+				})),
 			),
 		)
-		branchPipeline.Run(ctx, Calculation{Expression: "test", Success: true})
+		branch.Run(ctx, Calculation{Expression: "test", Success: true})
 
 		// Demo Parallel pattern
 		comp1 := core.NewPipeline[Calculation](obs,

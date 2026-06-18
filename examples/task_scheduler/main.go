@@ -69,8 +69,6 @@ func main() {
 			return t
 		}))), // falsePath: skip
 	)
-	branchPipeline := core.NewPipeline[Task](obs, branchStep)
-
 	// ─── WithRetry Pattern ───
 	retryConfig := core.RetryConfig{
 		MaxAttempts: 3,
@@ -78,7 +76,7 @@ func main() {
 		MaxDelay:    1 * time.Second,
 		Multiplier:  2.0,
 	}
-	retryComp := core.WithRetry[Task](branchPipeline, retryConfig)
+	retryComp := core.WithRetry[Task](branchStep, retryConfig)
 
 	// ─── WithTimeout Pattern ───
 	timeoutComp := core.WithTimeout[Task](retryComp, 5*time.Second)
@@ -99,7 +97,7 @@ func main() {
 	)
 
 	snap := &core.DefaultSnapshotAdapter{}
-	handoff := core.NewHandoff(scheduler, worker, snap, core.InProcTransport)
+	handoff := core.NewHandoff(scheduler, worker, snap, core.InProcTransport, obs)
 
 	// ─── Execute ───
 
