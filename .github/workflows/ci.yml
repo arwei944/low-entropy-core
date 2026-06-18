@@ -7,8 +7,11 @@ on:
     branches: [ master, main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.22', '1.23']
 
     steps:
     - uses: actions/checkout@v4
@@ -16,25 +19,33 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22'
+        go-version: ${{ matrix.go-version }}
 
-    - name: Build go-core
+    - name: Lint
       run: |
         cd go-core
-        go build .
+        go vet ./...
 
-    - name: Build calculator example
+    - name: Test with coverage
       run: |
-        cd examples/calculator
-        go build server.go types.go
+        cd go-core
+        go test ./... -coverprofile=coverage.out -covermode=atomic -count=1
 
-    - name: Build task scheduler example (if exists)
+    - name: Coverage report
       run: |
-        if [ -d "examples/task_scheduler" ]; then
-          cd examples/task_scheduler
-          go build .
-        fi
+        cd go-core
+        go tool cover -func=coverage.out | tail -1
 
-    - name: Test
+    - name: Benchmark regression
       run: |
-        go test ./... || echo "No tests or tests passed"
+        cd go-core
+        go test -bench=. -benchmem -count=1 ./...
+
+    - name: Build examples
+      run: |
+        cd examples/calculator && go build .
+        cd ../../examples/task_scheduler && go build .
+
+    - name: Build arch-manager
+      run: |
+        cd cmd/arch-manager && go build .
