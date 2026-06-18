@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 分片观测存储基础设施
 //
 // 本文件提供面向十亿级调用量的分片观测存储类型，包括：

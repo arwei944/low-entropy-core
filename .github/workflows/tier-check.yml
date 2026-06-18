@@ -1,0 +1,51 @@
+# Tier Drift Check — CI/CD workflow for Progressive Complexity Model
+# Runs on every push and PR to detect tier drift and validate migration readiness.
+name: Tier Drift Check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  tier-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build all tiers
+        working-directory: go-core
+        run: |
+          echo "=== Building all tiers ==="
+          for tier in 0 1 2 3 4 5; do
+            echo "Building tier $tier..."
+            go build -tags "lecore_tier${tier}" . || exit 1
+          done
+          echo "All tiers build OK"
+
+      - name: Test all tiers
+        working-directory: go-core
+        run: |
+          echo "=== Testing all tiers ==="
+          for tier in 0 1 2 3 4 5; do
+            echo "Testing tier $tier..."
+            go test -tags "lecore_tier${tier}" -count=1 . || exit 1
+          done
+          echo "All tiers test OK"
+
+      - name: Tier drift check
+        working-directory: go-core
+        run: |
+          echo "=== Tier Drift Check ==="
+          go run scripts/tier_check.go --root . --current-tier L2 || echo "::warning::Project may have outgrown current tier"
+
+      - name: Migration plan preview
+        working-directory: go-core
+        run: |
+          echo "=== Migration Plan (L1 → L3) ==="
+          go run scripts/migration_report.go --from L1 --to L3

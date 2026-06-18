@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 透明度监控 + 行为偏差检测 (v4.0)
 //
 // 合并自: guardian_transparency.go + guardian_drift.go

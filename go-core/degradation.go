@@ -1,3 +1,5 @@
+//go:build lecore_tier1 || lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 package core
 
 import (

@@ -39,17 +39,3 @@ func AdapterAsStep[In, Out any](a Adapter[In, Out]) Step[In, Out] {
 	}
 }
 
-// ──────────────────────────────────────────────
-// SnapshotAdapter — for Handoff protocol (Phase 3)
-// ──────────────────────────────────────────────
-
-// SnapshotAdapter[T] serializes and restores typed state snapshots.
-// Used by the Handoff protocol to deposit and withdraw agent state
-// at architecture boundaries.
-type SnapshotAdapter[T any] interface {
-	// CreateSnapshot serializes the current state into a transferable form.
-	CreateSnapshot(state T) HandoffSnapshot
-
-	// RestoreSnapshot deserializes a snapshot back into typed state.
-	RestoreSnapshot(snap HandoffSnapshot) (T, error)
-}

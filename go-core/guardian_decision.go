@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 监督决策引擎 + 告警适配器 (v4.0)
 //
 // 合并自: guardian_decision.go + guardian_alert.go

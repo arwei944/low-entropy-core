@@ -1,3 +1,5 @@
+//go:build lecore_tier5 || lecore_tier6 || lecore_tier7
+
 package core
 
 import (
@@ -10,45 +12,6 @@ import (
 	"syscall"
 	"time"
 )
-
-// AppConfig 应用配置。
-// 支持 JSON 文件加载和环境变量覆盖。
-type AppConfig struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-
-	// 持久化
-	StorageDir string `json:"storage_dir"`
-
-	// HTTP
-	HTTPAddr string `json:"http_addr"`
-
-	// 观测
-	ObservationBufferSize int `json:"observation_buffer_size"`
-
-	// Guardian
-	GuardianEnabled bool    `json:"guardian_enabled"`
-	EntropyCeiling  float64 `json:"entropy_ceiling"`
-
-	// 调度器
-	SchedulerEnabled  bool          `json:"scheduler_enabled"`
-	AgentHeartbeatTTL time.Duration `json:"agent_heartbeat_ttl"`
-}
-
-// DefaultAppConfig 返回安全的默认配置。
-func DefaultAppConfig() AppConfig {
-	return AppConfig{
-		Name:                  "low-entropy-core",
-		Version:               "4.0.0",
-		StorageDir:            "./data",
-		HTTPAddr:              ":8080",
-		ObservationBufferSize: 10000,
-		GuardianEnabled:       true,
-		EntropyCeiling:        0.8,
-		SchedulerEnabled:      false,
-		AgentHeartbeatTTL:     30 * time.Second,
-	}
-}
 
 // App 统一应用入口。
 // 一行代码初始化所有子系统：持久化、EventStore、Observation、Guardian、Scheduler、HTTP。

@@ -1,3 +1,5 @@
+//go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 配置解析 + 构建器 + 热重载 (v4.0)
 //
 // 合并自: config.go + config_builder.go + config_hotreload.go

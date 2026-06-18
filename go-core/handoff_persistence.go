@@ -1,3 +1,5 @@
+//go:build lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 package core
 
 import (
@@ -7,6 +9,22 @@ import (
 	"path/filepath"
 	"sync"
 )
+
+// ──────────────────────────────────────────────
+// SnapshotAdapter — typed snapshot serialization
+// ──────────────────────────────────────────────
+
+// SnapshotAdapter[T] serializes and restores typed state snapshots.
+// Used by the Handoff protocol to deposit and withdraw agent state
+// at architecture boundaries. Moved from adapter.go to keep the kernel
+// free of handoff dependencies.
+type SnapshotAdapter[T any] interface {
+	// CreateSnapshot serializes the current state into a transferable form.
+	CreateSnapshot(state T) HandoffSnapshot
+
+	// RestoreSnapshot deserializes a snapshot back into typed state.
+	RestoreSnapshot(snap HandoffSnapshot) (T, error)
+}
 
 // ──────────────────────────────────────────────
 // JSONSnapshotAdapter — file-based persistence

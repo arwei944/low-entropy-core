@@ -1,3 +1,5 @@
+//go:build lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 持久化事件存储 (Phase 1, Task 1.2)
 //
 // PersistentEventStore 将 EventStore 的事件持久化到 StorageBackend。

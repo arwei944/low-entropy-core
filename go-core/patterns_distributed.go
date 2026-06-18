@@ -1,3 +1,5 @@
+//go:build lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 分布式韧性 (v4.0)
 //
 // 本文件将单机韧性模式升级为跨服务分布式韧性，包括：

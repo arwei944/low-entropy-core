@@ -1,3 +1,5 @@
+//go:build lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 基准测试套件 (v4.0)
 //
 // 覆盖所有关键热路径的基准测试，对比 v3.0 和 v4.0 的性能差异。

@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — Agent 提交接口 (Phase 2 P1)
 //
 // 定义 AI Agent 与框架之间的"合同"：

@@ -1,3 +1,5 @@
+//go:build lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 文件系统持久化后端 (Phase 1, Task 1.1)
 //
 // StorageBackend 定义了持久化存储的统一接口。

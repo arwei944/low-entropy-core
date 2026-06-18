@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — Agent 编译执行管道 (Phase 2 P3)
 //
 // AgentRunner 负责编译和执行 Agent 提交的代码。

@@ -1,3 +1,5 @@
+//go:build lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 压力测试套件 (v4.0)
 //
 // 模拟十亿级调用量场景，验证无内存泄漏、无 goroutine 泄漏、无死锁。

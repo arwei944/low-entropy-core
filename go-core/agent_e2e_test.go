@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — Agent Workbench 端到端集成测试
 //
 // 覆盖 Agent Workbench 完整生命周期：

@@ -1,3 +1,5 @@
+//go:build lecore_tier5 || lecore_tier6 || lecore_tier7
+
 package core
 
 import (

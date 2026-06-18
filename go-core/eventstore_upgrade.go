@@ -1,3 +1,5 @@
+//go:build lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 事件溯源升级 (v4.0)
 //
 // 本文件包含事件溯源层的全面升级：

@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — Guardian 静态审核 (Phase 2 P2)
 //
 // StaticGuardPort 在编译前对 Agent 提交的代码进行 4 项静态检查：

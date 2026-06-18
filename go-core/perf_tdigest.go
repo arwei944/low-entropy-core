@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — TDigest 近似分位数算法 (v4.0)
 //
 // TDigest 是一种高效的分位数近似算法，使用固定数量的质心（centroids）

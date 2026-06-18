@@ -1,3 +1,5 @@
+//go:build lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — Schema 注册 + 迁移 + 兼容性检查 (v4.0)
 //
 // 合并自: schema_registry.go + schema_migration.go + schema_compat.go

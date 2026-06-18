@@ -1,3 +1,5 @@
+//go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+
 // Package core — 依赖图守卫 + 架构守卫 + 快照摘要 (v4.0)
 //
 // 合并自: guardian_dependency.go + guardian_architecture.go
