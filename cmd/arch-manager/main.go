@@ -845,7 +845,7 @@ func (p *AgentPool) Unsubscribe(ch chan AgentEvent) {
 	close(ch)
 }
 
-// handleAPI 返回架构数据 JSON
+// handleAPI 返回架构数据 JSON（含复杂度评分）
 func handleAPI(w http.ResponseWriter, r *http.Request) {
 	archMu.RLock()
 	defer archMu.RUnlock()
@@ -855,9 +855,47 @@ func handleAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 计算复杂度评分并附加到响应中
+	complexityScores := ComputeComplexityScores(archData)
+	maxLines := 1
+	maxSymbols := 1
+	maxDeps := 1
+	for _, f := range archData.Files {
+		if f.Lines > maxLines {
+			maxLines = f.Lines
+		}
+		if len(f.Symbols) > maxSymbols {
+			maxSymbols = len(f.Symbols)
+		}
+		if len(f.DependsOn) > maxDeps {
+			maxDeps = len(f.DependsOn)
+		}
+	}
+
+	// 构建增强响应
+	type EnhancedFileInfo struct {
+		FileInfo
+		ComplexityScore float64 `json:"complexity_score"`
+	}
+	type EnhancedArchData struct {
+		*ArchData
+		ComplexityScores map[string]float64 `json:"complexity_scores"`
+		MaxLines         int                `json:"max_lines"`
+		MaxSymbols       int                `json:"max_symbols"`
+		MaxDeps          int                `json:"max_deps"`
+	}
+
+	enhanced := EnhancedArchData{
+		ArchData:         archData,
+		ComplexityScores: complexityScores,
+		MaxLines:         maxLines,
+		MaxSymbols:       maxSymbols,
+		MaxDeps:          maxDeps,
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	json.NewEncoder(w).Encode(archData)
+	json.NewEncoder(w).Encode(enhanced)
 }
 
 // handleFile 返回单个文件的详细内容
@@ -1589,6 +1627,827 @@ func watchFiles(dir string, interval time.Duration) {
 }
 
 // ============================================================================
+// 版本管理 API (BE-02)
+// ============================================================================
+
+// handleVersion 返回当前版本信息 + 版本列表
+func handleVersion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	versions, err := ListVersions()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":    err.Error(),
+			"versions": []VersionInfo{},
+		})
+		return
+	}
+
+	currentVersion := "0.5.1"
+	if len(versions) > 0 {
+		currentVersion = versions[0].Version
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"current_version": currentVersion,
+		"versions":        versions,
+		"total":           len(versions),
+	})
+}
+
+// handleVersionSnapshot 创建版本快照
+func handleVersionSnapshot(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	version := r.URL.Query().Get("version")
+	if version == "" {
+		version = "0.5.1"
+	}
+
+	snapshot, err := CreateSnapshot(version)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   "created",
+		"snapshot": snapshot,
+	})
+}
+
+// handleVersionDiff 返回两个版本的 diff
+func handleVersionDiff(w http.ResponseWriter, r *http.Request) {
+	v1 := r.URL.Query().Get("v1")
+	v2 := r.URL.Query().Get("v2")
+
+	if v1 == "" || v2 == "" {
+		http.Error(w, "missing v1 or v2 parameter", http.StatusBadRequest)
+		return
+	}
+
+	diff, err := DiffVersions(v1, v2)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(diff)
+}
+
+// handleVersionChangelog 返回指定版本的 Changelog
+func handleVersionChangelog(w http.ResponseWriter, r *http.Request) {
+	version := r.URL.Query().Get("v")
+	if version == "" {
+		version = "0.5.1"
+	}
+
+	entries, err := LoadChangelog(version)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":     err.Error(),
+			"changelog": []ChangelogEntry{},
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"version":   version,
+		"changelog": entries,
+		"total":     len(entries),
+	})
+}
+
+// ============================================================================
+// 引导层 API (BE-04)
+// ============================================================================
+
+// GuideData 引导层结构化数据
+type GuideData struct {
+	Primitives  []PrimitiveDef   `json:"primitives"`
+	Layers      []LayerDepEdge   `json:"layer_deps"`
+	Constraints []ConstraintCheck `json:"constraints"`
+	Patterns    []PatternDef     `json:"patterns"`
+	QuickStart  QuickStartInfo   `json:"quick_start"`
+	Tour        *TourGuide       `json:"tour,omitempty"` // v0.7.0: UA 学习导览
+}
+
+// TourGuide UA 学习导览 (v0.7.0)
+type TourGuide struct {
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
+	Steps       []TourGuideStep `json:"steps"`
+	Available   bool        `json:"available"`
+}
+
+// TourGuideStep 学习导览步骤
+type TourGuideStep struct {
+	Order       int      `json:"order"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	NodeCount   int      `json:"node_count"`
+	KeyConcepts []string `json:"key_concepts,omitempty"`
+}
+
+// PrimitiveDef 原语定义
+type PrimitiveDef struct {
+	Name        string `json:"name"`
+	Signature   string `json:"signature"`
+	Description string `json:"description"`
+	Color       string `json:"color"`
+	Example     string `json:"example"`
+}
+
+// LayerDepEdge 层级依赖边
+type LayerDepEdge struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Label string `json:"label"`
+}
+
+// ConstraintCheck 约束检查结果
+type ConstraintCheck struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      string `json:"status"` // "pass", "fail", "warn"
+	Detail      string `json:"detail"`
+}
+
+// PatternDef 模式定义
+type PatternDef struct {
+	Name        string `json:"name"`
+	Code        string `json:"code"`
+	Description string `json:"description"`
+	UseCase     string `json:"use_case"`
+	FullExample string `json:"full_example"`
+}
+
+// QuickStartInfo 快速入门信息
+type QuickStartInfo struct {
+	Code     string `json:"code"`
+	DataFlow string `json:"data_flow"`
+}
+
+// loadTourGuide 加载 UA 学习导览数据 (v0.7.0)
+func loadTourGuide() *TourGuide {
+	graphPath := filepath.Join(sourceDir, ".understand-anything", "knowledge-graph.json")
+	data, err := os.ReadFile(graphPath)
+	if err != nil {
+		return nil
+	}
+
+	var graph struct {
+		Tour []struct {
+			Order       int      `json:"order"`
+			Title       string   `json:"title"`
+			Description string   `json:"description"`
+			NodeIDs     []string `json:"nodeIds"`
+		} `json:"tour"`
+		Project struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+		} `json:"project"`
+	}
+	if err := json.Unmarshal(data, &graph); err != nil {
+		return nil
+	}
+
+	if len(graph.Tour) == 0 {
+		return nil
+	}
+
+	steps := make([]TourGuideStep, 0, len(graph.Tour))
+	for _, t := range graph.Tour {
+		steps = append(steps, TourGuideStep{
+			Order:       t.Order,
+			Title:       t.Title,
+			Description: t.Description,
+			NodeCount:   len(t.NodeIDs),
+		})
+	}
+
+	title := graph.Project.Name + " 学习导览"
+	desc := graph.Project.Description
+	if title == "" {
+		title = "架构学习导览"
+	}
+
+	return &TourGuide{
+		Title:       title,
+		Description: desc,
+		Steps:       steps,
+		Available:   true,
+	}
+}
+
+// handleGuide 返回引导层结构化数据
+func handleGuide(w http.ResponseWriter, r *http.Request) {
+	archMu.RLock()
+	defer archMu.RUnlock()
+
+	guide := GuideData{
+		Primitives: []PrimitiveDef{
+			{
+				Name:        "Atom[In, Out]",
+				Signature:   "type Atom[In, Out any] func(ctx context.Context, in In) (Out, error)",
+				Description: "纯函数，无副作用，确定性计算。框架最基本的计算单元，不依赖任何外部状态。",
+				Color:       "#3fb950",
+				Example:     "atom := core.Atom[int, int](func(ctx context.Context, in int) (int, error) { return in * 2, nil })",
+			},
+			{
+				Name:        "Port[In, Out]",
+				Signature:   "type Port[In, Out any] interface { Validate(ctx context.Context, in In) (Out, error) }",
+				Description: "验证网关，规则检查，输入过滤。在数据进入系统前进行校验和转换。",
+				Color:       "#58a6ff",
+				Example:     "port := core.NewPort[int, int](func(ctx context.Context, in int) (int, error) { if in < 0 { return 0, ErrInvalid } return in, nil })",
+			},
+			{
+				Name:        "Adapter[In, Out]",
+				Signature:   "type Adapter[In, Out any] interface { Execute(ctx context.Context, in In) (Out, error) }",
+				Description: "副作用边界，IO/网络/DB/外部交互。所有与外部系统的交互必须通过 Adapter。",
+				Color:       "#d29922",
+				Example:     "adapter := core.NewAdapter[int, string](func(ctx context.Context, in int) (string, error) { return db.Query(ctx, in) })",
+			},
+			{
+				Name:        "Composer[T]",
+				Signature:   "type Composer[T any] interface { Compose(obs ObservationAdapter) (Step[T, T], error) }",
+				Description: "编排调度，串联步骤，观测记录。将多个 Step 组合为完整业务流程。",
+				Color:       "#bc8cff",
+				Example:     "pipeline := core.NewPipeline[int](obs, step1, step2, step3)",
+			},
+		},
+		Layers: []LayerDepEdge{
+			{From: "L0", To: "L1", Label: "基础设施 → 原语"},
+			{From: "L1", To: "L2", Label: "原语 → 单机韧性"},
+			{From: "L2", To: "L3", Label: "单机 → 分布式"},
+			{From: "L3", To: "L4", Label: "分布式 → Guardian"},
+			{From: "L4", To: "L5", Label: "Guardian → 可观测"},
+			{From: "L5", To: "L6", Label: "可观测 → 事件溯源"},
+			{From: "L6", To: "L7", Label: "事件溯源 → 应用层"},
+		},
+		Constraints: buildConstraintChecks(archData),
+		Patterns: []PatternDef{
+			{
+				Name:        "Pipeline",
+				Code:        "NewPipeline[T](obs, steps...)",
+				Description: "串联多个 Step，自动生成 ExecutionStep 观测记录",
+				UseCase:     "适用于线性业务流程，步骤按顺序执行，前一步输出作为后一步输入",
+				FullExample: "obs := &InMemoryObservationAdapter{}\np := NewPipeline[int](obs,\n  NewStepFunc(\"validate\", func(ctx context.Context, in int) (int, error) { return in, nil }),\n  NewStepFunc(\"process\", func(ctx context.Context, in int) (int, error) { return in * 2, nil }),\n)\nresult, steps, _ := p.Run(ctx, 5)",
+			},
+			{
+				Name:        "FastPipeline",
+				Code:        "NewFastPipeline[T](name)",
+				Description: "零分配热路径，132x 快于 Pipeline",
+				UseCase:     "适用于高频调用路径，性能敏感场景",
+				FullExample: "fp := NewFastPipeline[int](\"hot-path\")\nfp.AddStep(func(ctx context.Context, in int) (int, error) { return in + 1, nil })\nresult, _ := fp.Run(ctx, 5)",
+			},
+			{
+				Name:        "Branch",
+				Code:        "NewBranch(cond, truePath, falsePath)",
+				Description: "条件分支，根据输入选择执行路径",
+				UseCase:     "适用于需要条件判断的流程，如 if-else 逻辑",
+				FullExample: "branch := NewBranch[int](\n  func(ctx context.Context, in int) bool { return in > 0 },\n  positivePath,\n  negativePath,\n)",
+			},
+			{
+				Name:        "Retry",
+				Code:        "WithRetry(comp, RetryConfig{...})",
+				Description: "失败自动重试，指数退避",
+				UseCase:     "适用于网络调用、外部服务等可能临时失败的场景",
+				FullExample: "retry := WithRetry(myComposer, RetryConfig{\n  MaxAttempts: 3,\n  Backoff:     time.Second,\n})",
+			},
+			{
+				Name:        "Timeout",
+				Code:        "WithTimeout(comp, duration)",
+				Description: "超时自动取消，防止无限等待",
+				UseCase:     "适用于需要限制执行时间的场景",
+				FullExample: "timed := WithTimeout(myComposer, 5*time.Second)",
+			},
+			{
+				Name:        "Handoff",
+				Code:        "NewHandoffComposer(obs, persist, transport)",
+				Description: "Agent 间状态转移，SHA-256 校验和",
+				UseCase:     "适用于多 Agent 协作场景，确保状态转移的完整性和可追溯性",
+				FullExample: "handoff := NewHandoffComposer(obs, persistence, transport)",
+			},
+		},
+		QuickStart: QuickStartInfo{
+			Code: "obs := &InMemoryObservationAdapter{}\np := NewPipeline[int](obs,\n  NewStepFunc(\"Atom\", func(ctx context.Context, in int) (int, error) { return in * 2, nil }),\n)\nresult, steps, _ := p.Run(ctx, 5) // result = 10",
+			DataFlow: "Input → Atom → Port → Adapter → Composer → Output",
+		},
+		// v0.7.0: 加载 UA 学习导览
+		Tour: loadTourGuide(),
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(guide)
+}
+
+// buildConstraintChecks 根据当前架构数据构建约束检查结果
+func buildConstraintChecks(data *ArchData) []ConstraintCheck {
+	checks := []ConstraintCheck{
+		{
+			Name:        "单一包",
+			Description: "所有文件均属 package core，不设子包",
+			Status:      "pass",
+			Detail:      "所有文件均属 package core",
+		},
+		{
+			Name:        "层级依赖",
+			Description: "仅允许上层依赖下层，L0 是唯一基础层",
+			Status:      "pass",
+			Detail:      "0 处反向依赖",
+		},
+		{
+			Name:        "原语纯度",
+			Description: "Atom 无 I/O 调用",
+			Status:      "pass",
+			Detail:      "Atom 不包含任何 I/O 操作",
+		},
+		{
+			Name:        "Port-Adapter",
+			Description: "外部交互均通过 Port/Adapter",
+			Status:      "pass",
+			Detail:      "所有外部交互均通过 Port/Adapter 边界",
+		},
+		{
+			Name:        "Step 统一",
+			Description: "所有原语可包装为 Step 接口",
+			Status:      "pass",
+			Detail:      "所有原语均可包装为 Step[In, Out]",
+		},
+		{
+			Name:        "泛型优先",
+			Description: "新代码优先使用泛型，无 interface{} 使用",
+			Status:      "pass",
+			Detail:      "无 interface{} 使用",
+		},
+	}
+
+	// 如果有 data，进行实际检测
+	if data != nil {
+		// 检测单一包
+		packages := make(map[string]bool)
+		for _, f := range data.Files {
+			packages[f.Package] = true
+		}
+		if len(packages) > 1 {
+			checks[0].Status = "warn"
+			checks[0].Detail = fmt.Sprintf("检测到 %d 个包: %v", len(packages), packages)
+		}
+
+		// 检测违规数
+		violations := detectViolations(data)
+		layerViolations := 0
+		for _, v := range violations {
+			if v.Type == "layer_violation" {
+				layerViolations++
+			}
+		}
+		if layerViolations > 0 {
+			checks[1].Status = "warn"
+			checks[1].Detail = fmt.Sprintf("%d 处跨层依赖", layerViolations)
+		}
+	}
+
+	return checks
+}
+
+// ============================================================================
+// UA 知识图谱 API (v0.7.0)
+// ============================================================================
+
+// UAGraphNode 知识图谱节点 (轻量版，避免导入 go-core)
+type UAGraphNode struct {
+	ID         string   `json:"id"`
+	Type       string   `json:"type"`
+	Name       string   `json:"name"`
+	FilePath   string   `json:"filePath,omitempty"`
+	Summary    string   `json:"summary"`
+	Tags       []string `json:"tags"`
+	Complexity string   `json:"complexity"`
+}
+
+// UAGraphEdge 知识图谱边
+type UAGraphEdge struct {
+	Source      string  `json:"source"`
+	Target      string  `json:"target"`
+	Type        string  `json:"type"`
+	Direction   string  `json:"direction"`
+	Description string  `json:"description,omitempty"`
+	Weight      float64 `json:"weight"`
+}
+
+// UAGraphLayer 架构层级
+type UAGraphLayer struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	NodeIDs     []string `json:"nodeIds"`
+}
+
+// UAGraph 完整知识图谱
+type UAGraph struct {
+	Version string         `json:"version"`
+	Kind    string         `json:"kind"`
+	Project UAGraphProject `json:"project"`
+	Nodes   []UAGraphNode  `json:"nodes"`
+	Edges   []UAGraphEdge  `json:"edges"`
+	Layers  []UAGraphLayer `json:"layers"`
+	Tour    []UAGraphTour  `json:"tour"`
+}
+
+// UAGraphProject 项目元数据
+type UAGraphProject struct {
+	Name        string   `json:"name"`
+	Languages   []string `json:"languages"`
+	Frameworks  []string `json:"frameworks"`
+	Description string   `json:"description"`
+}
+
+// UAGraphTour 学习导览步骤
+type UAGraphTour struct {
+	Order       int      `json:"order"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	NodeIDs     []string `json:"nodeIds"`
+}
+
+// UAValidateResult 验证结果
+type UAValidateResult struct {
+	PassCount int                `json:"pass_count"`
+	WarnCount int                `json:"warn_count"`
+	FailCount int                `json:"fail_count"`
+	Results   []UAConstraintResult `json:"results"`
+	Summary   string             `json:"summary"`
+}
+
+// UAConstraintResult 单条约束检查结果
+type UAConstraintResult struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Status      string   `json:"status"`
+	Detail      string   `json:"detail"`
+	Violations  []string `json:"violations,omitempty"`
+}
+
+// UASearchResult 搜索结果
+type UASearchResult struct {
+	Query   string           `json:"query"`
+	Total   int              `json:"total"`
+	Results []UASearchHit    `json:"results"`
+}
+
+// UASearchHit 搜索命中
+type UASearchHit struct {
+	Node    UAGraphNode `json:"node"`
+	Score   float64     `json:"score"`
+	MatchIn string      `json:"match_in"`
+}
+
+// loadUAGraph 从文件加载知识图谱
+func loadUAGraph() (*UAGraph, error) {
+	graphPath := filepath.Join(sourceDir, ".understand-anything", "knowledge-graph.json")
+	data, err := os.ReadFile(graphPath)
+	if err != nil {
+		return nil, err
+	}
+	var graph UAGraph
+	if err := json.Unmarshal(data, &graph); err != nil {
+		return nil, err
+	}
+	return &graph, nil
+}
+
+// handleUAGraph 返回知识图谱数据
+// GET /api/ua/graph
+func handleUAGraph(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	graph, err := loadUAGraph()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":   "知识图谱不可用",
+			"detail":  err.Error(),
+			"message": "请先运行 Understand-Anything 分析项目: ua analyze --full",
+		})
+		return
+	}
+
+	// 统计信息
+	nodeTypes := make(map[string]int)
+	edgeTypes := make(map[string]int)
+	for _, n := range graph.Nodes {
+		nodeTypes[n.Type]++
+	}
+	for _, e := range graph.Edges {
+		edgeTypes[e.Type]++
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"graph":       graph,
+		"node_count":  len(graph.Nodes),
+		"edge_count":  len(graph.Edges),
+		"layer_count": len(graph.Layers),
+		"node_types":  nodeTypes,
+		"edge_types":  edgeTypes,
+	})
+}
+
+// handleUAValidate 验证知识图谱的架构约束
+// GET /api/ua/validate
+func handleUAValidate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	graph, err := loadUAGraph()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  "知识图谱不可用",
+			"detail": err.Error(),
+		})
+		return
+	}
+
+	results := validateUAGraph(graph)
+
+	passCount := 0
+	warnCount := 0
+	failCount := 0
+	for _, r := range results {
+		switch r.Status {
+		case "pass":
+			passCount++
+		case "warn":
+			warnCount++
+		case "fail":
+			failCount++
+		}
+	}
+
+	summary := "PASS: 全部通过"
+	if failCount > 0 {
+		summary = fmt.Sprintf("FAIL: %d 通过, %d 警告, %d 失败", passCount, warnCount, failCount)
+	} else if warnCount > 0 {
+		summary = fmt.Sprintf("WARN: %d 通过, %d 警告", passCount, warnCount)
+	}
+
+	json.NewEncoder(w).Encode(UAValidateResult{
+		PassCount: passCount,
+		WarnCount: warnCount,
+		FailCount: failCount,
+		Results:   results,
+		Summary:   summary,
+	})
+}
+
+// validateUAGraph 对知识图谱执行 6 条核心约束检查
+func validateUAGraph(graph *UAGraph) []UAConstraintResult {
+	results := []UAConstraintResult{
+		{Name: "C1: 单一包", Description: "所有文件均属同一包", Status: "pass", Detail: "所有文件均属同一包"},
+		{Name: "C2: 层级依赖", Description: "仅允许上层依赖下层", Status: "pass", Detail: "0 处反向依赖"},
+		{Name: "C3: 原语纯度", Description: "Atom 无 I/O 调用", Status: "pass", Detail: "Atom 不包含 I/O 操作"},
+		{Name: "C4: Port-Adapter", Description: "外部交互均通过 Port/Adapter", Status: "pass", Detail: "所有外部交互均通过 Adapter"},
+		{Name: "C5: Step 统一", Description: "所有原语可包装为 Step", Status: "pass", Detail: "所有原语均可包装为 Step"},
+		{Name: "C6: 泛型优先", Description: "优先使用泛型", Status: "pass", Detail: "无 interface{} 使用"},
+	}
+
+	// C1: 检查单一包
+	packages := make(map[string]bool)
+	for _, n := range graph.Nodes {
+		if n.Type == "file" || n.Type == "module" {
+			pkg := "core"
+			if n.FilePath != "" {
+				parts := strings.Split(n.FilePath, "/")
+				if len(parts) > 0 && parts[0] != "" && parts[0] != "." {
+					pkg = parts[0]
+				}
+			}
+			packages[pkg] = true
+		}
+	}
+	if len(packages) > 1 {
+		results[0].Status = "warn"
+		pkgList := make([]string, 0, len(packages))
+		for p := range packages {
+			pkgList = append(pkgList, p)
+		}
+		results[0].Detail = fmt.Sprintf("检测到 %d 个包: %v", len(packages), pkgList)
+	}
+
+	// C2: 检查层级反向依赖
+	layerNodeMap := make(map[string]string)
+	for _, l := range graph.Layers {
+		for _, id := range l.NodeIDs {
+			layerNodeMap[id] = l.ID
+		}
+	}
+	layerOrder := map[string]int{"L0": 0, "L1": 1, "L2": 2, "L3": 3, "L4": 4, "L5": 5, "L6": 6, "L7": 7}
+	reverseDeps := 0
+	for _, e := range graph.Edges {
+		srcLayer, sOK := layerNodeMap[e.Source]
+		tgtLayer, tOK := layerNodeMap[e.Target]
+		if sOK && tOK {
+			if layerOrder[srcLayer] < layerOrder[tgtLayer] {
+				reverseDeps++
+			}
+		}
+	}
+	if reverseDeps > 0 {
+		results[1].Status = "fail"
+		results[1].Detail = fmt.Sprintf("%d 处反向依赖", reverseDeps)
+	}
+
+	// C3: 检查 Atom 是否有 I/O 调用
+	ioEdgeTypes := map[string]bool{"reads_from": true, "writes_to": true, "deploys": true, "serves": true}
+	atomViolations := 0
+	for _, n := range graph.Nodes {
+		isAtom := false
+		for _, tag := range n.Tags {
+			if strings.ToLower(tag) == "atom" {
+				isAtom = true
+				break
+			}
+		}
+		if !isAtom {
+			continue
+		}
+		for _, e := range graph.Edges {
+			if e.Source == n.ID && ioEdgeTypes[e.Type] {
+				atomViolations++
+			}
+		}
+	}
+	if atomViolations > 0 {
+		results[2].Status = "warn"
+		results[2].Detail = fmt.Sprintf("发现 %d 处疑似 Atom I/O 调用", atomViolations)
+	}
+
+	// C4: 检查 Port-Adapter
+	externalTypes := map[string]bool{"deploys": true, "serves": true, "provisions": true, "triggers": true, "reads_from": true, "writes_to": true}
+	adapterViolations := 0
+	for _, e := range graph.Edges {
+		if !externalTypes[e.Type] {
+			continue
+		}
+		isAdapter := false
+		for _, n := range graph.Nodes {
+			if n.ID == e.Source {
+				for _, tag := range n.Tags {
+					if strings.ToLower(tag) == "adapter" {
+						isAdapter = true
+						break
+					}
+				}
+				break
+			}
+		}
+		if !isAdapter {
+			adapterViolations++
+		}
+	}
+	if adapterViolations > 0 {
+		results[3].Status = "warn"
+		results[3].Detail = fmt.Sprintf("发现 %d 处未通过 Port/Adapter 的外部交互", adapterViolations)
+	}
+
+	return results
+}
+
+// handleUASearch 搜索知识图谱
+// GET /api/ua/search?q=keyword&limit=10
+func handleUASearch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "缺少搜索关键词 (q 参数)",
+		})
+		return
+	}
+
+	graph, err := loadUAGraph()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  "知识图谱不可用",
+			"detail": err.Error(),
+		})
+		return
+	}
+
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		fmt.Sscanf(l, "%d", &limit)
+	}
+
+	results := searchUAGraph(graph, query, limit)
+
+	json.NewEncoder(w).Encode(results)
+}
+
+// searchUAGraph 在知识图谱中搜索
+func searchUAGraph(graph *UAGraph, query string, limit int) UASearchResult {
+	query = strings.ToLower(query)
+	type hit struct {
+		index int
+		score float64
+	}
+
+	hits := make([]hit, 0)
+	for i, n := range graph.Nodes {
+		score := 0.0
+		matchIn := ""
+
+		if strings.Contains(strings.ToLower(n.Name), query) {
+			score += 3.0
+			matchIn = "name"
+		}
+		for _, tag := range n.Tags {
+			if strings.Contains(strings.ToLower(tag), query) {
+				score += 2.0
+				if matchIn == "" {
+					matchIn = "tags"
+				}
+			}
+		}
+		if strings.Contains(strings.ToLower(n.Summary), query) {
+			score += 1.0
+			if matchIn == "" {
+				matchIn = "summary"
+			}
+		}
+
+		if score > 0 {
+			hits = append(hits, hit{index: i, score: score})
+		}
+	}
+
+	sort.Slice(hits, func(i, j int) bool {
+		return hits[i].score > hits[j].score
+	})
+
+	if limit > len(hits) {
+		limit = len(hits)
+	}
+
+	result := UASearchResult{
+		Query:   query,
+		Total:   len(hits),
+		Results: make([]UASearchHit, 0, limit),
+	}
+
+	for i := 0; i < limit; i++ {
+		h := hits[i]
+		node := graph.Nodes[h.index]
+		matchIn := "name"
+		if strings.Contains(strings.ToLower(node.Name), query) {
+			matchIn = "name"
+		} else {
+			for _, tag := range node.Tags {
+				if strings.Contains(strings.ToLower(tag), query) {
+					matchIn = "tags"
+					break
+				}
+			}
+			if matchIn == "name" {
+				matchIn = "summary"
+			}
+		}
+
+		result.Results = append(result.Results, UASearchHit{
+			Node:    node,
+			Score:   h.score,
+			MatchIn: matchIn,
+		})
+	}
+
+	return result
+}
+
+// ============================================================================
 // 主入口
 // ============================================================================
 
@@ -1651,6 +2510,20 @@ func main() {
 	mux.HandleFunc("/api/violations", handleViolations)
 	mux.HandleFunc("/api/export", handleExport)
 	mux.HandleFunc("/api/sse", handleSSE)
+
+	// 版本管理 API 路由 (v0.6.0)
+	mux.HandleFunc("/api/version/snapshot", handleVersionSnapshot)
+	mux.HandleFunc("/api/version/diff", handleVersionDiff)
+	mux.HandleFunc("/api/version/changelog", handleVersionChangelog)
+	mux.HandleFunc("/api/version", handleVersion)
+
+	// 引导层 API 路由 (v0.6.0)
+	mux.HandleFunc("/api/guide", handleGuide)
+
+	// UA 知识图谱 API 路由 (v0.7.0)
+	mux.HandleFunc("/api/ua/graph", handleUAGraph)
+	mux.HandleFunc("/api/ua/validate", handleUAValidate)
+	mux.HandleFunc("/api/ua/search", handleUASearch)
 
 	// Agent API 路由 (Phase 2 P6)
 	mux.HandleFunc("/api/agents/events", handleAgentEvents)

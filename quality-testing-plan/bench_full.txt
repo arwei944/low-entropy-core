@@ -1,0 +1,513 @@
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+2026/06/19 15:57:31 [app] HTTP server listening on :0
+2026/06/19 15:57:32 [eventbus] restored subscription: test.event -> 88059fa2-ad45-4bca-b37c-ce7ed65494d8 (async=false)
+2026/06/19 15:57:32 [eventbus] restored subscription: test.async -> feefe132-a2dd-4388-9f5d-4b2b0bb4355f (async=true)
+2026/06/19 15:57:32 [eventbus] restored 2 subscription metadata records (handlers must be re-registered)
+goos: windows
+goarch: amd64
+pkg: low-entropy-core/go-core
+cpu: Intel(R) Xeon(R) CPU E5-2660 0 @ 2.20GHz
+BenchmarkPipeline_100Steps-16                   	    4605	    253991 ns/op	   87200 B/op	    1615 allocs/op
+BenchmarkFastPipeline_100Steps-16               	  617214	      1916 ns/op	       0 B/op	       0 allocs/op
+BenchmarkObservation_10KGoroutines-16           	    7948	    149994 ns/op	  106689 B/op	    1601 allocs/op
+BenchmarkShardedLock_1000Keys_Read-16           	21092966	        57.85 ns/op	      25 B/op	       3 allocs/op
+BenchmarkShardedLock_1000Keys_Write-16          	20339947	        57.11 ns/op	      25 B/op	       3 allocs/op
+BenchmarkSingleMutex_Write-16                   	 6891813	       176.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkShardedEventStore_1000Aggregates-16    	 1265284	       916.6 ns/op	     575 B/op	       8 allocs/op
+BenchmarkUUIDGen_1M-16                          	 2422466	       505.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkUUIDGen_String_1M-16                   	 1236735	       970.6 ns/op	     184 B/op	       7 allocs/op
+BenchmarkTDigest_Add_100K-16                    	24800305	        49.04 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTDigest_Quantile-16                    	 2208578	       541.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCircuitBreaker_Atomic-16               	  269672	      4676 ns/op	    1232 B/op	      31 allocs/op
+BenchmarkRateLimiter_Atomic-16                  	 8723871	       132.0 ns/op	      82 B/op	       1 allocs/op
+BenchmarkShardedRateLimiter_1000Keys-16         	332794958	         3.674 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPipeline_Simple-16                     	  163586	      6996 ns/op	    2097 B/op	      47 allocs/op
+BenchmarkPipeline_WithObservation-16            	  158154	      8737 ns/op	    4014 B/op	      47 allocs/op
+BenchmarkParallel-16                            	   42506	     27975 ns/op	    7126 B/op	     142 allocs/op
+BenchmarkTraceTree_Build-16                     	   44924	     30211 ns/op	   25574 B/op	     111 allocs/op
+BenchmarkStepStore_Record-16                    	15310593	        76.31 ns/op	       0 B/op	       0 allocs/op
+BenchmarkStepStore_Query-16                     	     955	   1238637 ns/op	 2181640 B/op	      16 allocs/op
+BenchmarkAggregator_Aggregate-16                	  805309	      1463 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEntropyCollector-16                    	    2749	    458255 ns/op	  741104 B/op	      22 allocs/op
+BenchmarkCircuitBreaker-16                      	  280620	      4516 ns/op	    1232 B/op	      31 allocs/op
+BenchmarkTaskQueue_EnqueueDequeue-16            	 3414272	       375.2 ns/op	     133 B/op	       3 allocs/op
+BenchmarkMatchEngine-16                         	  135723	      9026 ns/op	    1608 B/op	      20 allocs/op
+BenchmarkDevSnapshot_Checksum-16                	  129338	      9365 ns/op	     752 B/op	       5 allocs/op
+PASS
+ok  	low-entropy-core/go-core	79.036s
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+warning: GOPATH set to GOROOT (C:\Users\Administrator\go) has no effect
+# cmp
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# unicode/utf8
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/godebugs
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/goos
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math/bits
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# unicode/utf16
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/unsafeheader
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/itoa
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/alias
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# unicode
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/syscall/windows/sysdll
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/race
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/goarch
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/coverage/rtcov
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# container/list
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# slices
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/cryptobyte/asn1
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/nettrace
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/internal/alias
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# log/internal
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/goexperiment
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/internal/math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/internal/sys
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# sync/atomic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# sync/atomic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# sync/atomic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/internal/atomic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/internal/atomic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/internal/atomic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/subtle
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/subtle
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/subtle
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/boring/sig
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/boring/sig
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/boring/sig
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/chacha8rand
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/chacha8rand
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/chacha8rand
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bytealg
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/abi
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/abi
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/abi
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/abi
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/reflectlite
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/reflectlite
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/reflectlite
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# sync
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# errors
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# sort
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/bisect
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/singleflight
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/sysinfo
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/testlog
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/oserror
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/net/dns/dnsmessage
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# path
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# io
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# container/heap
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/godebug
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# hash
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# text/tabwriter
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# strconv
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/randutil
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/nistec/fiat
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# bytes
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/intern
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# strings
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math/rand
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# syscall
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/rc4
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# hash/crc32
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# hash/crc32
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# hash/crc32
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/text/transform
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/http/internal/testcert
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/netip
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/http/internal/ascii
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# bufio
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# go/build/constraint
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# reflect
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# reflect
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# reflect
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# regexp/syntax
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/safefilepath
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/syscall/windows/registry
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/syscall/windows
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/fmtsort
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# regexp
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding/binary
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/syscall/execenv
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding/base64
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# time
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/md5
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/md5
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/md5
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/internal/poly1305
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/internal/poly1305
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/internal/poly1305
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/edwards25519/field
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/edwards25519/field
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/edwards25519/field
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/cipher
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding/pem
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# context
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# io/fs
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/des
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/boring
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/chacha20
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/poll
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/edwards25519
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# embed
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/hmac
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha1
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha1
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha1
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha512
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha512
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha512
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha256
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha256
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/sha256
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/aes
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/aes
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/aes
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/aes
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/hkdf
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/nistec
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/nistec
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/nistec
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# os
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/ecdh
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# io/ioutil
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# os/signal
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# os/signal
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# os/signal
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# fmt
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# path/filepath
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/sys/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/sys/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/sys/cpu
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# flag
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding/hex
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# log
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/url
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/trace
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# os/exec
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# go/token
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# mime
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/debug
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/debug
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/debug
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/net/http2/hpack
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# compress/flate
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding/json
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/chacha20poly1305
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/chacha20poly1305
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/chacha20poly1305
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# mime/quotedprintable
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/http/internal
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/text/unicode/norm
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# go/scanner
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# compress/gzip
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/text/unicode/bidi
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math/big
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math/big
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# math/big
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# testing
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/text/secure/bidirule
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# go/ast
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/rand
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/elliptic
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# runtime/pprof
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/bigmod
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/bigmod
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/bigmod
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# go/internal/typeparams
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/internal/boring/bbig
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/ed25519
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# encoding/asn1
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/dsa
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# go/parser
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/rsa
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/textproto
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/crypto/cryptobyte
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/net/idna
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/x509/pkix
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# mime/multipart
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/ecdsa
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/net/http/httpguts
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# internal/fuzz
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# vendor/golang.org/x/net/http/httpproxy
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# testing/internal/testdeps
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/x509
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# crypto/tls
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/http/httptrace
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/http
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# net/http/httptest
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# low-entropy-core/go-core [low-entropy-core/go-core.test]
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# low-entropy-core/go-core_test [low-entropy-core/go-core.test]
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# low-entropy-core/go-core
+# [low-entropy-core/go-core]
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# low-entropy-core/go-core.test
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# low-entropy-core/go-core_test
+# [low-entropy-core/go-core_test]
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode
+# low-entropy-core/go-core.test
+runtime: warning: IsLongPathAwareProcess failed to enable long paths; proceeding in fixup mode

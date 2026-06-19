@@ -630,6 +630,443 @@ body {
 }
 
 /* ============================================================
+   Complexity Table (v0.6.0)
+   ============================================================ */
+.complexity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.complexity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.complexity-table th {
+  font-weight: 600;
+  color: var(--dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  user-select: none;
+}
+.complexity-table th:hover { color: var(--ink); }
+.complexity-table th .sort-arrow { font-size: 9px; margin-left: 3px; }
+.complexity-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+.complexity-table tr:hover td { background: rgba(255,255,255,0.02); }
+.complexity-table .rank { font-size: 10px; color: var(--dim); width: 30px; }
+.complexity-table .score-bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* ============================================================
+   Version Tab (v0.6.0)
+   ============================================================ */
+.version-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+}
+.version-current {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.version-current .v { color: var(--accent); }
+.version-actions { display: flex; gap: 8px; margin-left: auto; }
+.version-actions .btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  font-family: var(--font);
+  transition: all var(--transition);
+}
+.version-actions .btn:hover { background: rgba(255,255,255,0.08); color: var(--ink); }
+.version-actions .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.version-actions .btn.primary:hover { background: var(--accent-hover); }
+
+.version-timeline {
+  position: relative;
+  padding-left: 30px;
+}
+.version-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--rule);
+}
+.version-entry {
+  position: relative;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  transition: all var(--transition);
+}
+.version-entry:hover { border-color: rgba(255,255,255,0.12); }
+.version-entry::before {
+  content: '';
+  position: absolute;
+  left: -23px;
+  top: 20px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  z-index: 1;
+}
+.version-entry .ve-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.version-entry .ve-version {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.version-entry .ve-date { font-size: 11px; color: var(--dim); }
+.version-entry .ve-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.version-entry .ve-changelog { font-size: 11px; color: var(--dim); }
+.version-entry .ve-changelog .cl-type {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 4px;
+  background: rgba(0,122,255,0.15);
+  color: var(--accent);
+}
+.version-entry .ve-changelog .cl-type.fix { background: rgba(255,159,10,0.15); color: var(--orange); }
+.version-entry .ve-changelog .cl-type.docs { background: rgba(48,209,88,0.15); color: var(--green); }
+.version-entry .ve-changelog .cl-type.test { background: rgba(175,82,222,0.15); color: #af52de; }
+.version-entry .ve-changelog .cl-type.refactor { background: rgba(94,194,250,0.15); color: #5ac8fa; }
+
+.diff-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.diff-column {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.diff-column .dc-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.diff-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.diff-stats .added { color: var(--green); }
+.diff-stats .removed { color: var(--red); }
+.diff-file-list { list-style: none; padding: 0; }
+.diff-file-list li {
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.diff-file-list .diff-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.diff-file-list .diff-tag.added { background: rgba(48,209,88,0.15); color: var(--green); }
+.diff-file-list .diff-tag.removed { background: rgba(255,69,58,0.15); color: var(--red); }
+.diff-file-list .diff-tag.changed { background: rgba(255,159,10,0.15); color: var(--orange); }
+.diff-file-list .diff-delta { font-size: 10px; color: var(--dim); margin-left: auto; }
+
+/* ============================================================
+   Guidance Tab (v0.6.0)
+   ============================================================ */
+.guide-hero {
+  text-align: center;
+  padding: 20px 0 32px;
+}
+.guide-hero h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.guide-hero .hero-sub {
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.dna-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.dna-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  border-top: 3px solid;
+  transition: all var(--transition);
+  cursor: default;
+}
+.dna-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.dna-card .dc-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: block;
+}
+.dna-card .dc-name {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.dna-card .dc-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.dna-card .dc-code {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  background: rgba(255,255,255,0.03);
+  padding: 6px 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.dna-card.atom { border-top-color: var(--green); }
+.dna-card.atom .dc-name { color: var(--green); }
+.dna-card.port { border-top-color: var(--accent); }
+.dna-card.port .dc-name { color: var(--accent); }
+.dna-card.adapter { border-top-color: var(--orange); }
+.dna-card.adapter .dc-name { color: var(--orange); }
+.dna-card.composer { border-top-color: #af52de; }
+.dna-card.composer .dc-name { color: #af52de; }
+
+.overview-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.overview-box {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.overview-box .ob-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.overview-box .flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.flow-step {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.flow-step.input { border-color: rgba(0,122,255,0.3); color: var(--accent); }
+.flow-step.atom { border-color: rgba(48,209,88,0.3); color: var(--green); }
+.flow-step.port { border-color: rgba(0,122,255,0.3); color: var(--accent); }
+.flow-step.adapter { border-color: rgba(255,159,10,0.3); color: var(--orange); }
+.flow-step.composer { border-color: rgba(175,82,222,0.3); color: #af52de; }
+.flow-step.output { border-color: rgba(48,209,88,0.3); color: var(--green); }
+.flow-arrow { color: var(--dim); font-size: 16px; font-weight: 300; }
+
+.overview-box pre {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  margin: 0;
+}
+.overview-box pre code { font-family: var(--mono); background: none; padding: 0; }
+
+.guide-section {
+  margin-bottom: 24px;
+}
+.guide-section .gs-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.decision-tree-wrap {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  min-height: 200px;
+  overflow-x: auto;
+}
+.decision-tree-wrap svg { max-width: 100%; }
+
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.pattern-chip {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.pattern-chip:hover { border-color: rgba(255,255,255,0.12); }
+.pattern-chip .pc-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.pattern-chip .pc-code {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.pattern-chip .pc-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.pattern-detail {
+  display: none;
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rule);
+}
+.pattern-detail.open { display: block; }
+.pattern-detail .pd-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.pattern-detail .pd-use { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.pattern-detail pre {
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+.pattern-detail .btn-copy {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-family: var(--font);
+  transition: all var(--transition);
+}
+.pattern-detail .btn-copy:hover { background: rgba(255,255,255,0.08); color: var(--ink); }
+
+.constraint-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.constraint-item {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.constraint-item .ci-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.constraint-item .ci-status.pass { background: var(--green); }
+.constraint-item .ci-status.warn { background: var(--orange); }
+.constraint-item .ci-status.fail { background: var(--red); }
+.constraint-item .ci-info { flex: 1; }
+.constraint-item .ci-name { font-size: 12px; font-weight: 600; }
+.constraint-item .ci-detail { font-size: 10px; color: var(--dim); }
+
+/* ============================================================
    Responsive
    ============================================================ */
 @media (max-width: 1100px) {
@@ -637,11 +1074,19 @@ body {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .charts-row { grid-template-columns: 1fr; }
   .layer-row { grid-template-columns: repeat(2, 1fr); }
+  .dna-grid { grid-template-columns: repeat(2, 1fr); }
+  .overview-row { grid-template-columns: 1fr; }
+  .pattern-grid { grid-template-columns: repeat(2, 1fr); }
+  .constraint-list { grid-template-columns: repeat(2, 1fr); }
+  .diff-container { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .main { margin-left: 0; }
   .stats-row { grid-template-columns: 1fr; }
+  .dna-grid { grid-template-columns: 1fr; }
+  .pattern-grid { grid-template-columns: 1fr; }
+  .constraint-list { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -685,7 +1130,11 @@ body {
 <div class="main">
   <div class="main-header">
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('dashboard')">
+      <button class="tab active" onclick="switchTab('guide')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        引导
+      </button>
+      <button class="tab" onclick="switchTab('dashboard')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         仪表盘
       </button>
@@ -700,6 +1149,14 @@ body {
       <button class="tab" onclick="switchTab('dependencies')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="12" y2="10"/><line x1="7" y1="12" x2="9.5" y2="15.5"/><line x1="17" y1="12" x2="14.5" y2="15.5"/></svg>
         依赖
+      </button>
+      <button class="tab" onclick="switchTab('version')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        版本
+      </button>
+      <button class="tab" onclick="switchTab('ua')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        知识图谱
       </button>
     </div>
     <div class="spacer"></div>
@@ -719,8 +1176,32 @@ body {
   </div>
 
   <div class="content">
+    <!-- Guidance (v0.6.0) -->
+    <div class="tab-content active" id="tab-guide">
+      <div class="guide-hero">
+        <h2>Low-Entropy Core 架构引导</h2>
+        <div class="hero-sub">10 秒理解核心架构——四原语 · 六约束 · 六模式</div>
+      </div>
+      <div class="dna-grid" id="dnaGrid"></div>
+      <div class="overview-row" id="overviewRow"></div>
+      <div class="guide-section">
+        <div class="gs-title">决策树 — 根据任务选择正确的原语</div>
+        <div class="decision-tree-wrap" id="decisionTree"></div>
+      </div>
+      <div class="guide-section">
+        <div class="gs-title">核心模式库</div>
+        <div class="pattern-grid" id="patternGrid"></div>
+        <div id="patternDetail"></div>
+      </div>
+      <div class="guide-section">
+        <div class="gs-title">架构约束检查器</div>
+        <div class="constraint-list" id="constraintList"></div>
+      </div>
+      <div id="tourSection"></div>
+    </div>
+
     <!-- Dashboard -->
-    <div class="tab-content active" id="tab-dashboard">
+    <div class="tab-content" id="tab-dashboard">
       <div class="health-bar" id="healthBar"></div>
       <div class="stats-row" id="statsRow"></div>
       <div class="charts-row">
@@ -728,8 +1209,14 @@ body {
         <div class="chart-box"><div class="chart-title">符号种类</div><div class="chart-container" id="chartKinds"></div></div>
       </div>
       <div class="layer-row" id="layerRow"></div>
-      <div class="charts-row" style="grid-template-columns:1fr 1fr">
-        <div class="chart-box"><div class="chart-title">文件复杂度热力图</div><div class="chart-container" id="chartHeatmap" style="height:320px"></div></div>
+      <div class="charts-row" style="grid-template-columns:1fr">
+        <div class="chart-box"><div class="chart-title">文件复杂度 Treemap</div><div class="chart-container" id="chartTreemap" style="height:400px"></div></div>
+      </div>
+      <div class="chart-box" style="margin-bottom:20px">
+        <div class="chart-title">复杂度 Top 15</div>
+        <div class="sym-table-wrap" style="max-height:400px;overflow-y:auto"><table class="complexity-table" id="complexityTable"></table></div>
+      </div>
+      <div class="charts-row" style="grid-template-columns:1fr">
         <div class="chart-box"><div class="chart-title">健康评分趋势</div><div class="chart-container" id="chartTimeline" style="height:320px"></div></div>
       </div>
     </div>
@@ -762,6 +1249,47 @@ body {
     <div class="tab-content" id="tab-file-detail">
       <div id="fileDetailContent"></div>
     </div>
+
+    <!-- Version Management (v0.6.0) -->
+    <div class="tab-content" id="tab-version">
+      <div id="versionContent"></div>
+    </div>
+
+    <!-- UA 知识图谱 (v0.7.0) -->
+    <div class="tab-content" id="tab-ua">
+      <div class="panel" style="display:flex;flex-direction:column;height:100%;">
+        <div class="panel-header">
+          <div class="panel-title">知识图谱 (Understand-Anything)</div>
+          <div class="panel-actions">
+            <button class="btn btn-sm" onclick="refreshUAGraph()" title="刷新知识图谱">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              刷新
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="validateUAGraph()" title="验证架构约束">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              验证约束
+            </button>
+          </div>
+        </div>
+        <div id="ua-status" style="padding:12px 16px;border-bottom:1px solid var(--border);display:none;"></div>
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;">
+          <input type="text" id="uaSearchInput" placeholder="搜索节点名称、标签、摘要..." style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);" onkeydown="if(event.key==='Enter')searchUAGraph()">
+          <button class="btn btn-sm btn-primary" onclick="searchUAGraph()">搜索</button>
+        </div>
+        <div style="display:flex;flex:1;overflow:hidden;">
+          <div style="flex:2;display:flex;flex-direction:column;overflow:auto;border-right:1px solid var(--border);">
+            <div id="ua-stats" style="display:flex;gap:12px;padding:12px 16px;flex-wrap:wrap;"></div>
+            <div id="ua-chart" style="flex:1;min-height:320px;position:relative;"></div>
+          </div>
+          <div style="flex:1;min-width:280px;overflow:auto;display:flex;flex-direction:column;" id="ua-sidebar">
+            <div id="ua-type-chart" style="height:200px;border-bottom:1px solid var(--border);position:relative;"></div>
+            <div id="ua-detail" style="flex:1;padding:12px 16px;overflow:auto;">
+              <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">点击左侧节点查看详情，或使用搜索查找节点</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -787,14 +1315,18 @@ body {
 <script>
 // State
 let archData = null, healthScore = null, violations = [];
-let selectedFile = null, activeTab = 'dashboard';
+let selectedFile = null, activeTab = 'guide';
 let autoRefresh = true, autoTimer = null;
 let layerChart = null, kindChart = null, depChart = null;
-let heatmapChart = null, timelineChart = null;
+let treemapChart = null, timelineChart = null;
 let collapsedLayers = {}; // track which layers are collapsed
 let healthHistory = []; // 健康评分历史记录
 const MAX_HISTORY = 30; // 最多保留 30 条历史记录
 let sseSource = null; // SSE 连接
+let guideData = null; // 引导层数据
+let versionData = null; // 版本数据
+let diffMode = null; // 版本对比模式: {v1, v2} or null
+let complexitySort = { col: 'score', asc: false }; // 复杂度排序状态
 
 // API
 const API = '';
@@ -869,12 +1401,13 @@ function toast(msg, type) {
 function renderAll() {
   if (!archData) return;
   renderFileTree();
+  if (activeTab === 'guide') renderGuideTab();
   if (activeTab === 'dashboard') renderDashboard();
   if (activeTab === 'symbols') renderSymbols();
   if (activeTab === 'violations') renderViolations();
   if (activeTab === 'dependencies') renderDepGraph('all');
+  if (activeTab === 'version') renderVersionTab();
   if (activeTab === 'file-detail') { /* file detail already rendered */ }
-  // Heatmap and timeline are rendered within renderDashboard
 }
 
 // ============================================================
@@ -1012,8 +1545,14 @@ function restoreDashboardDOM() {
       <div class="chart-box"><div class="chart-title">符号种类</div><div class="chart-container" id="chartKinds"></div></div>
     </div>
     <div class="layer-row" id="layerRow"></div>
-    <div class="charts-row" style="grid-template-columns:1fr 1fr">
-      <div class="chart-box"><div class="chart-title">文件复杂度热力图</div><div class="chart-container" id="chartHeatmap" style="height:320px"></div></div>
+    <div class="charts-row" style="grid-template-columns:1fr">
+      <div class="chart-box"><div class="chart-title">文件复杂度 Treemap</div><div class="chart-container" id="chartTreemap" style="height:400px"></div></div>
+    </div>
+    <div class="chart-box" style="margin-bottom:20px">
+      <div class="chart-title">复杂度 Top 15</div>
+      <div class="sym-table-wrap" style="max-height:400px;overflow-y:auto"><table class="complexity-table" id="complexityTable"></table></div>
+    </div>
+    <div class="charts-row" style="grid-template-columns:1fr">
       <div class="chart-box"><div class="chart-title">健康评分趋势</div><div class="chart-container" id="chartTimeline" style="height:320px"></div></div>
     </div>`;
 }
@@ -1059,7 +1598,8 @@ function renderDashboard() {
     </div>`).join('');
 
   renderCharts();
-  renderHeatmap();
+  renderTreemap();
+  renderComplexityTable();
   renderTimeline();
 }
 
@@ -1100,51 +1640,47 @@ function renderCharts() {
     series: [{ type: 'pie', radius: ['45%', '78%'], center: ['40%', '50%'], data: kindData, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } } }]
   });
 
-  window.addEventListener('resize', () => { layerChart?.resize(); kindChart?.resize(); heatmapChart?.resize(); timelineChart?.resize(); });
+  window.addEventListener('resize', () => { layerChart?.resize(); kindChart?.resize(); treemapChart?.resize(); timelineChart?.resize(); });
 }
 
 // ============================================================
-// Heatmap — 文件复杂度热力图
+// Treemap — 文件复杂度树图 (v0.6.0)
 // ============================================================
-function renderHeatmap() {
-  const el = document.getElementById('chartHeatmap');
+function renderTreemap() {
+  const el = document.getElementById('chartTreemap');
   if (!el) return;
-  if (heatmapChart) heatmapChart.dispose();
+  if (treemapChart) treemapChart.dispose();
 
   const style = getComputedStyle(document.documentElement);
   const muted = style.getPropertyValue('--muted').trim();
   const ink = style.getPropertyValue('--ink').trim();
 
-  // 按层级分组，每层内按文件名排序
+  const scores = archData.complexity_scores || {};
   const layers = archData.layers || [];
-  const filesByLayer = {};
-  layers.forEach(l => { filesByLayer[l.layer] = []; });
-  archData.files.forEach(f => {
-    if (!filesByLayer[f.layer]) filesByLayer[f.layer] = [];
-    filesByLayer[f.layer].push(f);
+
+  // 构建 treemap 数据：按层级分组
+  const treemapData = layers.map(l => {
+    const layerFiles = archData.files.filter(f => f.layer === l.layer);
+    return {
+      name: l.layer + ' ' + l.name,
+      itemStyle: { borderColor: l.color, borderWidth: 2 },
+      children: layerFiles.map(f => ({
+        name: f.name,
+        value: f.lines,
+        complexity_score: scores[f.name] || 0,
+        symbols: f.symbols.length,
+        deps: (f.depends_on || []).length,
+        depended_by: (f.depended_by || []).length,
+        layer: f.layer,
+        itemStyle: {
+          color: complexityColor(scores[f.name] || 0)
+        }
+      }))
+    };
   });
 
-  // 构建热力图数据: [x轴索引, y轴索引, 值]
-  // X轴: 指标 (行数, 符号数, 依赖数, 被依赖数)
-  // Y轴: 文件名
-  const metrics = ['行数', '符号', '依赖', '被依赖'];
-  let yLabels = [];
-  let heatData = [];
-
-  archData.files.forEach((f, fi) => {
-    yLabels.push(f.name);
-    const maxLines = Math.max(...archData.files.map(ff => ff.lines), 1);
-    const maxSym = Math.max(...archData.files.map(ff => ff.symbols.length), 1);
-    const maxDep = Math.max(...archData.files.map(ff => ff.depends_on?.length || 0), 1);
-    const maxDepBy = Math.max(...archData.files.map(ff => ff.depended_by?.length || 0), 1);
-    heatData.push([0, fi, f.lines / maxLines * 100]);
-    heatData.push([1, fi, f.symbols.length / maxSym * 100]);
-    heatData.push([2, fi, (f.depends_on?.length || 0) / maxDep * 100]);
-    heatData.push([3, fi, (f.depended_by?.length || 0) / maxDepBy * 100]);
-  });
-
-  heatmapChart = echarts.init(el, null, { renderer: 'svg' });
-  heatmapChart.setOption({
+  treemapChart = echarts.init(el, null, { renderer: 'svg' });
+  treemapChart.setOption({
     animation: false,
     tooltip: {
       appendToBody: true,
@@ -1152,42 +1688,174 @@ function renderHeatmap() {
       borderColor: '#2c2c2e',
       textStyle: { color: ink, fontSize: 12 },
       formatter: function(p) {
-        const f = archData.files[p.data[1]];
-        if (!f) return '';
-        const vals = [f.lines + ' 行', f.symbols.length + ' 个', (f.depends_on?.length || 0) + ' 个', (f.depended_by?.length || 0) + ' 个'];
-        return '<b>' + f.name + '</b><br/>' + metrics[p.data[0]] + ': ' + vals[p.data[0]] + '<br/>归一化: ' + p.data[2].toFixed(0) + '%';
+        if (!p.data.complexity_score && p.data.complexity_score !== 0) return p.name;
+        return '<b>' + p.data.name + '</b><br/>' +
+          '行数: ' + p.data.value + '<br/>' +
+          '符号: ' + p.data.symbols + '<br/>' +
+          '依赖: ' + p.data.deps + '<br/>' +
+          '被依赖: ' + p.data.depended_by + '<br/>' +
+          '复杂度评分: ' + p.data.complexity_score.toFixed(1);
       }
     },
-    grid: { left: 160, right: 40, top: 30, bottom: 30 },
-    xAxis: {
-      type: 'category',
-      data: metrics,
-      position: 'top',
-      axisLabel: { color: muted, fontSize: 11 },
-      axisLine: { lineStyle: { color: '#2c2c2e' } }
-    },
-    yAxis: {
-      type: 'category',
-      data: yLabels,
-      axisLabel: { color: muted, fontSize: 10, width: 140, overflow: 'truncate' },
-      axisLine: { lineStyle: { color: '#2c2c2e' } },
-      inverse: true
-    },
-    visualMap: {
-      min: 0, max: 100,
-      calculable: true,
-      orient: 'vertical',
-      right: 4, top: 'center',
-      textStyle: { color: muted, fontSize: 10 },
-      inRange: { color: ['#1c1c1e', '#30d158', '#ff9f0a', '#ff453a'] }
-    },
     series: [{
-      type: 'heatmap',
-      data: heatData,
-      label: { show: false },
-      emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } }
+      type: 'treemap',
+      data: treemapData,
+      width: '100%',
+      height: '100%',
+      roam: false,
+      nodeClick: 'link',
+      breadcrumb: {
+        show: true,
+        height: 28,
+        itemStyle: {
+          color: '#1c1c1e',
+          borderColor: '#2c2c2e',
+          textStyle: { color: muted, fontSize: 11 }
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#2c2c2e',
+            textStyle: { color: ink }
+          }
+        }
+      },
+      label: {
+        show: true,
+        formatter: function(p) {
+          if (!p.data.complexity_score && p.data.complexity_score !== 0) return p.name;
+          // 矩形太小时不显示文字
+          if (p.data.value < 30) return '';
+          return p.data.name.replace('.go', '');
+        },
+        fontSize: 10,
+        color: '#f5f5f7',
+        fontFamily: 'SF Mono, Consolas, monospace',
+        overflow: 'truncate'
+      },
+      upperLabel: {
+        show: true,
+        height: 24,
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#98989d'
+      },
+      itemStyle: {
+        borderColor: '#0a0a0a',
+        borderWidth: 1,
+        gapWidth: 1
+      },
+      levels: [{
+        itemStyle: { borderColor: '#555', borderWidth: 3, gapWidth: 2 },
+        upperLabel: { show: true }
+      }]
     }]
   });
+
+  // 点击跳转文件详情
+  treemapChart.off('click');
+  treemapChart.on('click', function(params) {
+    if (params.data.complexity_score !== undefined && params.data.complexity_score !== null) {
+      selectFile(params.data.name);
+    }
+  });
+}
+
+function complexityColor(score) {
+  // 0=绿 → 50=黄 → 100=红
+  if (score <= 30) {
+    const t = score / 30;
+    const r = Math.round(48 * t);
+    const g = Math.round(209 - (209 - 159) * t);
+    const b = Math.round(88 - (88 - 10) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  } else if (score <= 70) {
+    const t = (score - 30) / 40;
+    const r = Math.round(48 + (255 - 48) * t);
+    const g = Math.round(159 - 159 * t);
+    const b = Math.round(10);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  } else {
+    const t = (score - 70) / 30;
+    const r = 255;
+    const g = Math.round((1 - t) * 10);
+    const b = Math.round(10 + (58 - 10) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+}
+
+// ============================================================
+// Complexity Table — 复杂度排序表 (v0.6.0)
+// ============================================================
+function renderComplexityTable() {
+  const scores = archData.complexity_scores || {};
+  const files = archData.files.map(f => ({
+    name: f.name,
+    layer: f.layer,
+    score: scores[f.name] || 0,
+    lines: f.lines,
+    symbols: f.symbols.length,
+    deps: (f.depends_on || []).length
+  }));
+
+  // Sort
+  const col = complexitySort.col;
+  const asc = complexitySort.asc;
+  files.sort((a, b) => {
+    let cmp = 0;
+    if (col === 'score') cmp = a.score - b.score;
+    else if (col === 'name') cmp = a.name.localeCompare(b.name);
+    else if (col === 'lines') cmp = a.lines - b.lines;
+    else if (col === 'symbols') cmp = a.symbols - b.symbols;
+    else if (col === 'deps') cmp = a.deps - b.deps;
+    else if (col === 'layer') cmp = a.layer.localeCompare(b.layer);
+    return asc ? cmp : -cmp;
+  });
+
+  const top15 = files.slice(0, 15);
+  const arrow = asc ? ' ▲' : ' ▼';
+
+  const cols = [
+    { key: 'score', label: '复杂度' },
+    { key: 'name', label: '文件名' },
+    { key: 'layer', label: '层级' },
+    { key: 'lines', label: '行数' },
+    { key: 'symbols', label: '符号' },
+    { key: 'deps', label: '依赖' }
+  ];
+
+  let h = '<thead><tr>';
+  h += '<th>#</th>';
+  cols.forEach(c => {
+    h += '<th onclick="sortComplexity(\'' + c.key + '\')" style="cursor:pointer">' + c.label + (col === c.key ? arrow : '') + '</th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  top15.forEach((f, i) => {
+    const barW = Math.round(f.score);
+    const barColor = complexityColor(f.score);
+    h += '<tr onclick="selectFile(\'' + f.name + '\')">';
+    h += '<td class="rank">' + (i + 1) + '</td>';
+    h += '<td><span class="score-bar" style="width:' + barW + 'px;background:' + barColor + '"></span><b>' + f.score.toFixed(1) + '</b></td>';
+    h += '<td style="font-weight:600">' + f.name + '</td>';
+    h += '<td>' + f.layer + '</td>';
+    h += '<td>' + f.lines + '</td>';
+    h += '<td>' + f.symbols + '</td>';
+    h += '<td>' + f.deps + '</td>';
+    h += '</tr>';
+  });
+  h += '</tbody>';
+
+  document.getElementById('complexityTable').innerHTML = h;
+}
+
+function sortComplexity(col) {
+  if (complexitySort.col === col) {
+    complexitySort.asc = !complexitySort.asc;
+  } else {
+    complexitySort.col = col;
+    complexitySort.asc = false;
+  }
+  renderComplexityTable();
 }
 
 // ============================================================
@@ -1551,9 +2219,9 @@ function switchTabUI(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const idx = { dashboard: 0, symbols: 1, violations: 2, dependencies: 3, 'file-detail': 0 };
+  const idx = { guide: 0, dashboard: 1, symbols: 2, violations: 3, dependencies: 4, version: 5, 'file-detail': 0 };
   if (tab === 'file-detail') {
-    // Highlight file-detail as a special state — keep dashboard tab highlighted
+    // Highlight file-detail as a special state — keep first tab highlighted
     document.querySelectorAll('.tab')[0]?.classList.add('active');
     document.getElementById('tab-file-detail')?.classList.add('active');
   } else {
@@ -1563,13 +2231,20 @@ function switchTabUI(tab) {
 }
 
 function switchTab(tab) {
+  // 版本对比模式在切换 Tab 时退出
+  if (tab !== 'version' && diffMode) {
+    diffMode = null;
+  }
   selectedFile = null; // clear file selection on tab switch
   switchTabUI(tab);
+  if (tab === 'guide') renderGuideTab();
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'symbols') renderSymbols();
   if (tab === 'violations') renderViolations();
   if (tab === 'dependencies') renderDepGraph('all');
-  setTimeout(() => { layerChart?.resize(); kindChart?.resize(); heatmapChart?.resize(); timelineChart?.resize(); }, 150);
+  if (tab === 'version') renderVersionTab();
+  if (tab === 'ua') renderUATab();
+  setTimeout(() => { layerChart?.resize(); kindChart?.resize(); treemapChart?.resize(); timelineChart?.resize(); }, 150);
 }
 
 // Search
@@ -1606,12 +2281,613 @@ function toggleAutoRefresh() {
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); document.getElementById('globalSearch').focus(); }
   if ((e.metaKey || e.ctrlKey) && e.key === 'r') { e.preventDefault(); refreshData(); }
-  if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('dashboard'); }
-  if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('symbols'); }
-  if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('violations'); }
-  if ((e.metaKey || e.ctrlKey) && e.key === '4') { e.preventDefault(); switchTab('dependencies'); }
-  if (e.key === 'Escape') { closeDetail(); if (activeTab === 'file-detail') switchTab('dashboard'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('guide'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('dashboard'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('symbols'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '4') { e.preventDefault(); switchTab('violations'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '5') { e.preventDefault(); switchTab('dependencies'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '6') { e.preventDefault(); switchTab('version'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '7') { e.preventDefault(); switchTab('ua'); }
+  if (e.key === 'Escape') { closeDetail(); if (activeTab === 'file-detail') switchTab('guide'); }
 });
+
+// ============================================================
+// Version Tab — 版本管理 (v0.6.0)
+// ============================================================
+function renderVersionTab() {
+  fetch('/api/version').then(r => r.json()).then(data => {
+    versionData = data;
+    renderVersionContent();
+  }).catch(e => {
+    document.getElementById('versionContent').innerHTML = '<div class="empty">版本数据加载失败: ' + e.message + '</div>';
+  });
+}
+
+function renderVersionContent() {
+  const vd = versionData;
+  if (!vd) return;
+
+  let h = '';
+
+  // 版本对比模式
+  if (diffMode) {
+    h += renderDiffView();
+    document.getElementById('versionContent').innerHTML = h;
+    return;
+  }
+
+  // 头部
+  h += '<div class="version-header">';
+  h += '<div class="version-current"><span class="v">v</span>' + (vd.current_version || '0.5.1') + '</div>';
+  h += '<div class="version-actions">';
+  h += '<button class="btn primary" onclick="createSnapshot()">创建快照</button>';
+  h += '<button class="btn" onclick="enterDiffMode()">版本对比</button>';
+  h += '</div>';
+  h += '</div>';
+
+  // 版本时间线
+  if (vd.versions && vd.versions.length > 0) {
+    h += '<div class="version-timeline">';
+    vd.versions.forEach(v => {
+      h += '<div class="version-entry">';
+      h += '<div class="ve-header"><span class="ve-version">v' + v.version + '</span><span class="ve-date">' + (v.timestamp ? new Date(v.timestamp).toLocaleString('zh-CN') : '') + '</span></div>';
+      h += '<div class="ve-stats">';
+      h += '<span>文件: ' + v.files + '</span>';
+      h += '<span>行数: ' + v.lines + '</span>';
+      h += '<span>符号: ' + v.symbols + '</span>';
+      h += '</div>';
+      if (v.changelog_len > 0) {
+        h += '<div class="ve-changelog">变更: ' + v.changelog_len + ' 条</div>';
+      }
+      h += '</div>';
+    });
+    h += '</div>';
+  } else {
+    h += '<div class="empty">暂无版本快照，点击"创建快照"生成第一个版本记录</div>';
+  }
+
+  document.getElementById('versionContent').innerHTML = h;
+}
+
+function createSnapshot() {
+  const version = versionData?.current_version || '0.5.1';
+  fetch('/api/version/snapshot?version=' + version, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        toast('创建快照失败: ' + data.error, 'error');
+      } else {
+        toast('版本快照 v' + version + ' 创建成功', 'ok');
+        renderVersionTab();
+      }
+    })
+    .catch(e => toast('创建快照失败: ' + e.message, 'error'));
+}
+
+function enterDiffMode() {
+  const versions = versionData?.versions || [];
+  if (versions.length < 2) {
+    toast('需要至少 2 个版本快照才能对比', 'info');
+    return;
+  }
+  // 默认对比最近两个版本
+  diffMode = { v1: versions[1].version, v2: versions[0].version };
+  renderDiffViewData();
+}
+
+function renderDiffView() {
+  if (!diffMode) return '';
+  const versions = versionData?.versions || [];
+  let h = '<div class="version-header">';
+  h += '<div class="version-current" style="font-size:20px">版本对比</div>';
+  h += '<div class="version-actions">';
+  h += '<select id="diffV1" onchange="diffMode.v1=this.value;renderDiffViewData()" style="background:#1c1c1e;color:#f5f5f7;border:1px solid #2c2c2e;border-radius:6px;padding:6px 10px;font-size:12px">';
+  versions.forEach(v => {
+    h += '<option value="' + v.version + '"' + (v.version === diffMode.v1 ? ' selected' : '') + '>v' + v.version + '</option>';
+  });
+  h += '</select>';
+  h += '<span style="color:var(--dim)">→</span>';
+  h += '<select id="diffV2" onchange="diffMode.v2=this.value;renderDiffViewData()" style="background:#1c1c1e;color:#f5f5f7;border:1px solid #2c2c2e;border-radius:6px;padding:6px 10px;font-size:12px">';
+  versions.forEach(v => {
+    h += '<option value="' + v.version + '"' + (v.version === diffMode.v2 ? ' selected' : '') + '>v' + v.version + '</option>';
+  });
+  h += '</select>';
+  h += '<button class="btn" onclick="diffMode=null;renderVersionContent()">退出对比</button>';
+  h += '</div>';
+  h += '</div>';
+  h += '<div id="diffDetail">加载中...</div>';
+  return h;
+}
+
+function renderDiffViewData() {
+  if (!diffMode || !diffMode.v1 || !diffMode.v2) return;
+  fetch('/api/version/diff?v1=' + diffMode.v1 + '&v2=' + diffMode.v2)
+    .then(r => r.json())
+    .then(diff => {
+      renderDiffDetail(diff);
+    })
+    .catch(e => {
+      document.getElementById('diffDetail').innerHTML = '<div class="empty">对比失败: ' + e.message + '</div>';
+    });
+}
+
+function renderDiffDetail(diff) {
+  if (diff.error) {
+    document.getElementById('diffDetail').innerHTML = '<div class="empty">对比失败: ' + diff.error + '</div>';
+    return;
+  }
+  let h = '<div class="diff-container">';
+
+  // 左侧: v1
+  const linesAdded = diff.total_diff?.lines_added || 0;
+  const linesRemoved = Math.abs(linesAdded < 0 ? linesAdded : 0);
+  const symbolsAdded = diff.total_diff?.symbols_added || 0;
+
+  h += '<div class="diff-column">';
+  h += '<div class="dc-title">v' + diff.version_from + ' → v' + diff.version_to + '</div>';
+  h += '<div class="diff-stats">';
+  if (diff.files_added?.length) h += '<span class="added">+ ' + diff.files_added.length + ' 新增</span>';
+  if (diff.files_removed?.length) h += '<span class="removed">- ' + diff.files_removed.length + ' 删除</span>';
+  if (diff.files_changed?.length) h += '<span style="color:var(--orange)">~ ' + diff.files_changed.length + ' 修改</span>';
+  h += '</div>';
+  h += '<div class="diff-stats">';
+  h += '<span class="added">+ ' + (linesAdded > 0 ? linesAdded : 0) + ' 行</span>';
+  h += '<span class="removed">- ' + (linesRemoved) + ' 行</span>';
+  h += '<span class="added">+ ' + (symbolsAdded > 0 ? symbolsAdded : 0) + ' 符号</span>';
+  h += '</div>';
+  h += '</div>';
+
+  // 右侧: 文件变更列表
+  h += '<div class="diff-column">';
+  h += '<div class="dc-title">变更详情</div>';
+  h += '<ul class="diff-file-list">';
+  (diff.files_added || []).forEach(f => {
+    h += '<li><span class="diff-tag added">新增</span>' + f + '</li>';
+  });
+  (diff.files_removed || []).forEach(f => {
+    h += '<li><span class="diff-tag removed">删除</span>' + f + '</li>';
+  });
+  (diff.files_changed || []).forEach(f => {
+    const delta = f.lines_after - f.lines_before;
+    const deltaStr = delta >= 0 ? '+' + delta : '' + delta;
+    h += '<li><span class="diff-tag changed">修改</span>' + f.name + '<span class="diff-delta">' + deltaStr + '行</span></li>';
+  });
+  h += '</ul>';
+  h += '</div>';
+  h += '</div>';
+
+  document.getElementById('diffDetail').innerHTML = h;
+}
+
+// ============================================================
+// Guidance Tab — 引导层 (v0.6.0)
+// ============================================================
+function renderGuideTab() {
+  fetch('/api/guide').then(r => r.json()).then(data => {
+    guideData = data;
+    renderDNA();
+    renderOverview();
+    renderDecisionTree();
+    renderPatterns();
+    renderConstraints();
+    renderTourGuide();
+  }).catch(e => {
+    console.error('Guide load failed:', e);
+  });
+}
+
+function renderDNA() {
+  if (!guideData) return;
+  const grid = document.getElementById('dnaGrid');
+  const colorMap = { '#3fb950': 'atom', '#58a6ff': 'port', '#d29922': 'adapter', '#bc8cff': 'composer' };
+  const iconMap = { 'atom': '⚛', 'port': '🔌', 'adapter': '🔗', 'composer': '⚙' };
+
+  let h = '';
+  guideData.primitives.forEach(p => {
+    const cls = colorMap[p.color] || 'atom';
+    h += '<div class="dna-card ' + cls + '">';
+    h += '<span class="dc-icon">' + (iconMap[cls] || '') + '</span>';
+    h += '<div class="dc-name">' + p.name + '</div>';
+    h += '<div class="dc-desc">' + p.description + '</div>';
+    h += '<code class="dc-code">' + escapeHTML(p.example) + '</code>';
+    h += '</div>';
+  });
+  grid.innerHTML = h;
+}
+
+function renderOverview() {
+  if (!guideData) return;
+  const dv = document.getElementById('overviewRow');
+  let h = '';
+
+  // 数据流
+  h += '<div class="overview-box">';
+  h += '<div class="ob-title">数据流</div>';
+  h += '<div class="flow-steps">';
+  const steps = ['Input', 'Atom', 'Port', 'Adapter', 'Composer', 'Output'];
+  const classes = ['input', 'atom', 'port', 'adapter', 'composer', 'output'];
+  steps.forEach((s, i) => {
+    if (i > 0) h += '<span class="flow-arrow">→</span>';
+    h += '<span class="flow-step ' + classes[i] + '">' + s + '</span>';
+  });
+  h += '</div>';
+  h += '</div>';
+
+  // 5 行代码
+  h += '<div class="overview-box">';
+  h += '<div class="ob-title">5 行代码即可运行</div>';
+  h += '<pre><code>' + escapeHTML(guideData.quick_start.code) + '</code></pre>';
+  h += '</div>';
+
+  dv.innerHTML = h;
+}
+
+function renderDecisionTree() {
+  const el = document.getElementById('decisionTree');
+  const graph = [
+    'graph TD',
+    '  Start[开始任务]',
+    '  Start --> Q1{纯计算?}',
+    '  Q1 -->|是| Atom[Atom 纯函数]',
+    '  Q1 -->|否| Q2{需要校验?}',
+    '  Q2 -->|是| Port[Port 验证网关]',
+    '  Q2 -->|否| Q3{外部交互?}',
+    '  Q3 -->|是| Adapter[Adapter 副作用]',
+    '  Q3 -->|否| Q4{多步骤?}',
+    '  Q4 -->|是| Composer[Composer 编排]',
+    '  Q4 -->|否| Atom',
+    '  style Atom fill:#1b3821,stroke:#30d158,color:#30d158',
+    '  style Port fill:#132a40,stroke:#0a84ff,color:#0a84ff',
+    '  style Adapter fill:#2e1f00,stroke:#ff9f0a,color:#ff9f0a',
+    '  style Composer fill:#2a1a3e,stroke:#af52de,color:#af52de',
+    '  style Start fill:#1c1c1e,stroke:#2c2c2e,color:#f5f5f7',
+    '  style Q1 fill:#1c1c1e,stroke:#2c2c2e,color:#f5f5f7',
+    '  style Q2 fill:#1c1c1e,stroke:#2c2c2e,color:#f5f5f7',
+    '  style Q3 fill:#1c1c1e,stroke:#2c2c2e,color:#f5f5f7',
+    '  style Q4 fill:#1c1c1e,stroke:#2c2c2e,color:#f5f5f7'
+  ].join('\n');
+
+  mermaid.render('decisionTreeSvg', graph).then(result => {
+    el.innerHTML = result.svg;
+  }).catch(err => {
+    el.innerHTML = '<div class="empty">决策树渲染失败</div>';
+  });
+}
+
+function renderPatterns() {
+  if (!guideData) return;
+  const grid = document.getElementById('patternGrid');
+  let h = '';
+  guideData.patterns.forEach((p, i) => {
+    h += '<div class="pattern-chip" onclick="togglePattern(' + i + ')">';
+    h += '<div class="pc-name">' + p.name + '</div>';
+    h += '<div class="pc-code">' + escapeHTML(p.code) + '</div>';
+    h += '<div class="pc-desc">' + p.description + '</div>';
+    h += '</div>';
+  });
+  grid.innerHTML = h;
+}
+
+function togglePattern(idx) {
+  if (!guideData || !guideData.patterns[idx]) return;
+  const p = guideData.patterns[idx];
+  const detail = document.getElementById('patternDetail');
+  if (detail.dataset.openIdx === String(idx)) {
+    detail.innerHTML = '';
+    detail.dataset.openIdx = '';
+    return;
+  }
+  detail.dataset.openIdx = String(idx);
+  let h = '<div class="pattern-detail open">';
+  h += '<div class="pd-title">' + p.name + '</div>';
+  h += '<div class="pd-use"><b>使用场景:</b> ' + p.use_case + '</div>';
+  h += '<pre><code>' + escapeHTML(p.full_example) + '</code></pre>';
+  h += '<button class="btn-copy" onclick="copyPattern(' + idx + ')">复制完整代码</button>';
+  h += '</div>';
+  detail.innerHTML = h;
+}
+
+function copyPattern(idx) {
+  if (!guideData || !guideData.patterns[idx]) return;
+  const code = guideData.patterns[idx].full_example;
+  navigator.clipboard.writeText(code).then(() => {
+    toast('代码已复制到剪贴板', 'ok');
+  }).catch(() => {
+    toast('复制失败', 'error');
+  });
+}
+
+function renderConstraints() {
+  if (!guideData) return;
+  const list = document.getElementById('constraintList');
+  let h = '';
+  guideData.constraints.forEach(c => {
+    h += '<div class="constraint-item">';
+    h += '<div class="ci-status ' + c.status + '"></div>';
+    h += '<div class="ci-info">';
+    h += '<div class="ci-name">' + c.name + '</div>';
+    h += '<div class="ci-detail">' + c.detail + '</div>';
+    h += '</div>';
+    h += '</div>';
+  });
+  list.innerHTML = h;
+}
+
+// renderTourGuide 渲染 UA 学习导览 (v0.7.0)
+function renderTourGuide() {
+  if (!guideData || !guideData.tour || !guideData.tour.available) return;
+  const tour = guideData.tour;
+  const container = document.getElementById('tourSection');
+  if (!container) return;
+
+  let h = '<div class="panel-header" style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;">';
+  h += '<div class="panel-title">' + escHtml(tour.title) + '</div>';
+  h += '</div>';
+  if (tour.description) {
+    h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;padding:0 16px;">' + escHtml(tour.description) + '</div>';
+  }
+  h += '<div style="padding:0 16px 16px;">';
+  h += '<div class="timeline">';
+  (tour.steps || []).forEach((s, i) => {
+    h += '<div class="timeline-item">';
+    h += '<div class="timeline-dot"></div>';
+    h += '<div class="timeline-content">';
+    h += '<div style="font-size:13px;font-weight:600;color:var(--text);">' + (i+1) + '. ' + escHtml(s.title) + '</div>';
+    h += '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + escHtml(s.description) + '</div>';
+    h += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">涉及 ' + s.node_count + ' 个节点</div>';
+    h += '</div>';
+    h += '</div>';
+  });
+  h += '</div></div>';
+  container.innerHTML = h;
+}
+
+// ============================================================
+// UA 知识图谱 Tab (v0.7.0)
+// ============================================================
+let uaGraphData = null;
+let uaChart = null;
+let uaTypeChart = null;
+
+async function renderUATab() {
+  document.getElementById('ua-status').style.display = 'none';
+  document.getElementById('ua-stats').innerHTML = '<div style="color:var(--text-muted);padding:12px;">加载中...</div>';
+  try {
+    const res = await fetch('/api/ua/graph');
+    uaGraphData = await res.json();
+    if (uaGraphData.error) {
+      document.getElementById('ua-stats').innerHTML = '<div class="empty" style="padding:20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">🔍</div><div style="font-size:14px;color:var(--text);margin-bottom:4px;">知识图谱未生成</div><div style="font-size:12px;color:var(--text-muted);">' + uaGraphData.detail + '</div><div style="font-size:12px;color:var(--text-muted);margin-top:8px;">请运行: <code style="background:var(--bg);padding:2px 6px;border-radius:3px;">ua analyze --full</code></div></div>';
+      document.getElementById('ua-chart').innerHTML = '';
+      document.getElementById('ua-detail').innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">暂无数据</div>';
+      if (uaChart) { uaChart.dispose(); uaChart = null; }
+      if (uaTypeChart) { uaTypeChart.dispose(); uaTypeChart = null; }
+      return;
+    }
+    renderUAStats();
+    renderUANodeChart();
+    renderUATypeChart();
+    document.getElementById('ua-detail').innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">点击左侧节点查看详情，或使用搜索查找节点</div>';
+  } catch (e) {
+    document.getElementById('ua-stats').innerHTML = '<div class="empty" style="padding:20px;text-align:center;">加载失败: ' + e.message + '</div>';
+  }
+}
+
+function renderUAStats() {
+  const d = uaGraphData;
+  const graph = d.graph;
+  const st = document.getElementById('ua-stats');
+  let h = '<div class="stat-card"><div class="stat-value">' + d.node_count + '</div><div class="stat-label">节点</div></div>';
+  h += '<div class="stat-card"><div class="stat-value">' + d.edge_count + '</div><div class="stat-label">边</div></div>';
+  h += '<div class="stat-card"><div class="stat-value">' + d.layer_count + '</div><div class="stat-label">层级</div></div>';
+  if (d.node_types) {
+    h += '<div class="stat-card"><div class="stat-value">' + Object.keys(d.node_types).length + '</div><div class="stat-label">节点类型</div></div>';
+  }
+  if (d.edge_types) {
+    h += '<div class="stat-card"><div class="stat-value">' + Object.keys(d.edge_types).length + '</div><div class="stat-label">边类型</div></div>';
+  }
+  st.innerHTML = h;
+}
+
+function renderUANodeChart() {
+  const container = document.getElementById('ua-chart');
+  if (uaChart) { uaChart.dispose(); uaChart = null; }
+  if (!uaGraphData || !uaGraphData.graph) return;
+
+  const graph = uaGraphData.graph;
+  const nodes = (graph.nodes || []).slice(0, 200);
+
+  uaChart = echarts.init(container);
+  const layerColors = {
+    'L0': '#30d158', 'L1': '#0a84ff', 'L2': '#ff9f0a',
+    'L3': '#af52de', 'L4': '#ff375f', 'L5': '#5e5ce6',
+    'L6': '#ff6482', 'L7': '#ac8e68'
+  };
+
+  const layerNodeMap = {};
+  if (graph.layers) {
+    graph.layers.forEach(l => {
+      l.nodeIds && l.nodeIds.forEach(id => { layerNodeMap[id] = l.id; });
+    });
+  }
+
+  const categories = [
+    { name: 'L0: 基础' }, { name: 'L1: 原语' }, { name: 'L2: 组合' },
+    { name: 'L3: 适配' }, { name: 'L4: 监督' }, { name: 'L5: 观测' },
+    { name: 'L6: 应用' }, { name: 'L7: 入口' }
+  ];
+
+  const scatterData = nodes.map((n, i) => {
+    const layer = layerNodeMap[n.id] || 'L3';
+    const lIdx = parseInt(layer.replace('L','')) || 3;
+    const x = (lIdx * 80) + Math.random() * 40;
+    const y = Math.random() * 300;
+    const size = n.complexity === 'complex' ? 14 : n.complexity === 'moderate' ? 10 : 7;
+    return { name: n.name, value: [x, y, size], itemStyle: { color: layerColors[layer] || '#8e8e93' }, nodeData: n, layer: layer };
+  });
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: function(p) {
+        const n = p.data.nodeData;
+        if (!n) return p.name;
+        return '<b>' + n.name + '</b><br/>类型: ' + n.type + '<br/>复杂度: ' + (n.complexity||'unknown') + '<br/>' + (n.summary||'');
+      }
+    },
+    grid: { left: 10, right: 10, top: 10, bottom: 10 },
+    xAxis: { type: 'value', show: false, min: -20, max: 660 },
+    yAxis: { type: 'value', show: false, min: -20, max: 320 },
+    series: [{
+      type: 'scatter',
+      data: scatterData,
+      symbolSize: function(d) { return d[2]; },
+      itemStyle: { borderColor: '#1c1c1e', borderWidth: 1, opacity: 0.85 },
+      emphasis: { scale: 1.5 }
+    }]
+  };
+
+  uaChart.setOption(option);
+  uaChart.on('click', function(params) {
+    if (params.data && params.data.nodeData) {
+      showUANodeDetail(params.data.nodeData);
+    }
+  });
+  setTimeout(() => uaChart && uaChart.resize(), 100);
+}
+
+function renderUATypeChart() {
+  const container = document.getElementById('ua-type-chart');
+  if (uaTypeChart) { uaTypeChart.dispose(); uaTypeChart = null; }
+  if (!uaGraphData || !uaGraphData.node_types) return;
+
+  uaTypeChart = echarts.init(container);
+  const types = uaGraphData.node_types;
+  const typeData = Object.keys(types).map(k => ({ name: k, value: types[k] }));
+  typeData.sort((a, b) => b.value - a.value);
+
+  const colors = ['#30d158','#0a84ff','#ff9f0a','#af52de','#ff375f','#5e5ce6','#ff6482','#ac8e68','#64d2ff','#ffd60a'];
+
+  const option = {
+    title: { text: '节点类型分布', left: 'center', top: 8, textStyle: { color: '#8e8e93', fontSize: 12 } },
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['50%', '55%'],
+      data: typeData.slice(0, 8),
+      label: { color: '#8e8e93', fontSize: 10 },
+      itemStyle: { borderColor: '#1c1c1e', borderWidth: 2 }
+    }],
+    color: colors
+  };
+
+  uaTypeChart.setOption(option);
+}
+
+function showUANodeDetail(node) {
+  const el = document.getElementById('ua-detail');
+  let tags = (node.tags || []).map(t => '<span style="display:inline-block;background:var(--bg);padding:1px 6px;border-radius:3px;font-size:11px;margin:2px;border:1px solid var(--border);">' + escHtml(t) + '</span>').join('');
+  let h = '<div style="margin-bottom:12px;">';
+  h += '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px;">' + escHtml(node.name) + '</div>';
+  h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + escHtml(node.type) + ' · ' + (node.complexity||'unknown') + ' · ID: ' + escHtml(node.id) + '</div>';
+  if (node.filePath) h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📁 ' + escHtml(node.filePath) + '</div>';
+  h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + tags + '</div>';
+  h += '</div>';
+  if (node.summary) {
+    h += '<div style="font-size:13px;color:var(--text);line-height:1.5;padding:8px;background:var(--bg);border-radius:6px;">' + escHtml(node.summary) + '</div>';
+  }
+  el.innerHTML = h;
+}
+
+async function refreshUAGraph() {
+  document.getElementById('ua-status').style.display = 'block';
+  document.getElementById('ua-status').innerHTML = '<div style="color:#0a84ff;font-size:13px;">刷新中...</div>';
+  uaGraphData = null;
+  await renderUATab();
+  document.getElementById('ua-status').style.display = 'none';
+  toast('知识图谱已刷新', 'ok');
+}
+
+async function validateUAGraph() {
+  const statusEl = document.getElementById('ua-status');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<div style="color:#0a84ff;font-size:13px;">验证中...</div>';
+
+  try {
+    const res = await fetch('/api/ua/validate');
+    const data = await res.json();
+    if (data.error) {
+      statusEl.innerHTML = '<div style="color:#ff375f;font-size:13px;">验证失败: ' + data.error + '</div>';
+      return;
+    }
+
+    let color = data.fail_count > 0 ? '#ff375f' : data.warn_count > 0 ? '#ff9f0a' : '#30d158';
+    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;font-size:13px;">' +
+      '<span style="color:' + color + ';font-weight:600;">' + data.summary + '</span>' +
+      '<span style="display:flex;gap:6px;margin-left:8px;">' +
+      '<span style="color:#30d158;">✓ ' + data.pass_count + '</span>' +
+      '<span style="color:#ff9f0a;">⚠ ' + data.warn_count + '</span>' +
+      '<span style="color:#ff375f;">✗ ' + data.fail_count + '</span>' +
+      '</span></div>';
+
+    const detail = document.getElementById('ua-detail');
+    let h = '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text);">约束验证结果</div>';
+    (data.results || []).forEach(r => {
+      const icon = r.status === 'pass' ? '✓' : r.status === 'warn' ? '⚠' : '✗';
+      const color = r.status === 'pass' ? '#30d158' : r.status === 'warn' ? '#ff9f0a' : '#ff375f';
+      h += '<div style="margin-bottom:8px;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid ' + color + ';">';
+      h += '<div style="font-size:12px;font-weight:600;color:var(--text);">' + icon + ' ' + escHtml(r.name) + '</div>';
+      h += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escHtml(r.detail) + '</div>';
+      if (r.violations && r.violations.length > 0) {
+        h += '<div style="font-size:11px;color:#ff375f;margin-top:4px;">' + r.violations.map(v => '· ' + escHtml(v)).join('<br/>') + '</div>';
+      }
+      h += '</div>';
+    });
+    detail.innerHTML = h;
+  } catch (e) {
+    statusEl.innerHTML = '<div style="color:#ff375f;font-size:13px;">验证失败: ' + e.message + '</div>';
+  }
+}
+
+async function searchUAGraph() {
+  const q = document.getElementById('uaSearchInput').value.trim();
+  if (!q) return;
+  const detail = document.getElementById('ua-detail');
+  detail.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">搜索中...</div>';
+
+  try {
+    const res = await fetch('/api/ua/search?q=' + encodeURIComponent(q) + '&limit=20');
+    const data = await res.json();
+    if (data.error) {
+      detail.innerHTML = '<div style="color:#ff375f;font-size:13px;text-align:center;padding-top:40px;">' + data.error + '</div>';
+      return;
+    }
+
+    let h = '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text);">搜索结果: ' + data.total + ' 条</div>';
+    (data.results || []).forEach(r => {
+      const node = r.node;
+      h += '<div style="margin-bottom:8px;padding:8px;background:var(--bg);border-radius:6px;cursor:pointer;" onclick="showUANodeDetail(uaGraphData.graph.nodes.find(n=>n.id===\'' + (node.id||'').replace(/'/g,"\\'") + '\'))">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      h += '<span style="font-size:13px;font-weight:600;color:var(--text);">' + escHtml(node.name) + '</span>';
+      h += '<span style="font-size:11px;color:#0a84ff;">' + r.score.toFixed(1) + '</span>';
+      h += '</div>';
+      h += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escHtml(node.type) + ' · 匹配: ' + r.match_in + '</div>';
+      h += '</div>';
+    });
+    if (data.total === 0) {
+      h += '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:20px;">未找到匹配节点</div>';
+    }
+    detail.innerHTML = h;
+  } catch (e) {
+    detail.innerHTML = '<div style="color:#ff375f;font-size:13px;text-align:center;padding-top:40px;">搜索失败: ' + e.message + '</div>';
+  }
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 
 // Helpers
 function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

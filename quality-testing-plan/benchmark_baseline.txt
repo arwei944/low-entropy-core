@@ -1,0 +1,1 @@
+ok  	low-entropy-core/go-core	0.120s [no tests to run]

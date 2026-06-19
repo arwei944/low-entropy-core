@@ -82,7 +82,10 @@ func TestRemoteComposer_Error(t *testing.T) {
 
 	reqBody := RemoteCallRequest{Method: "run", Params: json.RawMessage(`"x"`)}
 	body, _ := json.Marshal(reqBody)
-	resp, _ := http.Post(srv.URL+"/api/rpc/run", "application/json", bytes.NewReader(body))
+	resp, err := http.Post(srv.URL+"/api/rpc/run", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 500 {
@@ -97,7 +100,10 @@ func TestRemoteComposer_MethodNotAllowed(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	resp, _ := http.Get(srv.URL + "/api/rpc/run")
+	resp, err := http.Get(srv.URL + "/api/rpc/run")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 405 {
