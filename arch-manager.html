@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <style>
 /* ============================================================
-   macOS Design System
+   macOS Design System — 极简统一风格
    ============================================================ */
 :root {
   --bg: #0a0a0a;
@@ -35,6 +35,23 @@
   --font: -apple-system, 'SF Pro Display', 'Segoe UI', BlinkMacSystemFont, sans-serif;
   --mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
   --transition: 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --btn-bg: rgba(255,255,255,0.04);
+  --btn-border: rgba(255,255,255,0.06);
+  --btn-hover-bg: rgba(255,255,255,0.08);
+  --btn-active-bg: rgba(255,255,255,0.10);
+  /* 统一别名 */
+  --border: var(--rule);
+  --text: var(--ink);
+  --text-muted: var(--muted);
+  /* 层级颜色 */
+  --l0: #7f8ea3;
+  --l1: #30d158;
+  --l2: #0a84ff;
+  --l3: #ff9f0a;
+  --l4: #ff375f;
+  --l5: #af52de;
+  --l6: #5ac8fa;
+  --l7: #ffd60a;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,6 +63,10 @@ body {
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 768px) {
+  html, body { overflow: auto; }
+  body { font-size: 14px; }
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -169,22 +190,25 @@ body {
   width: 28px; height: 28px;
   border-radius: 6px;
   border: none;
-  background: rgba(255,255,255,0.06);
-  color: var(--muted);
+  background: transparent;
+  color: var(--dim);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition);
 }
-.sidebar-footer .btn-icon:hover { background: rgba(255,255,255,0.12); color: var(--ink); }
+.sidebar-footer .btn-icon:hover { background: var(--btn-hover-bg); color: var(--ink); }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* ============================================================
    Main Content
    ============================================================ */
-.main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; }
+.main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; overflow-x: hidden; }
+@media (max-width: 768px) {
+  .main { margin-left: 0; height: auto; overflow-y: visible; }
+}
 .main-header {
   padding: 20px 28px 16px;
   display: flex;
@@ -204,7 +228,7 @@ body {
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--dim);
   cursor: pointer;
   border: none;
   background: none;
@@ -213,11 +237,12 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  letter-spacing: -0.01em;
 }
-.main-header .tab:hover { color: var(--ink); background: rgba(255,255,255,0.04); }
-.main-header .tab.active { color: var(--ink); background: rgba(255,255,255,0.08); }
+.main-header .tab:hover { color: var(--ink); background: var(--btn-hover-bg); }
+.main-header .tab.active { color: var(--ink); background: var(--btn-active-bg); }
 .main-header .spacer { flex: 1; }
-.main-header .actions { display: flex; gap: 6px; }
+.main-header .actions { display: flex; gap: 6px; align-items: center; }
 .main-header .btn {
   padding: 6px 14px;
   border-radius: 8px;
@@ -225,19 +250,73 @@ body {
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
   font-family: var(--font);
   transition: all var(--transition);
   display: flex;
   align-items: center;
   gap: 5px;
+  letter-spacing: -0.01em;
 }
-.main-header .btn:hover { background: rgba(255,255,255,0.08); color: var(--ink); }
+.main-header .btn:hover { background: var(--btn-hover-bg); color: var(--ink); border-color: rgba(255,255,255,0.1); }
 .main-header .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.main-header .btn.primary:hover { background: var(--accent-hover); }
+.main-header .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
-.content { padding: 24px 28px; }
+/* ============================================================
+   统一按钮基础样式 (Mac 极简)
+   ============================================================ */
+.btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  font-family: var(--font);
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.btn:hover { background: var(--btn-hover-bg); color: var(--ink); border-color: rgba(255,255,255,0.1); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 6px; }
+.btn.btn-icon { padding: 5px; border: none; background: transparent; color: var(--dim); }
+.btn.btn-icon:hover { background: var(--btn-hover-bg); color: var(--ink); }
+.btn .btn-spinner { animation: spin 1s linear infinite; }
+
+/* ============================================================
+   Panel Header (Mac 极简)
+   ============================================================ */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+}
+.panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.panel-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.content { padding: 24px 28px 64px; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
@@ -343,13 +422,15 @@ body {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--rule);
 }
-.violations-header h3 { font-size: 15px; font-weight: 600; }
+.violations-header h3 { font-size: 14px; font-weight: 600; color: var(--ink); margin: 0; letter-spacing: -0.01em; }
 .violations-count {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  background: var(--btn-bg);
   color: var(--muted);
 }
 .violation-item {
@@ -446,8 +527,8 @@ body {
   flex-shrink: 0;
 }
 .symbol-chip .ki.T { background: rgba(0,122,255,0.15); color: var(--accent); }
-.symbol-chip .ki.F { background: rgba(175,82,222,0.15); color: #af52de; }
-.symbol-chip .ki.M { background: rgba(175,82,222,0.15); color: #af52de; }
+.symbol-chip .ki.F { background: rgba(175,82,222,0.15); color: var(--l5); }
+.symbol-chip .ki.M { background: rgba(175,82,222,0.15); color: var(--l5); }
 .symbol-chip .ki.I { background: rgba(48,209,88,0.15); color: var(--green); }
 .symbol-chip .ki.C { background: rgba(255,159,10,0.15); color: var(--orange); }
 .symbol-chip .ki.V { background: rgba(255,159,10,0.15); color: var(--orange); }
@@ -485,16 +566,17 @@ body {
 .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
 .filter-pill {
   padding: 5px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  color: var(--muted);
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  background: transparent;
+  color: var(--dim);
   cursor: pointer;
   font-size: 11px;
   font-family: var(--font);
   transition: all var(--transition);
+  letter-spacing: -0.01em;
 }
-.filter-pill:hover { background: rgba(255,255,255,0.08); }
+.filter-pill:hover { background: var(--btn-hover-bg); color: var(--ink); }
 .filter-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 .sym-table-wrap { overflow-x: auto; border-radius: var(--radius); }
@@ -526,7 +608,7 @@ body {
 /* ============================================================
    Dep Graph
    ============================================================ */
-.dep-controls { margin-bottom: 16px; display: flex; gap: 6px; }
+.dep-controls { margin-bottom: 16px; display: flex; gap: 6px; padding: 0 20px; }
 .dep-graph-wrap {
   background: var(--card);
   border-radius: var(--radius);
@@ -567,8 +649,8 @@ body {
   width: 24px; height: 24px;
   border-radius: 6px;
   border: none;
-  background: rgba(255,255,255,0.06);
-  color: var(--muted);
+  background: transparent;
+  color: var(--dim);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -576,7 +658,7 @@ body {
   font-size: 14px;
   transition: all var(--transition);
 }
-.detail-panel-head .close:hover { background: rgba(255,255,255,0.12); color: var(--ink); }
+.detail-panel-head .close:hover { background: var(--btn-hover-bg); color: var(--ink); }
 .detail-panel-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
 .detail-empty { text-align: center; padding: 40px 16px; color: var(--dim); font-size: 12px; }
 .detail-field { margin-bottom: 14px; }
@@ -592,6 +674,51 @@ body {
   white-space: pre-wrap;
   line-height: 1.5;
 }
+
+/* ============================================================
+   熵度量样式 (模拟运行 Tab)
+   ============================================================ */
+.entropy-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.entropy-bar-label {
+  font-size: 10px;
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.entropy-bar-track {
+  flex: 1;
+  height: 14px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.entropy-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.entropy-bar-fill.ok { background: var(--green); }
+.entropy-bar-fill.warn { background: var(--orange); }
+.entropy-bar-fill.high { background: var(--red); }
+.entropy-risk {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  flex-shrink: 0;
+  width: 42px;
+  text-align: center;
+}
+.entropy-risk.low { background: rgba(48,209,88,0.15); color: var(--green); }
+.entropy-risk.medium { background: rgba(255,159,10,0.15); color: var(--orange); }
+.entropy-risk.high { background: rgba(255,55,95,0.15); color: var(--red); }
 
 /* ============================================================
    Toast
@@ -690,22 +817,47 @@ body {
   letter-spacing: -0.02em;
 }
 .version-current .v { color: var(--accent); }
-.version-actions { display: flex; gap: 8px; margin-left: auto; }
+.version-actions { display: flex; gap: 8px; margin-left: auto; align-items: center; }
 .version-actions .btn {
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
   color: var(--muted);
   font-family: var(--font);
   transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: -0.01em;
 }
-.version-actions .btn:hover { background: rgba(255,255,255,0.08); color: var(--ink); }
+.version-actions .btn:hover { background: var(--btn-hover-bg); color: var(--ink); border-color: rgba(255,255,255,0.1); }
 .version-actions .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .version-actions .btn.primary:hover { background: var(--accent-hover); }
+
+/* 版本管理内联按钮统一 */
+#versionSubContent .btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--muted);
+  font-family: var(--font);
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: -0.01em;
+}
+#versionSubContent .btn:hover { background: var(--btn-hover-bg); color: var(--ink); }
+#versionSubContent .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+#versionSubContent .btn.primary:hover { background: var(--accent-hover); }
 
 .version-timeline {
   position: relative;
@@ -774,8 +926,8 @@ body {
 }
 .version-entry .ve-changelog .cl-type.fix { background: rgba(255,159,10,0.15); color: var(--orange); }
 .version-entry .ve-changelog .cl-type.docs { background: rgba(48,209,88,0.15); color: var(--green); }
-.version-entry .ve-changelog .cl-type.test { background: rgba(175,82,222,0.15); color: #af52de; }
-.version-entry .ve-changelog .cl-type.refactor { background: rgba(94,194,250,0.15); color: #5ac8fa; }
+.version-entry .ve-changelog .cl-type.test { background: rgba(175,82,222,0.15); color: var(--l5); }
+.version-entry .ve-changelog .cl-type.refactor { background: rgba(94,194,250,0.15); color: var(--l6); }
 
 .diff-container {
   display: grid;
@@ -925,9 +1077,9 @@ body {
 .cl-type-tag.feat { background: rgba(0,122,255,0.15); color: var(--accent); }
 .cl-type-tag.fix { background: rgba(255,159,10,0.15); color: var(--orange); }
 .cl-type-tag.docs { background: rgba(48,209,88,0.15); color: var(--green); }
-.cl-type-tag.test { background: rgba(175,82,222,0.15); color: #af52de; }
-.cl-type-tag.refactor { background: rgba(94,194,250,0.15); color: #5ac8fa; }
-.cl-type-tag.perf { background: rgba(255,55,95,0.15); color: #ff375f; }
+.cl-type-tag.test { background: rgba(175,82,222,0.15); color: var(--l5); }
+.cl-type-tag.refactor { background: rgba(94,194,250,0.15); color: var(--l6); }
+.cl-type-tag.perf { background: rgba(255,55,95,0.15); color: var(--l4); }
 .cl-type-tag.chore { background: rgba(255,255,255,0.1); color: var(--dim); }
 .cl-type-tag.breaking { background: rgba(255,69,58,0.2); color: var(--red); font-weight: 700; }
 
@@ -968,10 +1120,6 @@ body {
   align-self: center;
   margin-bottom: 28px;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
 
 .adr-card {
   background: var(--card);
@@ -993,7 +1141,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--mono);
 }
 .adr-card .adr-title {
   font-size: 14px;
@@ -1089,6 +1237,7 @@ body {
   border-top: 3px solid;
   transition: all var(--transition);
   cursor: default;
+  min-width: 0;
 }
 .dna-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 .dna-card .dc-icon {
@@ -1101,6 +1250,7 @@ body {
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 6px;
+  word-break: break-all;
 }
 .dna-card .dc-desc {
   font-size: 12px;
@@ -1117,7 +1267,8 @@ body {
   padding: 6px 8px;
   border-radius: 4px;
   overflow-x: auto;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 .dna-card.atom { border-top-color: var(--green); }
 .dna-card.atom .dc-name { color: var(--green); }
@@ -1125,8 +1276,8 @@ body {
 .dna-card.port .dc-name { color: var(--accent); }
 .dna-card.adapter { border-top-color: var(--orange); }
 .dna-card.adapter .dc-name { color: var(--orange); }
-.dna-card.composer { border-top-color: #af52de; }
-.dna-card.composer .dc-name { color: #af52de; }
+.dna-card.composer { border-top-color: var(--l5); }
+.dna-card.composer .dc-name { color: var(--l5); }
 
 .overview-row {
   display: grid;
@@ -1167,7 +1318,7 @@ body {
 .flow-step.atom { border-color: rgba(48,209,88,0.3); color: var(--green); }
 .flow-step.port { border-color: rgba(0,122,255,0.3); color: var(--accent); }
 .flow-step.adapter { border-color: rgba(255,159,10,0.3); color: var(--orange); }
-.flow-step.composer { border-color: rgba(175,82,222,0.3); color: #af52de; }
+.flow-step.composer { border-color: rgba(175,82,222,0.3); color: var(--l5); }
 .flow-step.output { border-color: rgba(48,209,88,0.3); color: var(--green); }
 .flow-arrow { color: var(--dim); font-size: 16px; font-weight: 300; }
 
@@ -1263,16 +1414,17 @@ body {
 }
 .pattern-detail .btn-copy {
   padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
   color: var(--muted);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font);
   transition: all var(--transition);
+  letter-spacing: -0.01em;
 }
-.pattern-detail .btn-copy:hover { background: rgba(255,255,255,0.08); color: var(--ink); }
+.pattern-detail .btn-copy:hover { background: var(--btn-hover-bg); color: var(--ink); }
 
 .constraint-list {
   display: grid;
@@ -1301,8 +1453,168 @@ body {
 .constraint-item .ci-detail { font-size: 10px; color: var(--dim); }
 
 /* ============================================================
+   UA 知识图谱 —— 架构层级关系图
+   ============================================================ */
+.ua-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.ua-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ua-stat {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+}
+.ua-stat .ua-stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.ua-stat .ua-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.ua-layer-stats {
+  margin-bottom: 20px;
+}
+.ua-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.ua-layer-row:hover { background: rgba(255,255,255,0.04); }
+.ua-layer-row .ua-layer-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ua-layer-row .ua-layer-name {
+  font-size: 12px;
+  font-weight: 600;
+  width: 60px;
+  flex-shrink: 0;
+}
+.ua-layer-row .ua-layer-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ua-layer-row .ua-layer-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.ua-layer-row .ua-layer-info {
+  font-size: 10px;
+  color: var(--dim);
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.ua-layer-detail {
+  margin-top: 16px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: none;
+}
+.ua-layer-detail.show { display: block; }
+.ua-layer-detail h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+.ua-layer-detail .ua-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ua-layer-detail .ua-file-tag {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.ua-layer-detail .ua-file-tag:hover { background: rgba(0,122,255,0.15); color: var(--accent); }
+.ua-arch-diagram {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+.ua-arch-diagram svg { max-width: 100%; }
+.ua-search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.ua-search-bar input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg2);
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.ua-search-bar input:focus { border-color: var(--accent); }
+.ua-search-results {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.ua-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.ua-search-item:hover { background: rgba(255,255,255,0.04); }
+.ua-search-item .ua-si-name {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+.ua-search-item .ua-si-meta {
+  font-size: 10px;
+  color: var(--dim);
+}
+/* ============================================================
    Responsive
    ============================================================ */
+@media (max-width: 1300px) {
+  .dna-grid { grid-template-columns: repeat(4, 1fr); }
+  .dna-card .dc-code { font-size: 9px; }
+}
 @media (max-width: 1100px) {
   .detail-panel { display: none; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
@@ -1313,14 +1625,26 @@ body {
   .pattern-grid { grid-template-columns: repeat(2, 1fr); }
   .constraint-list { grid-template-columns: repeat(2, 1fr); }
   .diff-container { grid-template-columns: 1fr; }
+  .guide-hero h2 { font-size: 20px; }
 }
 @media (max-width: 768px) {
   .sidebar { display: none; }
-  .main { margin-left: 0; }
+  .main { margin-left: 0; height: auto; overflow-y: visible; }
+  html, body { overflow: auto; }
   .stats-row { grid-template-columns: 1fr; }
   .dna-grid { grid-template-columns: 1fr; }
   .pattern-grid { grid-template-columns: 1fr; }
   .constraint-list { grid-template-columns: 1fr; }
+  .main-header { padding: 12px 16px; }
+  .content { padding: 12px 16px 32px; }
+  .guide-hero { padding: 12px 0 20px; }
+  .guide-hero h2 { font-size: 18px; }
+  .dna-card { padding: 14px; }
+  .dna-card .dc-code { font-size: 9px; }
+  .overview-box { padding: 14px; }
+  .flow-steps { gap: 3px; }
+  .flow-step { padding: 6px 10px; font-size: 10px; }
+  .flow-arrow { font-size: 12px; }
 }
 </style>
 </head>
@@ -1391,6 +1715,10 @@ body {
       <button class="tab" onclick="switchTab('ua')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         知识图谱
+      </button>
+      <button class="tab" onclick="switchTab('sim')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        模拟运行
       </button>
     </div>
     <div class="spacer"></div>
@@ -1493,9 +1821,9 @@ body {
     <div class="tab-content" id="tab-ua">
       <div class="panel" style="display:flex;flex-direction:column;height:100%;">
         <div class="panel-header">
-          <div class="panel-title">知识图谱 (Understand-Anything)</div>
+          <div class="panel-title">架构层级关系图</div>
           <div class="panel-actions">
-            <button class="btn btn-sm" onclick="refreshUAGraph()" title="刷新知识图谱">
+            <button class="btn btn-sm" onclick="refreshUAGraph()" title="刷新">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               刷新
             </button>
@@ -1505,26 +1833,70 @@ body {
             </button>
           </div>
         </div>
-        <div id="ua-status" style="padding:12px 16px;border-bottom:1px solid var(--border);display:none;"></div>
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;">
-          <input type="text" id="uaSearchInput" placeholder="搜索节点名称、标签、摘要..." style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);" onkeydown="if(event.key==='Enter')searchUAGraph()">
-          <button class="btn btn-sm btn-primary" onclick="searchUAGraph()">搜索</button>
-        </div>
-        <div style="display:flex;flex:1;overflow:hidden;">
-          <div style="flex:2;display:flex;flex-direction:column;overflow:auto;border-right:1px solid var(--border);">
-            <div id="ua-stats" style="display:flex;gap:12px;padding:12px 16px;flex-wrap:wrap;"></div>
-            <div id="ua-chart" style="flex:1;min-height:320px;position:relative;"></div>
+        <div style="flex:1;overflow:auto;padding:20px;">
+          <!-- 统计卡片 -->
+          <div class="ua-stats-row" id="uaStats"></div>
+          <!-- 架构层级图 -->
+          <div class="ua-arch-diagram" id="uaArchDiagram" style="min-height:300px;">
+            <div style="color:var(--muted);text-align:center;padding:100px 20px;">加载中...</div>
           </div>
-          <div style="flex:1;min-width:280px;overflow:auto;display:flex;flex-direction:column;" id="ua-sidebar">
-            <div id="ua-type-chart" style="height:200px;border-bottom:1px solid var(--border);position:relative;"></div>
-            <div id="ua-detail" style="flex:1;padding:12px 16px;overflow:auto;">
-              <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">点击左侧节点查看详情，或使用搜索查找节点</div>
-            </div>
+          <!-- 层级统计 -->
+          <div class="ua-layer-stats" id="uaLayerStats"></div>
+          <!-- 层级详情 -->
+          <div class="ua-layer-detail" id="uaLayerDetail"></div>
+          <!-- 搜索 -->
+          <div class="ua-search-bar">
+            <input type="text" id="uaSearchInput" placeholder="搜索节点名称、标签..." onkeydown="if(event.key==='Enter')searchUAGraph()">
+            <button class="btn btn-sm btn-primary" onclick="searchUAGraph()">搜索</button>
+          </div>
+          <div class="ua-search-results" id="uaSearchResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模拟运行 Tab -->
+  <div class="tab-content" id="tab-sim">
+    <div class="panel" style="display:flex;flex-direction:column;height:100%;">
+      <div class="panel-header">
+        <div class="panel-title">代码模拟运行</div>
+        <div class="panel-actions">
+          <button class="btn btn-sm" onclick="runSimulate('build')">编译检查</button>
+          <button class="btn btn-sm" onclick="runSimulate('test')">运行测试</button>
+          <button class="btn btn-sm" onclick="runSimulate('vet')">静态分析</button>
+          <button class="btn btn-sm" onclick="runSimulate('bench')">基准测试</button>
+          <button class="btn btn-sm btn-primary" onclick="runAllSimulate()">一键检查</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:16px;">
+        <!-- 执行结果 -->
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">执行结果</div>
+          <div class="sim-output" id="simResult" style="font-family:var(--mono);font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:12px;color:var(--muted);">
+            <span style="color:var(--dim);">点击上方按钮开始代码模拟运行</span>
+          </div>
+        </div>
+        <!-- 观测指标 -->
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">观测指标 (L5)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="simObserveMetrics">
+            <div class="stat-card"><div class="stat-label">编译耗时</div><div class="stat-value" id="obsCompileTime">--</div></div>
+            <div class="stat-card"><div class="stat-label">测试通过率</div><div class="stat-value" id="obsTestPassRate">--</div></div>
+            <div class="stat-card"><div class="stat-label">覆盖率</div><div class="stat-value" id="obsCoverage">--</div></div>
+            <div class="stat-card"><div class="stat-label">静态问题</div><div class="stat-value" id="obsStaticIssues">--</div></div>
+          </div>
+        </div>
+        <!-- 熵度量 -->
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">熵度量 (L4)</div>
+          <div id="entropyMetrics" style="display:flex;flex-direction:column;gap:6px;">
+            <div style="color:var(--dim);font-size:12px;text-align:center;padding:10px;">点击"一键检查"获取熵度量</div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
 </div>
 
 <!-- ============================================================
@@ -1575,6 +1947,7 @@ async function fetchAll() {
     archData = await api('/api/arch');
     healthScore = await api('/api/health-score');
     violations = (await api('/api/violations')) || [];
+    guideData = await api('/api/guide');
     updateStatus('ok', '就绪');
     return true;
   } catch (e) {
@@ -2453,7 +2826,7 @@ function switchTabUI(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const idx = { guide: 0, dashboard: 1, symbols: 2, violations: 3, dependencies: 4, version: 5, 'file-detail': 0 };
+  const idx = { guide: 0, dashboard: 1, symbols: 2, violations: 3, dependencies: 4, version: 5, ua: 6, sim: 7, 'file-detail': 0 };
   if (tab === 'file-detail') {
     // Highlight file-detail as a special state — keep first tab highlighted
     document.querySelectorAll('.tab')[0]?.classList.add('active');
@@ -2478,6 +2851,7 @@ function switchTab(tab) {
   if (tab === 'dependencies') renderDepGraph('all');
   if (tab === 'version') renderVersionTab();
   if (tab === 'ua') renderUATab();
+  if (tab === 'sim') renderSimTab();
   setTimeout(() => { layerChart?.resize(); kindChart?.resize(); treemapChart?.resize(); timelineChart?.resize(); }, 150);
 }
 
@@ -2522,6 +2896,7 @@ document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === '5') { e.preventDefault(); switchTab('dependencies'); }
   if ((e.metaKey || e.ctrlKey) && e.key === '6') { e.preventDefault(); switchTab('version'); }
   if ((e.metaKey || e.ctrlKey) && e.key === '7') { e.preventDefault(); switchTab('ua'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '8') { e.preventDefault(); switchTab('sim'); }
   if (e.key === 'Escape') { closeDetail(); if (activeTab === 'file-detail') switchTab('guide'); }
 });
 
@@ -2551,8 +2926,9 @@ function renderVersionContent() {
     return;
   }
 
+  const ver = (vd.current_version || '0.8.0').replace(/^v/, '');
   h += '<div class="version-header">';
-  h += '<div class="version-current"><span class="v">v</span>' + (vd.current_version || '0.8.0') + '</div>';
+  h += '<div class="version-current"><span class="v">v</span>' + ver + '</div>';
   h += '<div class="version-actions">';
   h += '<button class="btn primary" onclick="createSnapshot()">创建快照</button>';
   h += '<button class="btn" onclick="enterDiffMode()">版本对比</button>';
@@ -2620,7 +2996,7 @@ function toggleVersionDetail(version) {
       if (data.changelog && data.changelog.length > 0) {
         h += '<div class="changelog-panel"><div style="font-size:12px;color:var(--dim);margin-bottom:8px">变更记录</div>';
         data.changelog.forEach(e => {
-          h += '<div class="cl-entry"><span class="cl-type-tag ' + e.type + '">' + e.type + '</span><span>' + escapeHTML(e.message) + '</span></div>';
+          h += '<div class="cl-entry"><span class="cl-type-tag ' + e.type + '">' + e.type + '</span><span>' + escHtml(e.message) + '</span></div>';
         });
         h += '</div>';
       }
@@ -2638,7 +3014,7 @@ function loadChangelog() {
         h += '<div class="cl-entry cl-item" data-type="' + e.type + '" data-msg="' + (e.message || '').toLowerCase() + '">';
         h += '<span class="cl-type-tag ' + e.type + '">' + e.type + '</span>';
         if (e.scope) h += '<span style="font-size:10px;color:var(--dim);margin-right:4px">(' + e.scope + ')</span>';
-        h += '<span>' + escapeHTML(e.message) + '</span></div>';
+        h += '<span>' + escHtml(e.message) + '</span></div>';
       });
     } else { h += '<div class="empty">暂无 Changelog 数据</div>'; }
     h += '</div>';
@@ -2660,15 +3036,15 @@ function loadADRs() {
       h += '<div style="color:var(--dim);font-size:11px;margin-bottom:8px">共 ' + data.total + ' 条记录</div>';
       data.adrs.forEach(adr => {
         const sc = (adr.status || '').toLowerCase();
-        h += '<div class="adr-card" onclick="toggleADRDetail(\'' + adr.id + '\')"><div class="adr-header"><span class="adr-id">' + adr.id + '</span><span class="adr-title">' + escapeHTML(adr.title) + '</span></div>';
+        h += '<div class="adr-card" onclick="toggleADRDetail(\'' + adr.id + '\')"><div class="adr-header"><span class="adr-id">' + adr.id + '</span><span class="adr-title">' + escHtml(adr.title) + '</span></div>';
         h += '<div class="adr-meta"><span class="adr-status-tag ' + sc + '">' + (adr.status || 'Proposed') + '</span>';
         if (adr.version) h += '<span>v' + adr.version + '</span>';
         if (adr.date) h += '<span>' + adr.date + '</span>';
         h += '</div>';
         h += '<div id="adr-detail-' + adr.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:12px;color:var(--dim)">';
-        if (adr.context) h += '<div style="margin-bottom:8px"><strong style="color:var(--ink)">Context:</strong> ' + escapeHTML(adr.context) + '</div>';
-        if (adr.decision) h += '<div style="margin-bottom:8px"><strong style="color:var(--ink)">Decision:</strong> ' + escapeHTML(adr.decision) + '</div>';
-        if (adr.consequences) h += '<div><strong style="color:var(--ink)">Consequences:</strong> ' + escapeHTML(adr.consequences) + '</div>';
+        if (adr.context) h += '<div style="margin-bottom:8px"><strong style="color:var(--ink)">Context:</strong> ' + escHtml(adr.context) + '</div>';
+        if (adr.decision) h += '<div style="margin-bottom:8px"><strong style="color:var(--ink)">Decision:</strong> ' + escHtml(adr.decision) + '</div>';
+        if (adr.consequences) h += '<div><strong style="color:var(--ink)">Consequences:</strong> ' + escHtml(adr.consequences) + '</div>';
         h += '</div></div>';
       });
     } else { h += '<div class="empty">暂无 ADR 记录</div>'; }
@@ -2707,7 +3083,7 @@ function loadArchChanges() {
       h += '<div style="color:var(--dim);font-size:11px;margin-bottom:8px">共 ' + data.total + ' 个变更意图</div>';
       data.changes.forEach(c => {
         h += '<div class="arch-change-card"><span class="acc-type cl-type-tag ' + c.type + '">' + c.type + '</span>';
-        h += '<div class="acc-info"><div class="acc-title">' + escapeHTML(c.title) + '</div>';
+        h += '<div class="acc-info"><div class="acc-title">' + escHtml(c.title) + '</div>';
         if (c.scope) h += '<div class="acc-scope">范围: ' + c.scope + '</div>';
         if (c.breaking) h += '<div class="acc-breaking">BREAKING CHANGE</div>';
         h += '</div><div class="acc-actions"><button class="btn" style="font-size:10px;padding:4px 8px" onclick="deleteArchChange(\'' + c.id + '\')">删除</button></div></div>';
@@ -2866,6 +3242,15 @@ function renderDiffDetail(diff) {
 // Guidance Tab — 引导层 (v0.6.0)
 // ============================================================
 function renderGuideTab() {
+  if (guideData) {
+    renderDNA();
+    renderOverview();
+    renderDecisionTree();
+    renderPatterns();
+    renderConstraints();
+    renderTourGuide();
+    return;
+  }
   fetch('/api/guide').then(r => r.json()).then(data => {
     guideData = data;
     renderDNA();
@@ -2892,7 +3277,7 @@ function renderDNA() {
     h += '<span class="dc-icon">' + (iconMap[cls] || '') + '</span>';
     h += '<div class="dc-name">' + p.name + '</div>';
     h += '<div class="dc-desc">' + p.description + '</div>';
-    h += '<code class="dc-code">' + escapeHTML(p.example) + '</code>';
+    h += '<code class="dc-code">' + escHtml(p.example) + '</code>';
     h += '</div>';
   });
   grid.innerHTML = h;
@@ -2919,7 +3304,7 @@ function renderOverview() {
   // 5 行代码
   h += '<div class="overview-box">';
   h += '<div class="ob-title">5 行代码即可运行</div>';
-  h += '<pre><code>' + escapeHTML(guideData.quick_start.code) + '</code></pre>';
+  h += '<pre><code>' + escHtml(guideData.quick_start.code) + '</code></pre>';
   h += '</div>';
 
   dv.innerHTML = h;
@@ -2964,7 +3349,7 @@ function renderPatterns() {
   guideData.patterns.forEach((p, i) => {
     h += '<div class="pattern-chip" onclick="togglePattern(' + i + ')">';
     h += '<div class="pc-name">' + p.name + '</div>';
-    h += '<div class="pc-code">' + escapeHTML(p.code) + '</div>';
+    h += '<div class="pc-code">' + escHtml(p.code) + '</div>';
     h += '<div class="pc-desc">' + p.description + '</div>';
     h += '</div>';
   });
@@ -2984,7 +3369,7 @@ function togglePattern(idx) {
   let h = '<div class="pattern-detail open">';
   h += '<div class="pd-title">' + p.name + '</div>';
   h += '<div class="pd-use"><b>使用场景:</b> ' + p.use_case + '</div>';
-  h += '<pre><code>' + escapeHTML(p.full_example) + '</code></pre>';
+  h += '<pre><code>' + escHtml(p.full_example) + '</code></pre>';
   h += '<button class="btn-copy" onclick="copyPattern(' + idx + ')">复制完整代码</button>';
   h += '</div>';
   detail.innerHTML = h;
@@ -3046,256 +3431,356 @@ function renderTourGuide() {
 }
 
 // ============================================================
-// UA 知识图谱 Tab (v0.7.0)
+// UA 知识图谱 Tab (v1.0 — 简洁直观版)
 // ============================================================
 let uaGraphData = null;
-let uaChart = null;
-let uaTypeChart = null;
 
 async function renderUATab() {
-  document.getElementById('ua-status').style.display = 'none';
-  document.getElementById('ua-stats').innerHTML = '<div style="color:var(--text-muted);padding:12px;">加载中...</div>';
+  const statsEl = document.getElementById('uaStats');
+  const diagramEl = document.getElementById('uaArchDiagram');
+  statsEl.innerHTML = '<div class="ua-stat" style="grid-column:1/-1;text-align:center;color:var(--muted);">加载中...</div>';
+  diagramEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:60px 20px;">加载中...</div>';
   try {
     const res = await fetch('/api/ua/graph');
     uaGraphData = await res.json();
     if (uaGraphData.error) {
-      document.getElementById('ua-stats').innerHTML = '<div class="empty" style="padding:20px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">🔍</div><div style="font-size:14px;color:var(--text);margin-bottom:4px;">知识图谱未生成</div><div style="font-size:12px;color:var(--text-muted);">' + uaGraphData.detail + '</div><div style="font-size:12px;color:var(--text-muted);margin-top:8px;">请运行: <code style="background:var(--bg);padding:2px 6px;border-radius:3px;">ua analyze --full</code></div></div>';
-      document.getElementById('ua-chart').innerHTML = '';
-      document.getElementById('ua-detail').innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">暂无数据</div>';
-      if (uaChart) { uaChart.dispose(); uaChart = null; }
-      if (uaTypeChart) { uaTypeChart.dispose(); uaTypeChart = null; }
+      const msg = uaGraphData.detail || '数据未生成';
+      statsEl.innerHTML = '<div class="ua-stat" style="grid-column:1/-1;text-align:center;"><div style="font-size:13px;color:var(--text);">知识图谱未生成</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">' + escHtml(msg) + '</div></div>';
+      diagramEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:60px 20px;font-size:13px;">暂无层级关系数据，请先运行 <code style="background:var(--bg);padding:2px 6px;border-radius:3px;">ua analyze --full</code></div>';
+      document.getElementById('uaLayerStats').innerHTML = '';
+      document.getElementById('uaLayerDetail').innerHTML = '';
       return;
     }
     renderUAStats();
-    renderUANodeChart();
-    renderUATypeChart();
-    document.getElementById('ua-detail').innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">点击左侧节点查看详情，或使用搜索查找节点</div>';
+    renderUAArchDiagram();
+    renderUALayerStats();
+    document.getElementById('uaLayerDetail').innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px;">点击上方层级查看文件列表</div>';
   } catch (e) {
-    document.getElementById('ua-stats').innerHTML = '<div class="empty" style="padding:20px;text-align:center;">加载失败: ' + e.message + '</div>';
+    statsEl.innerHTML = '<div class="ua-stat" style="grid-column:1/-1;text-align:center;color:var(--red);">加载失败: ' + escHtml(e.message) + '</div>';
   }
 }
 
 function renderUAStats() {
   const d = uaGraphData;
-  const graph = d.graph;
-  const st = document.getElementById('ua-stats');
-  let h = '<div class="stat-card"><div class="stat-value">' + d.node_count + '</div><div class="stat-label">节点</div></div>';
-  h += '<div class="stat-card"><div class="stat-value">' + d.edge_count + '</div><div class="stat-label">边</div></div>';
-  h += '<div class="stat-card"><div class="stat-value">' + d.layer_count + '</div><div class="stat-label">层级</div></div>';
+  const st = document.getElementById('uaStats');
+  const layerCount = d.layer_count || (d.graph && d.graph.layers ? d.graph.layers.length : 0);
+  const nodeCount = d.node_count || (d.graph && d.graph.nodes ? d.graph.nodes.length : 0);
+  const edgeCount = d.edge_count || (d.graph && d.graph.edges ? d.graph.edges.length : 0);
+  let html = '';
+  html += '<div class="ua-stat"><div class="stat-value">' + nodeCount + '</div><div class="stat-label">节点</div></div>';
+  html += '<div class="ua-stat"><div class="stat-value">' + edgeCount + '</div><div class="stat-label">边</div></div>';
+  html += '<div class="ua-stat"><div class="stat-value">' + layerCount + '</div><div class="stat-label">层级</div></div>';
   if (d.node_types) {
-    h += '<div class="stat-card"><div class="stat-value">' + Object.keys(d.node_types).length + '</div><div class="stat-label">节点类型</div></div>';
+    html += '<div class="ua-stat"><div class="stat-value">' + Object.keys(d.node_types).length + '</div><div class="stat-label">节点类型</div></div>';
   }
-  if (d.edge_types) {
-    h += '<div class="stat-card"><div class="stat-value">' + Object.keys(d.edge_types).length + '</div><div class="stat-label">边类型</div></div>';
-  }
-  st.innerHTML = h;
+  st.innerHTML = html;
 }
 
-function renderUANodeChart() {
-  const container = document.getElementById('ua-chart');
-  if (uaChart) { uaChart.dispose(); uaChart = null; }
-  if (!uaGraphData || !uaGraphData.graph) return;
+function renderUAArchDiagram() {
+  const container = document.getElementById('uaArchDiagram');
+  const g = uaGraphData.graph;
+  if (!g || !g.layers || g.layers.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:60px 20px;">无层级数据</div>';
+    return;
+  }
 
-  const graph = uaGraphData.graph;
-  const nodes = (graph.nodes || []).slice(0, 200);
+  // Build Mermaid flowchart from layers
+  let mermaidCode = 'graph TD\n';
+  mermaidCode += '  classDef l0 fill:#7f8ea3,stroke:#7f8ea3,color:#fff\n';
+  mermaidCode += '  classDef l1 fill:#30d158,stroke:#30d158,color:#000\n';
+  mermaidCode += '  classDef l2 fill:#0a84ff,stroke:#0a84ff,color:#fff\n';
+  mermaidCode += '  classDef l3 fill:#ff9f0a,stroke:#ff9f0a,color:#000\n';
+  mermaidCode += '  classDef l4 fill:#ff375f,stroke:#ff375f,color:#fff\n';
+  mermaidCode += '  classDef l5 fill:#af52de,stroke:#af52de,color:#fff\n';
+  mermaidCode += '  classDef l6 fill:#5ac8fa,stroke:#5ac8fa,color:#000\n';
+  mermaidCode += '  classDef l7 fill:#ffd60a,stroke:#ffd60a,color:#000\n';
 
-  uaChart = echarts.init(container);
-  const layerColors = {
-    'L0': '#30d158', 'L1': '#0a84ff', 'L2': '#ff9f0a',
-    'L3': '#af52de', 'L4': '#ff375f', 'L5': '#5e5ce6',
-    'L6': '#ff6482', 'L7': '#ac8e68'
-  };
+  const layerNames = {'L0':'基础','L1':'原语','L2':'组合','L3':'适配','L4':'监督','L5':'观测','L6':'应用','L7':'入口'};
+  const sortedLayers = (g.layers || []).sort((a,b) => (a.id||'').localeCompare(b.id||''));
 
-  const layerNodeMap = {};
-  if (graph.layers) {
-    graph.layers.forEach(l => {
-      l.nodeIds && l.nodeIds.forEach(id => { layerNodeMap[id] = l.id; });
+  let prevId = null;
+  sortedLayers.forEach(l => {
+    const lid = (l.id || 'L?').replace(/[^A-Za-z0-9]/g, '_');
+    const lname = layerNames[l.id] || l.name || l.id;
+    const nodeCount = (l.nodeIds || l.nodes || []).length;
+    mermaidCode += '  ' + lid + '["' + l.id + ': ' + lname + ' (' + nodeCount + '个)"';
+    mermaidCode += ']\n';
+    mermaidCode += '  class ' + lid + ' l' + (l.id||'L0').replace('L','') + '\n';
+    if (prevId) {
+      mermaidCode += '  ' + prevId + ' --> ' + lid + '\n';
+    }
+    prevId = lid;
+  });
+
+  container.innerHTML = '<div id="uaMermaidContainer"></div>';
+  if (typeof mermaid !== 'undefined') {
+    // 使用 mermaid.render() 直接渲染，比 mermaid.run() 更可靠
+    const mermaidId = 'ua-mermaid-' + Date.now();
+    mermaid.render(mermaidId, mermaidCode).then(result => {
+      document.getElementById('uaMermaidContainer').innerHTML = result.svg;
+    }).catch(err => {
+      console.error('Mermaid render error:', err);
+      document.getElementById('uaMermaidContainer').innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px;">图表渲染失败，请刷新重试</div>';
     });
   }
-
-  const categories = [
-    { name: 'L0: 基础' }, { name: 'L1: 原语' }, { name: 'L2: 组合' },
-    { name: 'L3: 适配' }, { name: 'L4: 监督' }, { name: 'L5: 观测' },
-    { name: 'L6: 应用' }, { name: 'L7: 入口' }
-  ];
-
-  const scatterData = nodes.map((n, i) => {
-    const layer = layerNodeMap[n.id] || 'L3';
-    const lIdx = parseInt(layer.replace('L','')) || 3;
-    const x = (lIdx * 80) + Math.random() * 40;
-    const y = Math.random() * 300;
-    const size = n.complexity === 'complex' ? 14 : n.complexity === 'moderate' ? 10 : 7;
-    return { name: n.name, value: [x, y, size], itemStyle: { color: layerColors[layer] || '#8e8e93' }, nodeData: n, layer: layer };
-  });
-
-  const option = {
-    tooltip: {
-      trigger: 'item',
-      formatter: function(p) {
-        const n = p.data.nodeData;
-        if (!n) return p.name;
-        return '<b>' + n.name + '</b><br/>类型: ' + n.type + '<br/>复杂度: ' + (n.complexity||'unknown') + '<br/>' + (n.summary||'');
-      }
-    },
-    grid: { left: 10, right: 10, top: 10, bottom: 10 },
-    xAxis: { type: 'value', show: false, min: -20, max: 660 },
-    yAxis: { type: 'value', show: false, min: -20, max: 320 },
-    series: [{
-      type: 'scatter',
-      data: scatterData,
-      symbolSize: function(d) { return d[2]; },
-      itemStyle: { borderColor: '#1c1c1e', borderWidth: 1, opacity: 0.85 },
-      emphasis: { scale: 1.5 }
-    }]
-  };
-
-  uaChart.setOption(option);
-  uaChart.on('click', function(params) {
-    if (params.data && params.data.nodeData) {
-      showUANodeDetail(params.data.nodeData);
-    }
-  });
-  setTimeout(() => uaChart && uaChart.resize(), 100);
 }
 
-function renderUATypeChart() {
-  const container = document.getElementById('ua-type-chart');
-  if (uaTypeChart) { uaTypeChart.dispose(); uaTypeChart = null; }
-  if (!uaGraphData || !uaGraphData.node_types) return;
-
-  uaTypeChart = echarts.init(container);
-  const types = uaGraphData.node_types;
-  const typeData = Object.keys(types).map(k => ({ name: k, value: types[k] }));
-  typeData.sort((a, b) => b.value - a.value);
-
-  const colors = ['#30d158','#0a84ff','#ff9f0a','#af52de','#ff375f','#5e5ce6','#ff6482','#ac8e68','#64d2ff','#ffd60a'];
-
-  const option = {
-    title: { text: '节点类型分布', left: 'center', top: 8, textStyle: { color: '#8e8e93', fontSize: 12 } },
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    series: [{
-      type: 'pie',
-      radius: ['40%', '70%'],
-      center: ['50%', '55%'],
-      data: typeData.slice(0, 8),
-      label: { color: '#8e8e93', fontSize: 10 },
-      itemStyle: { borderColor: '#1c1c1e', borderWidth: 2 }
-    }],
-    color: colors
-  };
-
-  uaTypeChart.setOption(option);
-}
-
-function showUANodeDetail(node) {
-  const el = document.getElementById('ua-detail');
-  let tags = (node.tags || []).map(t => '<span style="display:inline-block;background:var(--bg);padding:1px 6px;border-radius:3px;font-size:11px;margin:2px;border:1px solid var(--border);">' + escHtml(t) + '</span>').join('');
-  let h = '<div style="margin-bottom:12px;">';
-  h += '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px;">' + escHtml(node.name) + '</div>';
-  h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + escHtml(node.type) + ' · ' + (node.complexity||'unknown') + ' · ID: ' + escHtml(node.id) + '</div>';
-  if (node.filePath) h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📁 ' + escHtml(node.filePath) + '</div>';
-  h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + tags + '</div>';
-  h += '</div>';
-  if (node.summary) {
-    h += '<div style="font-size:13px;color:var(--text);line-height:1.5;padding:8px;background:var(--bg);border-radius:6px;">' + escHtml(node.summary) + '</div>';
+function renderUALayerStats() {
+  const container = document.getElementById('uaLayerStats');
+  const g = uaGraphData.graph;
+  if (!g || !g.layers || g.layers.length === 0) {
+    container.innerHTML = '';
+    return;
   }
-  el.innerHTML = h;
+
+  const layerNames = {'L0':'基础','L1':'原语','L2':'组合','L3':'适配','L4':'监督','L5':'观测','L6':'应用','L7':'入口'};
+  const sortedLayers = (g.layers || []).sort((a,b) => (a.id||'').localeCompare(b.id||''));
+  const maxNodes = Math.max(...sortedLayers.map(l => (l.nodeIds || l.nodes || []).length), 1);
+
+  let html = '';
+  sortedLayers.forEach(l => {
+    const lname = layerNames[l.id] || l.name || l.id;
+    const nodeCount = (l.nodeIds || l.nodes || []).length;
+    const pct = Math.round((nodeCount / maxNodes) * 100);
+    const colorVar = '--l' + (l.id||'L0').replace('L','');
+    html += '<div class="ua-layer-row" onclick="showUALayerDetail(\'' + escHtml(l.id) + '\')" style="cursor:pointer;">';
+    html += '<span class="ua-layer-tag" style="background:var(' + colorVar + ');">' + escHtml(l.id) + '</span>';
+    html += '<span class="ua-layer-name">' + escHtml(lname) + '</span>';
+    html += '<div class="ua-layer-bar-bg"><div class="ua-layer-bar-fill" style="width:' + pct + '%;background:var(' + colorVar + ');"></div></div>';
+    html += '<span class="ua-layer-count">' + nodeCount + '</span>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function showUALayerDetail(layerId) {
+  const container = document.getElementById('uaLayerDetail');
+  const g = uaGraphData.graph;
+  const layer = (g.layers || []).find(l => l.id === layerId);
+  if (!layer) { container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px;">无数据</div>'; return; }
+
+  const nodeIds = layer.nodeIds || layer.nodes || [];
+  const nodes = (g.nodes || []).filter(n => nodeIds.includes(n.id));
+  const layerNames = {'L0':'基础','L1':'原语','L2':'组合','L3':'适配','L4':'监督','L5':'观测','L6':'应用','L7':'入口'};
+  const colorVar = '--l' + (layerId||'L0').replace('L','');
+
+  let html = '<div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(' + colorVar + ');">' + escHtml(layerId) + ': ' + escHtml(layerNames[layerId]||layer.name||'') + ' (' + nodes.length + ' 个节点)</div>';
+
+  if (nodes.length === 0) {
+    html += '<div style="color:var(--muted);font-size:12px;">该层级暂无节点</div>';
+  } else {
+    const typeCount = {};
+    nodes.forEach(n => { const t = n.type || 'unknown'; typeCount[t] = (typeCount[t]||0) + 1; });
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">';
+    Object.keys(typeCount).sort((a,b)=>typeCount[b]-typeCount[a]).forEach(t => {
+      html += '<span style="font-size:10px;background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--muted);">' + escHtml(t) + ': ' + typeCount[t] + '</span>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+    nodes.slice(0, 30).forEach(n => {
+      html += '<span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:4px;color:var(--text);">' + escHtml(n.name) + '</span>';
+    });
+    if (nodes.length > 30) html += '<span style="font-size:11px;color:var(--muted);">... 还有 ' + (nodes.length-30) + ' 个</span>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
 }
 
 async function refreshUAGraph() {
-  document.getElementById('ua-status').style.display = 'block';
-  document.getElementById('ua-status').innerHTML = '<div style="color:#0a84ff;font-size:13px;">刷新中...</div>';
   uaGraphData = null;
   await renderUATab();
-  document.getElementById('ua-status').style.display = 'none';
   toast('知识图谱已刷新', 'ok');
 }
 
 async function validateUAGraph() {
-  const statusEl = document.getElementById('ua-status');
-  statusEl.style.display = 'block';
-  statusEl.innerHTML = '<div style="color:#0a84ff;font-size:13px;">验证中...</div>';
-
+  const detail = document.getElementById('uaLayerDetail');
+  detail.innerHTML = '<div style="color:var(--accent);font-size:13px;text-align:center;padding:20px;">验证中...</div>';
   try {
     const res = await fetch('/api/ua/validate');
     const data = await res.json();
-    if (data.error) {
-      statusEl.innerHTML = '<div style="color:#ff375f;font-size:13px;">验证失败: ' + data.error + '</div>';
-      return;
-    }
-
-    let color = data.fail_count > 0 ? '#ff375f' : data.warn_count > 0 ? '#ff9f0a' : '#30d158';
-    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;font-size:13px;">' +
-      '<span style="color:' + color + ';font-weight:600;">' + data.summary + '</span>' +
-      '<span style="display:flex;gap:6px;margin-left:8px;">' +
-      '<span style="color:#30d158;">✓ ' + data.pass_count + '</span>' +
-      '<span style="color:#ff9f0a;">⚠ ' + data.warn_count + '</span>' +
-      '<span style="color:#ff375f;">✗ ' + data.fail_count + '</span>' +
-      '</span></div>';
-
-    const detail = document.getElementById('ua-detail');
-    let h = '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text);">约束验证结果</div>';
+    if (data.error) { detail.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:20px;">验证失败: ' + escHtml(data.error) + '</div>'; return; }
+    const color = data.fail_count > 0 ? 'var(--red)' : data.warn_count > 0 ? 'var(--orange)' : 'var(--green)';
+    let h = '<div style="font-weight:600;font-size:13px;margin-bottom:10px;color:' + color + ';">' + escHtml(data.summary) + '</div>';
+    h += '<div style="display:flex;gap:10px;margin-bottom:12px;font-size:12px;">';
+    h += '<span style="color:var(--green);">&#10003; ' + data.pass_count + '</span>';
+    h += '<span style="color:var(--orange);">&#9888; ' + data.warn_count + '</span>';
+    h += '<span style="color:var(--red);">&#10007; ' + data.fail_count + '</span>';
+    h += '</div>';
     (data.results || []).forEach(r => {
-      const icon = r.status === 'pass' ? '✓' : r.status === 'warn' ? '⚠' : '✗';
-      const color = r.status === 'pass' ? '#30d158' : r.status === 'warn' ? '#ff9f0a' : '#ff375f';
-      h += '<div style="margin-bottom:8px;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid ' + color + ';">';
+      const icon = r.status === 'pass' ? '&#10003;' : r.status === 'warn' ? '&#9888;' : '&#10007;';
+      const c = r.status === 'pass' ? 'var(--green)' : r.status === 'warn' ? 'var(--orange)' : 'var(--red)';
+      h += '<div style="margin-bottom:6px;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid ' + c + ';">';
       h += '<div style="font-size:12px;font-weight:600;color:var(--text);">' + icon + ' ' + escHtml(r.name) + '</div>';
-      h += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escHtml(r.detail) + '</div>';
+      h += '<div style="font-size:11px;color:var(--muted);">' + escHtml(r.detail) + '</div>';
       if (r.violations && r.violations.length > 0) {
-        h += '<div style="font-size:11px;color:#ff375f;margin-top:4px;">' + r.violations.map(v => '· ' + escHtml(v)).join('<br/>') + '</div>';
+        h += '<div style="font-size:11px;color:var(--red);margin-top:4px;">' + r.violations.map(v => '· ' + escHtml(v)).join('<br>') + '</div>';
       }
       h += '</div>';
     });
     detail.innerHTML = h;
   } catch (e) {
-    statusEl.innerHTML = '<div style="color:#ff375f;font-size:13px;">验证失败: ' + e.message + '</div>';
+    detail.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:20px;">验证失败: ' + escHtml(e.message) + '</div>';
   }
 }
 
 async function searchUAGraph() {
   const q = document.getElementById('uaSearchInput').value.trim();
   if (!q) return;
-  const detail = document.getElementById('ua-detail');
-  detail.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px;">搜索中...</div>';
-
+  const resultsEl = document.getElementById('uaSearchResults');
+  resultsEl.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px;">搜索中...</div>';
   try {
     const res = await fetch('/api/ua/search?q=' + encodeURIComponent(q) + '&limit=20');
     const data = await res.json();
-    if (data.error) {
-      detail.innerHTML = '<div style="color:#ff375f;font-size:13px;text-align:center;padding-top:40px;">' + data.error + '</div>';
+    if (data.error) { resultsEl.innerHTML = '<div style="color:var(--red);font-size:12px;text-align:center;padding:10px;">' + escHtml(data.error) + '</div>'; return; }
+    if (!data.results || data.results.length === 0) {
+      resultsEl.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px;">未找到匹配节点</div>';
       return;
     }
-
-    let h = '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text);">搜索结果: ' + data.total + ' 条</div>';
+    let h = '<div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text);">结果: ' + data.total + ' 条</div>';
     (data.results || []).forEach(r => {
       const node = r.node;
-      h += '<div style="margin-bottom:8px;padding:8px;background:var(--bg);border-radius:6px;cursor:pointer;" onclick="showUANodeDetail(uaGraphData.graph.nodes.find(n=>n.id===\'' + (node.id||'').replace(/'/g,"\\'") + '\'))">';
-      h += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-      h += '<span style="font-size:13px;font-weight:600;color:var(--text);">' + escHtml(node.name) + '</span>';
-      h += '<span style="font-size:11px;color:#0a84ff;">' + r.score.toFixed(1) + '</span>';
+      h += '<div class="ua-search-item">';
+      h += '<div style="display:flex;justify-content:space-between;">';
+      h += '<span style="font-weight:600;color:var(--text);">' + escHtml(node.name) + '</span>';
+      h += '<span style="font-size:11px;color:var(--accent);">' + r.score.toFixed(1) + '</span>';
       h += '</div>';
-      h += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escHtml(node.type) + ' · 匹配: ' + r.match_in + '</div>';
+      h += '<div style="font-size:11px;color:var(--muted);">' + escHtml(node.type) + ' · ' + escHtml(r.match_in) + '</div>';
       h += '</div>';
     });
-    if (data.total === 0) {
-      h += '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:20px;">未找到匹配节点</div>';
-    }
-    detail.innerHTML = h;
+    resultsEl.innerHTML = h;
   } catch (e) {
-    detail.innerHTML = '<div style="color:#ff375f;font-size:13px;text-align:center;padding-top:40px;">搜索失败: ' + e.message + '</div>';
+    resultsEl.innerHTML = '<div style="color:var(--red);font-size:12px;text-align:center;padding:10px;">搜索失败</div>';
   }
-}
-
-function escapeHTML(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }
 
 // Helpers
 function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// Init
+// ============================================================================
+// 代码模拟运行 (v1.1 — 独立 Tab 页)
+// ============================================================================
+
+function renderSimTab() {
+  loadObserveMetrics();
+  loadEntropyMetrics();
+}
+
+async function runSimulate(action) {
+  const resultEl = document.getElementById('simResult');
+  resultEl.innerHTML = '<div style="color:var(--accent);padding:20px;text-align:center;font-size:12px;">执行中: ' + action + '...</div>';
+
+  try {
+    const resp = await fetch('/api/simulate?pkg=.&action=' + action);
+    const data = await resp.json();
+
+    let html = '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    html += '<span style="font-weight:600;font-size:12px;">' + escHtml(data.action) + '</span>';
+    html += '<span style="font-size:10px;color:var(--muted);">' + escHtml(data.package) + '</span>';
+    html += '<span style="font-size:10px;color:var(--dim);">' + escHtml(data.duration) + '</span>';
+    if (data.status === 'pass') {
+      html += '<span style="color:var(--green);font-weight:700;font-size:12px;">&#10003; 通过</span>';
+    } else {
+      html += '<span style="color:var(--red);font-weight:700;font-size:12px;">&#10007; 失败</span>';
+    }
+    if (data.coverage) {
+      html += '<span style="font-size:10px;color:var(--accent);">' + escHtml(data.coverage) + '</span>';
+    }
+    html += '</div>';
+    html += '<div class="sim-output">' + escHtml(data.output) + '</div>';
+    if (data.error) {
+      html += '<div style="color:var(--red);margin-top:6px;font-size:11px;">错误: ' + escHtml(data.error) + '</div>';
+    }
+    resultEl.innerHTML = html;
+  } catch (e) {
+    resultEl.innerHTML = '<div style="color:var(--red);padding:20px;font-size:12px;">执行失败: ' + escHtml(e.message) + '</div>';
+  }
+}
+
+async function runAllSimulate() {
+  const resultEl = document.getElementById('simResult');
+  resultEl.innerHTML = '<div style="color:var(--accent);padding:20px;text-align:center;font-size:12px;">全面检查中...</div>';
+
+  const actions = ['build', 'test', 'vet'];
+  let allHtml = '';
+
+  for (const action of actions) {
+    allHtml += '<div style="color:var(--accent);margin-bottom:3px;font-size:11px;">&#9654; 执行 ' + action + '...</div>';
+    resultEl.innerHTML = allHtml;
+    try {
+      const resp = await fetch('/api/simulate?pkg=.&action=' + action);
+      const data = await resp.json();
+      const statusColor = data.status === 'pass' ? 'var(--green)' : 'var(--red)';
+      const statusIcon = data.status === 'pass' ? '&#10003;' : '&#10007;';
+      allHtml += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;font-size:12px;">';
+      allHtml += '<span style="font-weight:600;">' + escHtml(data.action) + '</span>';
+      allHtml += '<span style="font-size:10px;color:var(--muted);">' + escHtml(data.duration) + '</span>';
+      allHtml += '<span style="color:' + statusColor + ';font-weight:700;">' + statusIcon + ' ' + data.status + '</span>';
+      if (data.coverage) allHtml += '<span style="font-size:10px;color:var(--accent);">' + escHtml(data.coverage) + '</span>';
+      allHtml += '</div>';
+      if (data.output && data.output.length < 2000) {
+        allHtml += '<div class="sim-output">' + escHtml(data.output) + '</div>';
+      }
+    } catch (e) {
+      allHtml += '<div style="color:var(--red);margin-bottom:8px;font-size:11px;">' + action + ': ' + escHtml(e.message) + '</div>';
+    }
+  }
+
+  resultEl.innerHTML = allHtml;
+  loadObserveMetrics();
+  loadEntropyMetrics();
+}
+
+async function loadObserveMetrics() {
+  try {
+    const resp = await fetch('/api/observe?pkg=.');
+    const data = await resp.json();
+    const m = data.metrics || {};
+    const el = (id) => document.getElementById(id);
+    const setVal = (id, val, cls) => { const e = el(id); if (e) { e.textContent = val; if (cls) e.className = 'sim-stat-value ' + cls; } };
+    setVal('obsCompileTime', m.compile_time || '--');
+    setVal('obsTestPassRate', m.test_pass_rate ? m.test_pass_rate.toFixed(1) + '%' : '--', m.test_pass_rate >= 90 ? 'good' : m.test_pass_rate >= 70 ? 'warn' : 'bad');
+    setVal('obsCoverage', m.coverage_rate ? m.coverage_rate.toFixed(1) + '%' : '--', m.coverage_rate >= 80 ? 'good' : m.coverage_rate >= 50 ? 'warn' : 'bad');
+    setVal('obsStaticIssues', m.static_issues !== undefined ? m.static_issues : '--', m.static_issues === 0 ? 'good' : m.static_issues <= 5 ? 'warn' : 'bad');
+  } catch (e) {
+    console.error('loadObserveMetrics:', e);
+  }
+}
+
+async function loadEntropyMetrics() {
+  try {
+    const resp = await fetch('/api/entropy');
+    const data = await resp.json();
+    const metrics = data.metrics || [];
+    const container = document.getElementById('entropyMetrics');
+    if (metrics.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:10px;font-size:11px;">暂无熵度量数据</div>';
+      return;
+    }
+
+    const layerPalette = {'L0':'var(--l0)','L1':'var(--l1)','L2':'var(--l2)','L3':'var(--l3)','L4':'var(--l4)','L5':'var(--l5)','L6':'var(--l6)','L7':'var(--l7)'};
+    let html = '';
+    const maxDrift = Math.max(...metrics.map(m => m.drift_score || 0), 0.1);
+    metrics.forEach(m => {
+      const pct = Math.min(((m.drift_score || 0) / maxDrift) * 100, 100);
+      const barColor = m.risk_level === 'critical' ? 'var(--red)' :
+                       m.risk_level === 'high' ? 'var(--orange)' :
+                       m.risk_level === 'medium' ? 'var(--orange)' : 'var(--green)';
+      const layerColor = layerPalette[m.layer] || 'var(--rule)';
+      html += '<div class="entropy-bar-wrap">';
+      html += '<span class="entropy-bar-label" style="background:' + layerColor + '20;color:' + layerColor + ';">' + escHtml(m.layer) + '</span>';
+      html += '<div class="entropy-bar-track"><div class="entropy-bar-fill ' + (m.risk_level||'ok') + '" style="width:' + pct + '%;"></div></div>';
+      html += '<span class="entropy-risk ' + (m.risk_level||'low') + '">' + escHtml(m.risk_level||'low') + '</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  } catch (e) {
+    console.error('loadEntropyMetrics:', e);
+  }
+}
+
+// ============================================================
+// 初始化
+// ============================================================
 if (typeof mermaid !== 'undefined') {
   mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', themeVariables: { primaryColor: '#1c1c1e', primaryTextColor: '#f5f5f7', primaryBorderColor: '#2c2c2e', lineColor: '#48484a', secondaryColor: '#161618', tertiaryColor: '#0a0a0a' } });
 }

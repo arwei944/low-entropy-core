@@ -373,8 +373,11 @@ func LoadAppConfigFromFile(path string) (AppConfig, error) {
 
 // ApplyEnvOverrides 用环境变量覆盖 AppConfig。
 // 支持的环境变量:
-//   APP_NAME, APP_VERSION, APP_STORAGE_DIR, APP_HTTP_ADDR,
-//   APP_GUARDIAN_ENABLED, APP_ENTROPY_CEILING, APP_SCHEDULER_ENABLED
+//   APP_NAME, APP_VERSION, APP_STORAGE_DIR, APP_STORAGE_BACKEND,
+//   APP_POSTGRES_DSN, APP_REDIS_ADDR, APP_REDIS_PASSWORD, APP_REDIS_DB,
+//   APP_HTTP_ADDR, APP_OBSERVABILITY_ENABLED, APP_LOG_LEVEL,
+//   APP_GUARDIAN_ENABLED, APP_ENTROPY_CEILING, APP_SCHEDULER_ENABLED,
+//   APP_JWT_SECRET, APP_API_KEY_ENABLED, APP_RATE_LIMIT
 func ApplyEnvOverrides(cfg *AppConfig) {
 	if v := os.Getenv("APP_NAME"); v != "" {
 		cfg.Name = v
@@ -385,8 +388,29 @@ func ApplyEnvOverrides(cfg *AppConfig) {
 	if v := os.Getenv("APP_STORAGE_DIR"); v != "" {
 		cfg.StorageDir = v
 	}
+	if v := os.Getenv("APP_STORAGE_BACKEND"); v != "" {
+		cfg.StorageBackend = v
+	}
+	if v := os.Getenv("APP_POSTGRES_DSN"); v != "" {
+		cfg.PostgresDSN = v
+	}
+	if v := os.Getenv("APP_REDIS_ADDR"); v != "" {
+		cfg.RedisAddr = v
+	}
+	if v := os.Getenv("APP_REDIS_PASSWORD"); v != "" {
+		cfg.RedisPassword = v
+	}
+	if v := os.Getenv("APP_REDIS_DB"); v != "" {
+		cfg.RedisDB, _ = strconv.Atoi(v)
+	}
 	if v := os.Getenv("APP_HTTP_ADDR"); v != "" {
 		cfg.HTTPAddr = v
+	}
+	if v := os.Getenv("APP_OBSERVABILITY_ENABLED"); v != "" {
+		cfg.ObservabilityEnabled, _ = strconv.ParseBool(v)
+	}
+	if v := os.Getenv("APP_LOG_LEVEL"); v != "" {
+		cfg.LogLevel = v
 	}
 	if v := os.Getenv("APP_GUARDIAN_ENABLED"); v != "" {
 		cfg.GuardianEnabled, _ = strconv.ParseBool(v)
@@ -396,6 +420,15 @@ func ApplyEnvOverrides(cfg *AppConfig) {
 	}
 	if v := os.Getenv("APP_SCHEDULER_ENABLED"); v != "" {
 		cfg.SchedulerEnabled, _ = strconv.ParseBool(v)
+	}
+	if v := os.Getenv("APP_JWT_SECRET"); v != "" {
+		cfg.JWTSecret = v
+	}
+	if v := os.Getenv("APP_API_KEY_ENABLED"); v != "" {
+		cfg.APIKeyEnabled, _ = strconv.ParseBool(v)
+	}
+	if v := os.Getenv("APP_RATE_LIMIT"); v != "" {
+		cfg.RateLimit, _ = strconv.ParseFloat(v, 64)
 	}
 }
 

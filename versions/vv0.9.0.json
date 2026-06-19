@@ -1,0 +1,550 @@
+{
+  "version": "v0.9.0",
+  "timestamp": "2026-06-19T21:06:39.4870591+08:00",
+  "semver": {
+    "major": 0,
+    "minor": 9,
+    "patch": 0
+  },
+  "snapshot": {
+    "files": {
+      "adapter.go": {
+        "hash": "sha256:752ac74117815444ae8686271707b152c590b92f4f8e18d4d2f284a77ba5acee",
+        "lines": 42,
+        "symbols": 5
+      },
+      "agent_runner.go": {
+        "hash": "sha256:8aaa618734b50df059f71e3973eb04c579894f8f6ad9ab54a4ff9929927c4c0f",
+        "lines": 180,
+        "symbols": 4
+      },
+      "agent_submit.go": {
+        "hash": "sha256:5fe88d3d0e37bbfc5c12c47826f23e4aeaacdd52873c459af3bdd38a90cd2e02",
+        "lines": 450,
+        "symbols": 22
+      },
+      "app.go": {
+        "hash": "sha256:7e953a7782f818d1758bb4026adc08fa2b01bf988caa16a7394c0de6d7b97442",
+        "lines": 148,
+        "symbols": 4
+      },
+      "architecture_registry.go": {
+        "hash": "sha256:336100cdf5fcd0bfd5b746de16c998c10efc1ee9b182104ea7441a66f85b0ab7",
+        "lines": 117,
+        "symbols": 11
+      },
+      "atom.go": {
+        "hash": "sha256:723cb9a5c83842d36007586b3e9afca17d74bb01c25aedbf4ef56c76f53e1e2d",
+        "lines": 7,
+        "symbols": 0
+      },
+      "auto_detect.go": {
+        "hash": "sha256:e91c0b8984e2eecf5a4d38a58a99b46f6c4fd4f09c6f2d27d4d999c53ce9b53b",
+        "lines": 168,
+        "symbols": 4
+      },
+      "complexity_profile.go": {
+        "hash": "sha256:6ae369301a96a66b1f18d2ebfd60d382e03fb8156b508183b625d9ee3bb12daf",
+        "lines": 174,
+        "symbols": 16
+      },
+      "composer.go": {
+        "hash": "sha256:1c1d2794040630b6b3d1d6d328b745a2e2164c08bc1ac1d8c62a2847a50a6565",
+        "lines": 720,
+        "symbols": 40
+      },
+      "config.go": {
+        "hash": "sha256:c913f715ae39395457dc94c31aa681d90bab4fb1e3b3e9c9d8f10510839d033b",
+        "lines": 478,
+        "symbols": 22
+      },
+      "config_enhanced.go": {
+        "hash": "sha256:c3deb51f9671c1d60337ca7d99d9fe5994af3d03471b0efce5b0283e63d9d86f",
+        "lines": 318,
+        "symbols": 16
+      },
+      "degradation.go": {
+        "hash": "sha256:ef7f57a00b9d0344583e1cc2d3b2e1a4660268db7c90157606391aff48c8af96",
+        "lines": 103,
+        "symbols": 11
+      },
+      "entropy_metrics.go": {
+        "hash": "sha256:d64f5f36dfe5feb0afa0425c6ccaeddeef96be5b384adf6325ddb471ef33c500",
+        "lines": 145,
+        "symbols": 7
+      },
+      "errors.go": {
+        "hash": "sha256:137181bd59efa9061870f47699fee1cb8e3efdfc5a5b1f94a1c0d466c37e5f75",
+        "lines": 187,
+        "symbols": 31
+      },
+      "errors_enhanced.go": {
+        "hash": "sha256:50b192b07382188ba4dfe0932f158e358d4dc03d15be3efe9bd3a64eae47518f",
+        "lines": 299,
+        "symbols": 48
+      },
+      "eventbus.go": {
+        "hash": "sha256:ce6f16cc1cd948f9c56e37dde50edf2905a0cb905be70309559e43b3025c8ec2",
+        "lines": 196,
+        "symbols": 10
+      },
+      "eventbus_persistent.go": {
+        "hash": "sha256:7df916dc0116fc55bb48f7c040cec152da44bc2aa152c56726c553b2e36478f6",
+        "lines": 133,
+        "symbols": 8
+      },
+      "eventstore.go": {
+        "hash": "sha256:c05a865a4b97a2a71d2f402314b9496d37615c0cebc9560bc8685be1c6b71f06",
+        "lines": 292,
+        "symbols": 20
+      },
+      "eventstore_backend.go": {
+        "hash": "sha256:c7c04cee27094e637f65f4379f81699955b9e66be56498424010cdf482c5f19f",
+        "lines": 64,
+        "symbols": 7
+      },
+      "eventstore_persistent.go": {
+        "hash": "sha256:45cd73a3349f23daf4e42e1452956833253f3369454cd16c57046f95394c6b00",
+        "lines": 216,
+        "symbols": 12
+      },
+      "eventstore_postgres.go": {
+        "hash": "sha256:c76f4e040bfefa24827e4acdf104fae75df2e4299c7fe2a41080b942e81c02cf",
+        "lines": 327,
+        "symbols": 12
+      },
+      "eventstore_upgrade.go": {
+        "hash": "sha256:8a0d89e86439f2478092493d2a33e99f16570d0f76ee32cd66b501230aae73b4",
+        "lines": 618,
+        "symbols": 39
+      },
+      "fastpath.go": {
+        "hash": "sha256:3213453f7623040236cd6496affc1fcf1efcae73ea7142fccd02dca9652e25bf",
+        "lines": 107,
+        "symbols": 8
+      },
+      "guardian_decision.go": {
+        "hash": "sha256:c71b6d73e4e240e9ac60999014d4d3badcf673632745ab1d0800fa533b62dc6d",
+        "lines": 374,
+        "symbols": 19
+      },
+      "guardian_dependency.go": {
+        "hash": "sha256:762ac40fa75f0a7d88d45db7f96a14dcef9c5cd69d12d2527b04294a71a749d1",
+        "lines": 614,
+        "symbols": 31
+      },
+      "guardian_entropy.go": {
+        "hash": "sha256:a5e9295f1ef3480df3ecf93299d3c665ba1a1db7548681934876895091706601",
+        "lines": 771,
+        "symbols": 55
+      },
+      "guardian_static.go": {
+        "hash": "sha256:c74d46d2997a2163b1f839022991b22e585c79bef188b58b7cea623fb886d95e",
+        "lines": 665,
+        "symbols": 7
+      },
+      "guardian_transparency.go": {
+        "hash": "sha256:5a6e86c2b07d913f44444b6e3f6d1ef6f8059bca1eafc6a1651ec28a1f7d85e7",
+        "lines": 401,
+        "symbols": 18
+      },
+      "handoff.go": {
+        "hash": "sha256:af18a3a4b8246ef5a8e2e87cefef6e84d49587ba94d1929b53a12589863c09bf",
+        "lines": 673,
+        "symbols": 54
+      },
+      "handoff_persistence.go": {
+        "hash": "sha256:5ca5ae355ce336468f76887730599cd33dc8f92e04cbbc781e191dee2720a0f5",
+        "lines": 246,
+        "symbols": 19
+      },
+      "health.go": {
+        "hash": "sha256:5e581c164e9a68c663373fbaca0815c6f23132aaf05c22d1f45370da6f9e164c",
+        "lines": 63,
+        "symbols": 4
+      },
+      "idempotent.go": {
+        "hash": "sha256:421b7a323f9bcf9f0ab6c7a833a892367d17490e257ba4715d83d5d9f3223aea",
+        "lines": 197,
+        "symbols": 12
+      },
+      "migration_adopt.go": {
+        "hash": "sha256:875033db09dfd751084468c3251c78162cc6743ccdba1b47c1ae96ef6e68a404",
+        "lines": 69,
+        "symbols": 3
+      },
+      "migration_analyze.go": {
+        "hash": "sha256:807dfe6933a3f7eb63292c9b7cd655c80c30e49a49571da9387d4d3b4b76b190",
+        "lines": 311,
+        "symbols": 22
+      },
+      "migration_validate.go": {
+        "hash": "sha256:41fad102008ba313e3ec25df84bde80659ad84c6291f9897937b773260447692",
+        "lines": 127,
+        "symbols": 4
+      },
+      "observability.go": {
+        "hash": "sha256:90ce11cbe624cb3176b67da7c7f6b56e4cc28159e25ac55606f6e254b16bed24",
+        "lines": 345,
+        "symbols": 51
+      },
+      "observability_http.go": {
+        "hash": "sha256:8b8949c31ae9265d9002a610058e39cc012b869dd944c479332c73c8df3377ff",
+        "lines": 152,
+        "symbols": 5
+      },
+      "observability_slog.go": {
+        "hash": "sha256:7716ea37b057da5d5f28de32cc93df5f770d2e52606485bbbc08934b71f897bc",
+        "lines": 171,
+        "symbols": 15
+      },
+      "observation.go": {
+        "hash": "sha256:ee0a27ce464d087be74e406baf64881e3754b20ab9f303984ec24bbd86c51c85",
+        "lines": 372,
+        "symbols": 26
+      },
+      "observation_aggregator.go": {
+        "hash": "sha256:9cb74ecddcf41db22e5c92af3ea44b0687c5b2691c14fdcfd2ed08bbafe0a32c",
+        "lines": 675,
+        "symbols": 19
+      },
+      "observation_api.go": {
+        "hash": "sha256:515e313288693d7a8f45f120782d3eb16d7cf1e972733b8b813b11c69c18f9e7",
+        "lines": 210,
+        "symbols": 3
+      },
+      "observation_pipeline.go": {
+        "hash": "sha256:e95529cb530af61497685da180f584f09bf5249fe7b52dc39ea51cff8b49ca32",
+        "lines": 202,
+        "symbols": 13
+      },
+      "observation_sampler.go": {
+        "hash": "sha256:30f95878137e5f6700e891b84f2c521d3bdbf8a1304c5c8e96194a4b3b0a8783",
+        "lines": 172,
+        "symbols": 18
+      },
+      "observation_store.go": {
+        "hash": "sha256:85f47495cdf5a8df6107cc6f4ac554a61f7cf96f8976df10cc694b47346a8307",
+        "lines": 173,
+        "symbols": 9
+      },
+      "patterns_distributed.go": {
+        "hash": "sha256:77a290ad9e514d584acc6050062db13e9859c94e9877ca04654d6bee378db502",
+        "lines": 554,
+        "symbols": 37
+      },
+      "patterns_distributed_redis.go": {
+        "hash": "sha256:d2b6d39cf7996159e9fe6c07764383da690ddcf566eec5b10784d5a49236afc0",
+        "lines": 274,
+        "symbols": 10
+      },
+      "patterns_resilience.go": {
+        "hash": "sha256:fbd74d3cc6ec742c3dba05bf44073bd8d593b1018991a6769c0eec1a7ade6dc8",
+        "lines": 537,
+        "symbols": 27
+      },
+      "patterns_resilience_enhanced.go": {
+        "hash": "sha256:def2508f6f6332302d006bb9f1a26900403db3cb265e17af2baabc5ec67b1dff",
+        "lines": 542,
+        "symbols": 33
+      },
+      "perf_core.go": {
+        "hash": "sha256:fa087216b41c396d30ba008a3f041a46a0ad4c0fd1e177b2db5460a697a1fba5",
+        "lines": 645,
+        "symbols": 39
+      },
+      "perf_sharded_observation.go": {
+        "hash": "sha256:be92ceb09b95d0e1dab68574eda1edc817c62c3bdec6b0e4726fe564a851377e",
+        "lines": 710,
+        "symbols": 19
+      },
+      "perf_tdigest.go": {
+        "hash": "sha256:fcf33f76957f0c5c87e7fd3e67d07eb6a6d91bcea38fba1a15f6e8803730c9c8",
+        "lines": 474,
+        "symbols": 31
+      },
+      "port.go": {
+        "hash": "sha256:79e1f82ccb1f597ab4faad89f5316b27a9dd10bc8dbd075b57da5ffed178b605",
+        "lines": 41,
+        "symbols": 5
+      },
+      "port_contract.go": {
+        "hash": "sha256:c67b3782eb87991923e8fc0c385289198308fc3de9a4a734f383b29272cb2bc7",
+        "lines": 150,
+        "symbols": 6
+      },
+      "projection.go": {
+        "hash": "sha256:3e0759a01be709a458d949a81639f62b4f6d9a18849501f62f485892805377b2",
+        "lines": 114,
+        "symbols": 7
+      },
+      "remote_composer.go": {
+        "hash": "sha256:6c50b0265dc1e87524eb28d5a362a3b46ef4a0786433469f8307f1b434c89bb5",
+        "lines": 79,
+        "symbols": 5
+      },
+      "scheduler.go": {
+        "hash": "sha256:3227f65a224991145ada1507071669deecb0b89dbc4ce750889feda82896135b",
+        "lines": 497,
+        "symbols": 44
+      },
+      "schema.go": {
+        "hash": "sha256:d77075380ef44e2c9dc1084f9cfbc0b50a9490de5e0b44969e910537a382f464",
+        "lines": 365,
+        "symbols": 19
+      },
+      "security.go": {
+        "hash": "sha256:14ebbe3fc7810ebd5a2876606fbd56a5e2be7609a90e0eb16789b916d6b3b30d",
+        "lines": 538,
+        "symbols": 48
+      },
+      "security_apikey.go": {
+        "hash": "sha256:9b7bad49e0170d90213e636ff201b81c4335b398ab74037acbd9fa273113044a",
+        "lines": 219,
+        "symbols": 11
+      },
+      "security_http.go": {
+        "hash": "sha256:27e74b3eba81c78b66cc6520f2bd469c02cf83510f930d0f0b1aa3bb130bce45",
+        "lines": 231,
+        "symbols": 8
+      },
+      "security_jwt.go": {
+        "hash": "sha256:78ac005e5f122ca8812d81bf2901922c6400b0f25858900cddf758bc10b01565",
+        "lines": 355,
+        "symbols": 19
+      },
+      "security_rbac.go": {
+        "hash": "sha256:696df2ff787197ebf1efe4ebc0dd08cb63956442d36dbb92e6abd0e94c48a8f9",
+        "lines": 285,
+        "symbols": 19
+      },
+      "step.go": {
+        "hash": "sha256:024a86182495611b7caf1a5fa51c1522a408e5056f5a0055de4d4414de4d6412",
+        "lines": 51,
+        "symbols": 6
+      },
+      "storage.go": {
+        "hash": "sha256:ce6321ca61222dd0e5c3a8d2ac5b1bb79eaa647db45662d7d30f725d856f18cd",
+        "lines": 55,
+        "symbols": 6
+      },
+      "storage_factory.go": {
+        "hash": "sha256:bc6716f83967c1eb964f4aed8859d05561550a849042bcb89a7244648c55d6e8",
+        "lines": 53,
+        "symbols": 2
+      },
+      "storage_factory_pgx.go": {
+        "hash": "sha256:88dc257b06e0f57f1f595f174d3e5bf93f90f61072f2fa6d60d4a0d1e307a6c4",
+        "lines": 26,
+        "symbols": 0
+      },
+      "storage_factory_pgx_fallback.go": {
+        "hash": "sha256:3b0859bbe3ed931c252ed197e882e0dd674701439c5ebebea980496343c1728d",
+        "lines": 20,
+        "symbols": 0
+      },
+      "storage_factory_redis.go": {
+        "hash": "sha256:0a34e3ed93a42c29509ec8125784667bd3ce59bada2d63edea35c02706487c7d",
+        "lines": 33,
+        "symbols": 1
+      },
+      "storage_factory_redis_fallback.go": {
+        "hash": "sha256:d05410ffd31e80cca96e8e47f8edcf1f79a0361abe2952b0db59507aba4ee251",
+        "lines": 15,
+        "symbols": 0
+      },
+      "storage_fs.go": {
+        "hash": "sha256:28c78cf27ff46592f6d43960085a447f18a49ac9499445e28e9265f3cdc196e4",
+        "lines": 361,
+        "symbols": 16
+      },
+      "storage_memory.go": {
+        "hash": "sha256:7d45933c6069c5d2bcac5c79b32d5ed5d054e684f6c34e75e5fd3a60100bc30a",
+        "lines": 123,
+        "symbols": 10
+      },
+      "storage_postgres.go": {
+        "hash": "sha256:b812b28b7dd35da5d67cd6002b7a3acea5fed93baf6f3fb14ac168bd488d63be",
+        "lines": 234,
+        "symbols": 12
+      },
+      "storage_redis.go": {
+        "hash": "sha256:ffc4dcdb91c7af6e18162303a5e87690a555ffd05c5a46e02f8f5cf0642de1a8",
+        "lines": 203,
+        "symbols": 13
+      },
+      "tenant.go": {
+        "hash": "sha256:644d815b7288f494f73cab2e5a6eae3ce3dea540a0717baac2b1f13ed946de39",
+        "lines": 55,
+        "symbols": 6
+      },
+      "tier_bridge.go": {
+        "hash": "sha256:ae9797bc969fbef18f65d15a5706be43f0083a10c6c05c721f0c133cbb6252fa",
+        "lines": 155,
+        "symbols": 3
+      },
+      "tier_check.go": {
+        "hash": "sha256:dcd65d3800a2041979e97b15cdab84d3edefc809caedb09abfdf42ec5c468f7f",
+        "lines": 65,
+        "symbols": 5
+      },
+      "tier_drift.go": {
+        "hash": "sha256:b50e0a7be25147b8b88ab43155dcbccecab3610a3d15d6ba012697e8758b8b1b",
+        "lines": 198,
+        "symbols": 9
+      },
+      "tier_transition.go": {
+        "hash": "sha256:ea75be8589f8570b30024b81c1ef823ef1d07640eda0d51300d6b5b897f95f39",
+        "lines": 216,
+        "symbols": 14
+      },
+      "transaction.go": {
+        "hash": "sha256:e98f97ebee823da59e721af503125a84933462ba1842532fb3ba50d613a2d114",
+        "lines": 116,
+        "symbols": 6
+      },
+      "types.go": {
+        "hash": "sha256:ceb1a916a48da4863ab476068a58f65d9874f4eff09e23eb1a5d4d06535394f7",
+        "lines": 85,
+        "symbols": 10
+      },
+      "understand_adapter.go": {
+        "hash": "sha256:ead5eb085c2824a93201dfb5edd8d5d0c161609dcacce0404aecffecde90324e",
+        "lines": 211,
+        "symbols": 10
+      },
+      "understand_migration.go": {
+        "hash": "sha256:7e0456a442e0808229da61d981e20e77c49fe442d44c90708c9045be01cda2fc",
+        "lines": 524,
+        "symbols": 16
+      },
+      "understand_observer.go": {
+        "hash": "sha256:6812751de4f7cb88943079d0bb1c243ec20d01efba84953b651cd8d346d8276d",
+        "lines": 366,
+        "symbols": 18
+      },
+      "understand_supervisor.go": {
+        "hash": "sha256:cfedcc4fe39d441ef5270f489342e5a910d534c83a4acb7466aa7b04f2f0f00c",
+        "lines": 435,
+        "symbols": 12
+      },
+      "understand_types.go": {
+        "hash": "sha256:78dce85665b05452102b91403edf2bb41f65a0bffcb198fc2adaff58ac3ce4b7",
+        "lines": 315,
+        "symbols": 71
+      },
+      "version_adr.go": {
+        "hash": "sha256:f214a143f40b5d6ba1f5d111231df6d61584181ef23efd98017550c00b0d892d",
+        "lines": 312,
+        "symbols": 6
+      },
+      "version_change.go": {
+        "hash": "sha256:667903f2a7761c839a6f2696f9109227563ae8168767817adf208153b8829632",
+        "lines": 260,
+        "symbols": 9
+      },
+      "version_changelog.go": {
+        "hash": "sha256:19c822e318de81294709b411eade215ed33e1b430f66a9da6484c776b92bc713",
+        "lines": 181,
+        "symbols": 6
+      },
+      "version_commit.go": {
+        "hash": "sha256:bd07076190837cd3fa7ca4b92bc5857312c7f45f0d0b8096b852e23bf59dcde6",
+        "lines": 275,
+        "symbols": 10
+      },
+      "version_composer.go": {
+        "hash": "sha256:3c2b8944eb546c0dc1ab6bcc36912be41158e5060319c2cc19a7276b9795606c",
+        "lines": 242,
+        "symbols": 10
+      },
+      "version_git.go": {
+        "hash": "sha256:12c12613ae328f702e7f2fc2df8487ba8c0a3255f4ffd8711bdc5fbb7adec0aa",
+        "lines": 172,
+        "symbols": 10
+      },
+      "version_semver.go": {
+        "hash": "sha256:7d418fcd406f854b70232f0adf1239523ae71e33867da54f159d4777f53bd124",
+        "lines": 281,
+        "symbols": 14
+      },
+      "version_types.go": {
+        "hash": "sha256:94885eca1e25afbd4d69b1b0d929f169111d6ca38e6efcb775d2232385a5392c",
+        "lines": 291,
+        "symbols": 29
+      }
+    },
+    "layer_stats": {
+      "L0": {
+        "layer": "L0",
+        "name": "错误处理",
+        "files": 6,
+        "lines": 2208,
+        "symbols": 138,
+        "color": "#7f8ea3"
+      },
+      "L1": {
+        "layer": "L1",
+        "name": "四原语定义",
+        "files": 5,
+        "lines": 861,
+        "symbols": 56,
+        "color": "#00d4aa"
+      },
+      "L2": {
+        "layer": "L2",
+        "name": "单机韧性",
+        "files": 2,
+        "lines": 640,
+        "symbols": 38,
+        "color": "#60a5fa"
+      },
+      "L3": {
+        "layer": "L3",
+        "name": "分布式韧性",
+        "files": 1,
+        "lines": 554,
+        "symbols": 37,
+        "color": "#38bdf8"
+      },
+      "L4": {
+        "layer": "L4",
+        "name": "Guardian 监督",
+        "files": 4,
+        "lines": 2160,
+        "symbols": 123,
+        "color": "#ef4444"
+      },
+      "L5": {
+        "layer": "L5",
+        "name": "Observation 可观测",
+        "files": 6,
+        "lines": 1804,
+        "symbols": 88,
+        "color": "#34d399"
+      },
+      "L6": {
+        "layer": "L6",
+        "name": "EventStore 事件溯源",
+        "files": 7,
+        "lines": 1588,
+        "symbols": 100,
+        "color": "#f472b6"
+      },
+      "L7": {
+        "layer": "L7",
+        "name": "应用层",
+        "files": 62,
+        "lines": 15196,
+        "symbols": 911,
+        "color": "#f59e0b"
+      }
+    },
+    "total": {
+      "files": 93,
+      "lines": 25011,
+      "symbols": 1491
+    }
+  },
+  "changelog": []
+}

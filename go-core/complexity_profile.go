@@ -111,11 +111,22 @@ type AppConfig struct {
 	// Persistence
 	StorageDir string `json:"storage_dir"`
 
+	// Storage Backend (v0.9.0)
+	StorageBackend   string `json:"storage_backend"`    // "memory", "file", "postgres", "redis"
+	PostgresDSN      string `json:"postgres_dsn"`       // PostgreSQL connection string
+	RedisAddr        string `json:"redis_addr"`         // Redis address "host:port"
+	RedisPassword    string `json:"redis_password"`     // Redis password
+	RedisDB          int    `json:"redis_db"`           // Redis database number
+
 	// HTTP
 	HTTPAddr string `json:"http_addr"`
 
 	// Observation
 	ObservationBufferSize int `json:"observation_buffer_size"`
+
+	// Observability (v0.9.0)
+	ObservabilityEnabled bool `json:"observability_enabled"` // Enable tracing/metrics/logging
+	LogLevel             string `json:"log_level"`           // "debug", "info", "warn", "error"
 
 	// Guardian
 	GuardianEnabled bool    `json:"guardian_enabled"`
@@ -124,6 +135,15 @@ type AppConfig struct {
 	// Scheduler
 	SchedulerEnabled  bool          `json:"scheduler_enabled"`
 	AgentHeartbeatTTL time.Duration `json:"agent_heartbeat_ttl"`
+
+	// Security (v0.9.0)
+	JWTSecret     string `json:"jwt_secret"`     // JWT signing secret
+	APIKeyEnabled bool   `json:"api_key_enabled"` // Enable API key authentication
+
+	// Resilience (v0.9.0)
+	RateLimit             float64       `json:"rate_limit"`              // Requests/second
+	CircuitBreakerEnabled bool          `json:"circuit_breaker_enabled"` // Enable circuit breaker
+	CircuitBreakerCooldown time.Duration `json:"circuit_breaker_cooldown"` // Cooldown period
 }
 
 // DefaultAppConfig returns safe default configuration.
@@ -132,11 +152,23 @@ func DefaultAppConfig() AppConfig {
 		Name:                  "low-entropy-core",
 		Version:               "5.0.0",
 		StorageDir:            "./data",
+		StorageBackend:        "file",
+		PostgresDSN:           "",
+		RedisAddr:             "localhost:6379",
+		RedisPassword:         "",
+		RedisDB:               0,
 		HTTPAddr:              ":8080",
 		ObservationBufferSize: 10000,
+		ObservabilityEnabled:  false,
+		LogLevel:              "info",
 		GuardianEnabled:       true,
 		EntropyCeiling:        0.8,
 		SchedulerEnabled:      false,
 		AgentHeartbeatTTL:     30 * time.Second,
+		JWTSecret:             "",
+		APIKeyEnabled:         false,
+		RateLimit:             100,
+		CircuitBreakerEnabled: false,
+		CircuitBreakerCooldown: 30 * time.Second,
 	}
 }

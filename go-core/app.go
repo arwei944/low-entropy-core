@@ -32,24 +32,27 @@ type App struct {
 func NewApp(cfg AppConfig) (*App, error) {
 	app := &App{Config: cfg}
 
-	// 1. 持久化后端
-	if cfg.StorageDir != "" {
-		storage, err := NewFileStorageBackend(cfg.StorageDir)
-		if err != nil {
-			return nil, fmt.Errorf("app: storage: %w", err)
-		}
-		app.Storage = storage
-		app.shutdownHooks = append(app.shutdownHooks, storage.Close)
+	// 0. 可观测性 (v0.9.0)
+	var obsProv *ObservabilityProvider
+	if cfg.ObservabilityEnabled {
+		obsProv = NewNoOpObservabilityProvider()
+		// 用户可后续注入真实的 OpenTelemetry/Prometheus/slog Provider
 	}
 
-	// 2. EventStore
-	if app.Storage != nil {
-		es, err := NewPersistentEventStore(app.Storage)
-		if err != nil {
-			return nil, fmt.Errorf("app: eventstore: %w", err)
-		}
-		app.EventStore = es
+	// 1. 持久化后端 (v0.9.0: 支持多后端)
+	storage, err := NewStorageBackendFromConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, fmt.Errorf("app: storage: %w", err)
 	}
+	app.Storage = storage
+	app.shutdownHooks = append(app.shutdownHooks, storage.Close)
+
+	// 2. EventStore (v0.9.0: 支持多后端)
+	es, err := NewPersistentEventStore(app.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("app: eventstore: %w", err)
+	}
+	app.EventStore = es
 
 	// 3. Observation
 	obsCfg := DefaultObservationPipelineConfig()
@@ -67,7 +70,6 @@ func NewApp(cfg AppConfig) (*App, error) {
 		pool := NewAgentPool()
 		queue := NewTaskQueue()
 		transport := NewInProcHandoffTransport()
-		// 创建独立的观测适配器用于 Handoff
 		handoffObs := &InMemoryObservationAdapter{}
 		handoff := NewHandoffComposer(handoffObs, NewInMemorySnapshotAdapter(), transport)
 		app.Scheduler = NewSchedulerComposer(pool, queue, handoff, handoffObs)
@@ -78,20 +80,32 @@ func NewApp(cfg AppConfig) (*App, error) {
 		mux := http.NewServeMux()
 		app.obsAPI = NewObservationAPI(app.Observation, nil)
 		app.obsAPI.RegisterHandlers(mux)
-		mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"status":"ok","version":"` + cfg.Version + `"}`))
-		})
+
+		// 健康检查端点 (v0.9.0: 增强版)
+		healthCheckers := map[string]func(context.Context) error{
+			"storage": storage.HealthCheck,
+		}
+		mux.Handle("/health", HealthHandler(healthCheckers))
 
 		// 7. Remote RPC — 暴露 JSON-RPC 端点供远程 Agent 调用
 		remoteObs := &InMemoryObservationAdapter{}
 		defaultPipeline := NewPipeline[any](remoteObs)
+		// v0.9.0: 注入可观测性
+		if obsProv != nil {
+			defaultPipeline.WithObservability(obsProv)
+		}
 		remote := NewRemoteComposer(defaultPipeline, remoteObs)
 		remote.RegisterRemoteHandlers(mux)
 
+		// v0.9.0: HTTP 可观测性中间件
+		var handler http.Handler = mux
+		if obsProv != nil {
+			handler = HTTPMiddleware(mux, obsProv)
+		}
+
 		app.HTTP = &http.Server{
 			Addr:    cfg.HTTPAddr,
-			Handler: mux,
+			Handler: handler,
 		}
 	}
 

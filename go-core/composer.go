@@ -29,9 +29,11 @@ type Composer[T any] interface {
 // ============================================================================
 
 // Pipeline is a linear chain of Steps that transform T → T.
+// v0.9.0: 新增 ObservabilityProvider 支持，自动注入 Tracing/Metrics/Logging。
 type Pipeline[T any] struct {
-	steps []Step[T, T]
-	obs   ObservationAdapter
+	steps    []Step[T, T]
+	obs      ObservationAdapter
+	obsProv  *ObservabilityProvider // v0.9.0: 可观测性注入
 }
 
 func NewPipeline[T any](obs ObservationAdapter, steps ...Step[T, T]) *Pipeline[T] {
@@ -41,12 +43,36 @@ func NewPipeline[T any](obs ObservationAdapter, steps ...Step[T, T]) *Pipeline[T
 	return &Pipeline[T]{steps: steps, obs: obs}
 }
 
+// WithObservability 注入可观测性 Provider。
+// 注入后，Pipeline 和每个 Step 执行时自动创建 Span、记录 Metrics、输出日志。
+// 未注入时，零开销（所有埋点跳过）。
+func (p *Pipeline[T]) WithObservability(provider *ObservabilityProvider) *Pipeline[T] {
+	p.obsProv = provider
+	return p
+}
+
 func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
 	steps := make([]ExecutionStep, 0, len(p.steps))
 	result := input
 
 	traceID := string(NewTraceID())
 	parentSpanID := string(NewSpanID())
+
+	// v0.9.0: 可观测性 — Pipeline Span
+	var pipelineSpan Span
+	if p.obsProv != nil && p.obsProv.TracerProvider != nil {
+		tracer := p.obsProv.TracerProvider.Tracer("pipeline")
+		ctx, pipelineSpan = tracer.Start(ctx, "pipeline.Run",
+			WithSpanKind(0), // Internal
+			WithSpanAttributes(
+				NewKeyValue("pipeline.steps", len(p.steps)),
+			),
+		)
+		defer pipelineSpan.End()
+	}
+	if p.obsProv != nil && p.obsProv.Logger != nil {
+		p.obsProv.Logger.InfoContext(ctx, "pipeline started", "steps", len(p.steps))
+	}
 
 	for i, step := range p.steps {
 		select {
@@ -56,13 +82,42 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 			errStep.Error = &StepError{Code: "CONTEXT_CANCELLED", Message: ctx.Err().Error(), Recoverable: false}
 			steps = append(steps, errStep)
 			p.obs.Record(steps)
+			if p.obsProv != nil && p.obsProv.Logger != nil {
+				p.obsProv.Logger.WarnContext(ctx, "pipeline cancelled", "step_index", i)
+			}
 			return result, steps, ctx.Err()
 		default:
 		}
 
+		// v0.9.0: 可观测性 — Step Span
+		var stepSpan Span
+		stepCtx := ctx
+		if p.obsProv != nil && p.obsProv.TracerProvider != nil {
+			tracer := p.obsProv.TracerProvider.Tracer("step")
+			stepCtx, stepSpan = tracer.Start(ctx, step.UnitType()+".execute",
+				WithSpanKind(0),
+				WithSpanAttributes(
+					NewKeyValue("step.type", step.UnitType()),
+					NewKeyValue("step.index", i),
+				),
+			)
+		}
+
 		start := time.Now()
-		output, err := step.Execute(ctx, result)
+		output, err := step.Execute(stepCtx, result)
 		elapsed := time.Since(start)
+
+		// v0.9.0: 可观测性 — 记录 Step 耗时
+		if p.obsProv != nil && p.obsProv.MeterProvider != nil {
+			if meter := p.obsProv.MeterProvider.Meter("step"); meter != nil {
+				if hist, e := meter.NewHistogram("framework_step_duration_ms", "Step execution duration in milliseconds",
+					[]float64{1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 10000}); e == nil {
+					hist.Record(stepCtx, float64(elapsed.Milliseconds()),
+						NewKeyValue("step.type", step.UnitType()),
+					)
+				}
+			}
+		}
 
 		es := NewExecutionStepWithTrace(parentSpanID, step.UnitType(), "execute", "pipeline step", "")
 		es.TraceID = traceID
@@ -80,8 +135,30 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 			}
 			es.Details = "pipeline step failed"
 			steps = append(steps, es)
+
+			// v0.9.0: 可观测性 — 记录错误
+			if stepSpan != nil {
+				stepSpan.RecordError(err)
+				stepSpan.SetStatus(StatusError, err.Error())
+				stepSpan.End()
+			}
+			if p.obsProv != nil && p.obsProv.Logger != nil {
+				p.obsProv.Logger.ErrorContext(stepCtx, "step failed",
+					"step", step.UnitType(),
+					"index", i,
+					"error", err.Error(),
+					"duration_ms", elapsed.Milliseconds(),
+				)
+			}
+
 			p.obs.Record(steps)
 			return result, steps, err
+		}
+
+		// v0.9.0: 可观测性 — Step 成功
+		if stepSpan != nil {
+			stepSpan.SetStatus(StatusOK, "")
+			stepSpan.End()
 		}
 
 		es.Details = "pipeline step completed"
@@ -98,6 +175,11 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 			return result, steps, ctx.Err()
 		default:
 		}
+	}
+
+	// v0.9.0: Pipeline 成功
+	if p.obsProv != nil && p.obsProv.Logger != nil {
+		p.obsProv.Logger.InfoContext(ctx, "pipeline completed", "total_steps", len(p.steps))
 	}
 
 	p.obs.Record(steps)

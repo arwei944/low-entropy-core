@@ -18,6 +18,18 @@ const (
 	CategoryHumanRequired ErrorCategory = "human_required"
 )
 
+// Severity-based ErrorCategory constants (v0.9.0).
+// These complement the recoverability-based categories above.
+// Used for slog level mapping and log severity classification.
+const (
+	CatDebug   ErrorCategory = "debug"
+	CatInfo    ErrorCategory = "info"
+	CatSuccess ErrorCategory = "success"
+	CatWarning ErrorCategory = "warning"
+	CatError   ErrorCategory = "error"
+	CatFatal   ErrorCategory = "fatal"
+)
+
 // ──────────────────────────────────────────────
 // Error Code
 // ──────────────────────────────────────────────

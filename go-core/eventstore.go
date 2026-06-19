@@ -196,3 +196,97 @@ func generateEventID() string {
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
+
+// ──────────────────────────────────────────────
+// EventStoreBackend 接口适配 (v0.9.0)
+// ──────────────────────────────────────────────
+
+// Append 实现 EventStoreBackend 接口。
+// 使用乐观并发控制：expectedVersion 必须等于当前最新版本。
+func (es *EventStore) Append(ctx context.Context, event EventEnvelope, expectedVersion int64) (AppendResult, error) {
+	// 生成 EventID 和 Timestamp
+	if event.EventID == "" {
+		event.EventID = generateEventID()
+	}
+	if event.Timestamp.IsZero() {
+		event.Timestamp = time.Now()
+	}
+
+	es.mu.Lock()
+	defer es.mu.Unlock()
+
+	currentVersion := es.getLatestVersionLocked(event.AggregateID)
+	if currentVersion != expectedVersion {
+		return AppendResult{}, NewVersionConflictError(expectedVersion, currentVersion)
+	}
+
+	event.Version = currentVersion + 1
+	es.events[event.AggregateID] = append(es.events[event.AggregateID], event)
+
+	return AppendResult{
+		EventID: event.EventID,
+		Version: event.Version,
+		Success: true,
+	}, nil
+}
+
+// StreamCtx 实现 EventStoreBackend.Stream（带 context）。
+func (es *EventStore) StreamCtx(_ context.Context, aggregateID string, fromVersion int64) ([]EventEnvelope, error) {
+	return es.Stream(aggregateID, fromVersion), nil
+}
+
+// GetLatestVersionCtx 实现 EventStoreBackend.GetLatestVersion（带 context）。
+func (es *EventStore) GetLatestVersionCtx(_ context.Context, aggregateID string) (int64, error) {
+	return es.GetLatestVersion(aggregateID), nil
+}
+
+// SaveSnapshotObj 实现 EventStoreBackend.SaveSnapshot（接受 Snapshot 对象）。
+func (es *EventStore) SaveSnapshotObj(_ context.Context, snapshot Snapshot) error {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	es.snapshots[snapshot.AggregateID] = &Snapshot{
+		AggregateID: snapshot.AggregateID,
+		Version:     snapshot.Version,
+		State:       snapshot.State,
+		Timestamp:   snapshot.Timestamp,
+	}
+	return nil
+}
+
+// GetSnapshotObj 实现 EventStoreBackend.GetSnapshot（返回 *Snapshot, error）。
+func (es *EventStore) GetSnapshotObj(_ context.Context, aggregateID string) (*Snapshot, error) {
+	es.mu.RLock()
+	defer es.mu.RUnlock()
+	s, ok := es.snapshots[aggregateID]
+	if !ok {
+		return nil, nil
+	}
+	return s, nil
+}
+
+// ListAggregates 实现 EventStoreBackend.ListAggregates。
+func (es *EventStore) ListAggregates(_ context.Context) ([]string, error) {
+	es.mu.RLock()
+	defer es.mu.RUnlock()
+	ids := make([]string, 0, len(es.events))
+	for id := range es.events {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids, nil
+}
+
+// HealthCheck 实现 EventStoreBackend.HealthCheck。
+func (es *EventStore) HealthCheck(_ context.Context) error {
+	// 内存实现始终健康
+	return nil
+}
+
+// Close 实现 EventStoreBackend.Close。
+func (es *EventStore) Close() error {
+	// 内存实现无需清理
+	return nil
+}
+
+// Ensure EventStore implements EventStoreBackend.
+var _ EventStoreBackend = (*EventStore)(nil)

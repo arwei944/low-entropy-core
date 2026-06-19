@@ -253,6 +253,54 @@ func (fs *FileStorageBackend) Close() error {
 	return nil
 }
 
+// ──────────────────────────────────────────────
+// SECTION 2.5: 批量操作和健康检查 (v0.9.0)
+// ──────────────────────────────────────────────
+
+// SaveBatch 批量保存数据。不保证原子性。
+func (fs *FileStorageBackend) SaveBatch(ctx context.Context, entries map[string][]byte) error {
+	for key, data := range entries {
+		if err := fs.Save(ctx, key, data); err != nil {
+			return fmt.Errorf("storage: save batch %s: %w", key, err)
+		}
+	}
+	return nil
+}
+
+// LoadBatch 批量加载数据。
+func (fs *FileStorageBackend) LoadBatch(ctx context.Context, keys []string) (map[string][]byte, error) {
+	result := make(map[string][]byte, len(keys))
+	for _, key := range keys {
+		data, err := fs.Load(ctx, key)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, fmt.Errorf("storage: load batch %s: %w", key, err)
+		}
+		result[key] = data
+	}
+	return result, nil
+}
+
+// HealthCheck 检查文件系统后端健康状态。
+func (fs *FileStorageBackend) HealthCheck(ctx context.Context) error {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+	if fs.closed {
+		return fmt.Errorf("storage: backend is closed")
+	}
+	// 检查 baseDir 是否存在且可访问
+	info, err := os.Stat(fs.baseDir)
+	if err != nil {
+		return fmt.Errorf("storage: base dir inaccessible: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("storage: base dir is not a directory")
+	}
+	return nil
+}
+
 // BaseDir 返回基础目录路径。
 func (fs *FileStorageBackend) BaseDir() string {
 	return fs.baseDir
