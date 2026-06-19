@@ -1,10 +1,9 @@
-// Architecture Manager v0.6.0 — 版本管理模块
+// Architecture Manager v0.8.0 — 版本管理模块（重构版）
 //
-// 功能：
-//   - 版本快照创建、存储、列表
-//   - 版本间 diff 对比
-//   - Git Conventional Commits Changelog 提取
-//   - 版本快照存储在 versions/ 目录下
+// 重构说明：
+//   - 删除 parseSemver()、parseConventionalCommit()、findPreviousTag() 等重复逻辑
+//   - 全部调用 go-core 通用版本管理模块
+//   - 版本快照 CRUD 保持不变（依赖 arch-manager 特有的 ArchData 结构）
 
 package main
 
@@ -13,62 +12,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	core "low-entropy-core/go-core"
 )
 
 // ============================================================================
-// 版本管理数据模型
+// 版本管理数据模型（使用 go-core 类型）
 // ============================================================================
 
-// VersionSnapshot 表示一个版本快照
+// VersionSnapshot 表示一个版本快照。
 type VersionSnapshot struct {
-	Version   string           `json:"version"`
-	Timestamp time.Time        `json:"timestamp"`
-	Semver    SemverInfo       `json:"semver"`
-	Snapshot  SnapshotData     `json:"snapshot"`
-	Changelog []ChangelogEntry `json:"changelog"`
+	Version   string              `json:"version"`
+	Timestamp time.Time           `json:"timestamp"`
+	Semver    core.Semver         `json:"semver"`
+	Snapshot  SnapshotData        `json:"snapshot"`
+	Changelog []core.ChangelogEntry `json:"changelog"`
 }
 
-// SemverInfo 语义化版本号分解
-type SemverInfo struct {
-	Major int `json:"major"`
-	Minor int `json:"minor"`
-	Patch int `json:"patch"`
-}
-
-// SnapshotData 版本快照数据
+// SnapshotData 版本快照数据。
 type SnapshotData struct {
-	Files       map[string]FileSnapshot `json:"files"`
-	LayerStats  map[string]LayerStat    `json:"layer_stats"`
-	Total       TotalStat               `json:"total"`
+	Files      map[string]FileSnapshot `json:"files"`
+	LayerStats map[string]LayerStat    `json:"layer_stats"`
+	Total      TotalStat               `json:"total"`
 }
 
-// FileSnapshot 单个文件的快照信息
+// FileSnapshot 单个文件的快照信息。
 type FileSnapshot struct {
 	Hash    string `json:"hash"`
 	Lines   int    `json:"lines"`
 	Symbols int    `json:"symbols"`
 }
 
-// TotalStat 全局统计
+// TotalStat 全局统计。
 type TotalStat struct {
 	Files   int `json:"files"`
 	Lines   int `json:"lines"`
 	Symbols int `json:"symbols"`
 }
 
-// ChangelogEntry 一条 Changelog 记录
-type ChangelogEntry struct {
-	Type    string `json:"type"`    // feat, fix, refactor, docs, test, chore
-	Scope   string `json:"scope"`
-	Message string `json:"message"`
-}
-
-// VersionInfo 版本列表中的简要信息
+// VersionInfo 版本列表中的简要信息。
 type VersionInfo struct {
 	Version      string `json:"version"`
 	Timestamp    string `json:"timestamp"`
@@ -78,18 +64,18 @@ type VersionInfo struct {
 	ChangelogLen int    `json:"changelog_len"`
 }
 
-// VersionDiff 两个版本之间的差异
+// VersionDiff 两个版本之间的差异。
 type VersionDiff struct {
-	VersionFrom string            `json:"version_from"`
-	VersionTo   string            `json:"version_to"`
-	FilesAdded  []string          `json:"files_added"`
-	FilesRemoved []string         `json:"files_removed"`
-	FilesChanged []FileDiffEntry  `json:"files_changed"`
-	LayerDrift  map[string]LayerDriftEntry `json:"layer_drift"`
-	TotalDiff   TotalDiffStat     `json:"total_diff"`
+	VersionFrom   string                     `json:"version_from"`
+	VersionTo     string                     `json:"version_to"`
+	FilesAdded    []string                   `json:"files_added"`
+	FilesRemoved  []string                   `json:"files_removed"`
+	FilesChanged  []FileDiffEntry            `json:"files_changed"`
+	LayerDrift    map[string]LayerDriftEntry `json:"layer_drift"`
+	TotalDiff     TotalDiffStat              `json:"total_diff"`
 }
 
-// FileDiffEntry 文件差异详情
+// FileDiffEntry 文件差异详情。
 type FileDiffEntry struct {
 	Name          string `json:"name"`
 	LinesBefore   int    `json:"lines_before"`
@@ -98,17 +84,17 @@ type FileDiffEntry struct {
 	SymbolsAfter  int    `json:"symbols_after"`
 }
 
-// LayerDriftEntry 层级漂移
+// LayerDriftEntry 层级漂移。
 type LayerDriftEntry struct {
 	FilesBefore int `json:"files_before"`
 	FilesAfter  int `json:"files_after"`
 }
 
-// TotalDiffStat 全局差异统计
+// TotalDiffStat 全局差异统计。
 type TotalDiffStat struct {
-	LinesAdded   int `json:"lines_added"`
-	LinesRemoved int `json:"lines_removed"`
-	SymbolsAdded int `json:"symbols_added"`
+	LinesAdded    int `json:"lines_added"`
+	LinesRemoved  int `json:"lines_removed"`
+	SymbolsAdded  int `json:"symbols_added"`
 	SymbolsRemoved int `json:"symbols_removed"`
 }
 
@@ -116,15 +102,18 @@ type TotalDiffStat struct {
 // 版本快照 CRUD
 // ============================================================================
 
-// versionsDir 返回版本快照存储目录
+// versionsDir 返回版本快照存储目录。
 func versionsDir() string {
 	return filepath.Join(sourceDir, "..", "versions")
 }
 
-// CreateSnapshot 扫描 go-core 目录，生成版本快照并保存
+// CreateSnapshot 扫描 go-core 目录，生成版本快照并保存。
 func CreateSnapshot(version string) (*VersionSnapshot, error) {
-	// 解析语义版本号
-	semver := parseSemver(version)
+	// 使用 go-core 解析语义版本号
+	semver, err := core.ParseSemver(version)
+	if err != nil {
+		return nil, fmt.Errorf("parse semver: %w", err)
+	}
 
 	// 构建架构数据
 	data, err := buildArchData(sourceDir)
@@ -153,7 +142,7 @@ func CreateSnapshot(version string) (*VersionSnapshot, error) {
 		layerStats[l.Layer] = l
 	}
 
-	// 提取 Changelog
+	// 提取 Changelog（使用 go-core 的 Git 操作）
 	changelog, _ := LoadChangelog(version)
 
 	snapshot := &VersionSnapshot{
@@ -180,29 +169,7 @@ func CreateSnapshot(version string) (*VersionSnapshot, error) {
 	return snapshot, nil
 }
 
-// parseSemver 解析语义版本号
-func parseSemver(v string) SemverInfo {
-	info := SemverInfo{}
-	// 去除 v 前缀
-	v = strings.TrimPrefix(v, "v")
-	_, err := fmt.Sscanf(v, "%d.%d.%d", &info.Major, &info.Minor, &info.Patch)
-	if err != nil {
-		// 尝试部分解析
-		parts := strings.Split(v, ".")
-		if len(parts) >= 1 {
-			fmt.Sscanf(parts[0], "%d", &info.Major)
-		}
-		if len(parts) >= 2 {
-			fmt.Sscanf(parts[1], "%d", &info.Minor)
-		}
-		if len(parts) >= 3 {
-			fmt.Sscanf(parts[2], "%d", &info.Patch)
-		}
-	}
-	return info
-}
-
-// saveSnapshot 将版本快照保存到磁盘
+// saveSnapshot 将版本快照保存到磁盘。
 func saveSnapshot(s *VersionSnapshot) error {
 	dir := versionsDir()
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -218,7 +185,7 @@ func saveSnapshot(s *VersionSnapshot) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// LoadSnapshot 从磁盘加载指定版本快照
+// LoadSnapshot 从磁盘加载指定版本快照。
 func LoadSnapshot(version string) (*VersionSnapshot, error) {
 	path := filepath.Join(versionsDir(), fmt.Sprintf("v%s.json", version))
 	data, err := os.ReadFile(path)
@@ -234,7 +201,7 @@ func LoadSnapshot(version string) (*VersionSnapshot, error) {
 	return &s, nil
 }
 
-// ListVersions 列出所有已记录的版本
+// ListVersions 列出所有已记录的版本。
 func ListVersions() ([]VersionInfo, error) {
 	dir := versionsDir()
 	entries, err := os.ReadDir(dir)
@@ -251,7 +218,6 @@ func ListVersions() ([]VersionInfo, error) {
 			continue
 		}
 
-		// 解析文件名: v0.5.0.json -> 0.5.0
 		name := strings.TrimPrefix(entry.Name(), "v")
 		name = strings.TrimSuffix(name, ".json")
 
@@ -270,23 +236,17 @@ func ListVersions() ([]VersionInfo, error) {
 		})
 	}
 
-	// 按版本号降序排列
+	// 使用 go-core 的 SemVer 比较排序
 	sort.Slice(versions, func(i, j int) bool {
-		vi := parseSemver(versions[i].Version)
-		vj := parseSemver(versions[j].Version)
-		if vi.Major != vj.Major {
-			return vi.Major > vj.Major
-		}
-		if vi.Minor != vj.Minor {
-			return vi.Minor > vj.Minor
-		}
-		return vi.Patch > vj.Patch
+		vi, _ := core.ParseSemver(versions[i].Version)
+		vj, _ := core.ParseSemver(versions[j].Version)
+		return vi.Compare(vj) > 0
 	})
 
 	return versions, nil
 }
 
-// DiffVersions 对比两个版本的差异
+// DiffVersions 对比两个版本的差异。
 func DiffVersions(v1, v2 string) (*VersionDiff, error) {
 	s1, err := LoadSnapshot(v1)
 	if err != nil {
@@ -306,7 +266,6 @@ func DiffVersions(v1, v2 string) (*VersionDiff, error) {
 		LayerDrift:   make(map[string]LayerDriftEntry),
 	}
 
-	// 检测新增和修改的文件
 	for name, f2 := range s2.Snapshot.Files {
 		if f1, ok := s1.Snapshot.Files[name]; ok {
 			if f1.Hash != f2.Hash {
@@ -323,14 +282,12 @@ func DiffVersions(v1, v2 string) (*VersionDiff, error) {
 		}
 	}
 
-	// 检测删除的文件
 	for name := range s1.Snapshot.Files {
 		if _, ok := s2.Snapshot.Files[name]; !ok {
 			diff.FilesRemoved = append(diff.FilesRemoved, name)
 		}
 	}
 
-	// 层级漂移
 	for layer, l2 := range s2.Snapshot.LayerStats {
 		l1, ok := s1.Snapshot.LayerStats[layer]
 		if !ok {
@@ -348,10 +305,9 @@ func DiffVersions(v1, v2 string) (*VersionDiff, error) {
 		}
 	}
 
-	// 全局差异
 	diff.TotalDiff = TotalDiffStat{
-		LinesAdded:    s2.Snapshot.Total.Lines - s1.Snapshot.Total.Lines,
-		SymbolsAdded:  s2.Snapshot.Total.Symbols - s1.Snapshot.Total.Symbols,
+		LinesAdded:   s2.Snapshot.Total.Lines - s1.Snapshot.Total.Lines,
+		SymbolsAdded: s2.Snapshot.Total.Symbols - s1.Snapshot.Total.Symbols,
 	}
 
 	sort.Strings(diff.FilesAdded)
@@ -363,127 +319,156 @@ func DiffVersions(v1, v2 string) (*VersionDiff, error) {
 	return diff, nil
 }
 
-// LoadChangelog 从 Git log 中提取 Conventional Commits 格式的变更记录
-func LoadChangelog(version string) ([]ChangelogEntry, error) {
-	entries := make([]ChangelogEntry, 0)
+// LoadChangelog 从 Git log 中提取 Conventional Commits 格式的变更记录。
+// 重构为使用 go-core 的 Git 操作和 Commit 解析。
+func LoadChangelog(version string) ([]core.ChangelogEntry, error) {
+	entries := make([]core.ChangelogEntry, 0)
 
-	// 尝试查找上一个版本的 tag
-	prevTag := findPreviousTag(version)
-	var rangeSpec string
-	if prevTag != "" {
-		rangeSpec = fmt.Sprintf("%s..HEAD", prevTag)
+	// 使用 go-core 获取最近 tag
+	lastTag, _ := core.GitLastTag(sourceDir)
+	var log string
+	var err error
+
+	if lastTag != "" {
+		log, err = core.GitCommitsSinceTag(sourceDir, lastTag)
 	} else {
-		rangeSpec = "-50" // 最近 50 条提交
+		log, err = core.GitLog(sourceDir, core.GitLogOptions{MaxCount: 50, SkipMerges: true})
 	}
-
-	// 执行 git log
-	cmd := exec.Command("git", "log", rangeSpec, "--oneline", "--no-merges")
-	cmd.Dir = sourceDir
-	output, err := cmd.Output()
 	if err != nil {
-		// git 不可用，返回空列表
 		return entries, nil
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
+	// 使用 go-core 解析 Conventional Commits
+	commits, err := core.ParseCommitsFromLog(log)
+	if err != nil {
+		return entries, nil
+	}
 
-		entry := parseConventionalCommit(line)
-		if entry != nil {
-			entries = append(entries, *entry)
-		}
+	for _, c := range commits {
+		entries = append(entries, core.ChangelogEntry{
+			Type:    c.Type,
+			Scope:   c.Scope,
+			Message: c.Description,
+		})
 	}
 
 	return entries, nil
 }
 
-// findPreviousTag 查找指定版本之前的 Git tag
-func findPreviousTag(version string) string {
-	cmd := exec.Command("git", "tag", "--sort=-v:refname")
-	cmd.Dir = sourceDir
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
+// ============================================================================
+// 新增：版本分析 API 辅助函数
+// ============================================================================
 
-	tags := strings.Split(strings.TrimSpace(string(output)), "\n")
-	currentTag := "v" + version
+// AnalyzeCommitsWrapper 分析 Git 提交并返回版本推断。
+func AnalyzeCommitsWrapper(since string) (map[string]interface{}, error) {
+	repoDir := filepath.Join(sourceDir, "..")
 
-	found := false
-	for _, tag := range tags {
-		tag = strings.TrimSpace(tag)
-		if tag == "" {
-			continue
-		}
-		if found {
-			return tag
-		}
-		if tag == currentTag {
-			found = true
-		}
-	}
-
-	return ""
-}
-
-// parseConventionalCommit 解析 Conventional Commit 格式：
-// <type>(<scope>): <message>
-// 也支持简化的 git log --oneline 格式：<hash> <type>(<scope>): <message>
-func parseConventionalCommit(line string) *ChangelogEntry {
-	// 跳过 hash 前缀（git log --oneline 格式）
-	parts := strings.SplitN(line, " ", 2)
-	if len(parts) == 2 {
-		line = parts[1]
-	}
-
-	// 匹配 type(scope): message 或 type: message
-	colonIdx := strings.Index(line, ":")
-	if colonIdx < 0 {
-		return nil
-	}
-
-	prefix := strings.TrimSpace(line[:colonIdx])
-	message := strings.TrimSpace(line[colonIdx+1:])
-
-	// 解析 type 和 scope
-	entry := &ChangelogEntry{Message: message}
-	openParen := strings.Index(prefix, "(")
-	closeParen := strings.Index(prefix, ")")
-
-	if openParen > 0 && closeParen > openParen {
-		entry.Type = strings.TrimSpace(prefix[:openParen])
-		entry.Scope = prefix[openParen+1 : closeParen]
+	var log string
+	var err error
+	if since != "" {
+		log, err = core.GitCommitsSinceTag(repoDir, since)
 	} else {
-		entry.Type = prefix
+		log, err = core.GitCommitsSinceTag(repoDir, "")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("git log: %w", err)
 	}
 
-	// 验证 type 是否为有效的 Conventional Commit 类型
-	validTypes := map[string]bool{
-		"feat": true, "fix": true, "docs": true, "style": true,
-		"refactor": true, "perf": true, "test": true, "chore": true,
-		"ci": true, "build": true, "revert": true,
+	commits, _ := core.ParseCommitsFromLog(log)
+	class := core.ClassifyCommits(commits)
+	bump := core.InferBump(commits)
+
+	current := core.Semver{Major: 0, Minor: 7, Patch: 0}
+	lastTag, _ := core.GitLastTag(repoDir)
+	if lastTag != "" {
+		if parsed, err := core.ParseSemver(lastTag); err == nil {
+			current = parsed
+		}
 	}
-	if !validTypes[entry.Type] {
-		entry.Type = "chore"
+	next := core.InferNextVersion(commits, current)
+
+	return map[string]interface{}{
+		"commits":      commits,
+		"total":        len(commits),
+		"classification": class,
+		"bump":         bump,
+		"current":      current.String(),
+		"next_version": next.String(),
+	}, nil
+}
+
+// NextVersionWrapper 推断下一版本号。
+func NextVersionWrapper(currentStr string) (map[string]interface{}, error) {
+	repoDir := filepath.Join(sourceDir, "..")
+
+	current := core.Semver{Major: 0, Minor: 7, Patch: 0}
+	if currentStr != "" {
+		if parsed, err := core.ParseSemver(currentStr); err == nil {
+			current = parsed
+		}
 	}
 
-	return entry
+	log, err := core.GitCommitsSinceTag(repoDir, "")
+	if err != nil {
+		// 无法获取提交，保持当前版本
+		return map[string]interface{}{
+			"current": current.String(),
+			"next":    current.String(),
+			"bump":    "none",
+		}, nil
+	}
+
+	commits, _ := core.ParseCommitsFromLog(log)
+	bump := core.InferBump(commits)
+	next := core.InferNextVersion(commits, current)
+
+	bumpType := "patch"
+	switch {
+	case bump.Major:
+		bumpType = "major"
+	case bump.Minor:
+		bumpType = "minor"
+	}
+
+	return map[string]interface{}{
+		"current":  current.String(),
+		"next":     next.String(),
+		"bump":     bumpType,
+		"breaking": bump.Major,
+		"commits":  len(commits),
+	}, nil
+}
+
+// GetCurrentVersion 动态获取当前版本号（从快照或 Git tag）。
+func GetCurrentVersion() string {
+	// 优先从版本快照获取
+	versions, err := ListVersions()
+	if err == nil && len(versions) > 0 {
+		return versions[0].Version
+	}
+
+	// 其次从 Git tag 获取
+	repoDir := filepath.Join(sourceDir, "..")
+	tag, err := core.GitLastTag(repoDir)
+	if err == nil && tag != "" {
+		if sv, err := core.ParseSemver(tag); err == nil {
+			return sv.String()
+		}
+	}
+
+	return "0.8.0"
 }
 
 // ============================================================================
-// 复杂度评分 (BE-03)
+// 复杂度评分
 // ============================================================================
 
-// ComplexityInfo 文件复杂度信息
+// ComplexityInfo 文件复杂度信息。
 type ComplexityInfo struct {
-	Score float64 `json:"score"` // 0-100 复杂度评分
+	Score float64 `json:"score"`
 }
 
-// ComputeComplexityScores 为所有文件计算复杂度评分
+// ComputeComplexityScores 为所有文件计算复杂度评分。
 func ComputeComplexityScores(data *ArchData) map[string]float64 {
 	scores := make(map[string]float64)
 
@@ -491,7 +476,6 @@ func ComputeComplexityScores(data *ArchData) map[string]float64 {
 		return scores
 	}
 
-	// 计算最大值用于归一化
 	maxLines := 1
 	maxSymbols := 1
 	maxDeps := 1
@@ -507,7 +491,6 @@ func ComputeComplexityScores(data *ArchData) map[string]float64 {
 		}
 	}
 
-	// 计算每个文件的复杂度评分
 	for _, f := range data.Files {
 		score := (float64(f.Lines)/float64(maxLines))*0.4 +
 			(float64(len(f.Symbols))/float64(maxSymbols))*0.3 +
@@ -518,7 +501,6 @@ func ComputeComplexityScores(data *ArchData) map[string]float64 {
 	return scores
 }
 
-// mathRound 四舍五入到指定精度
 func mathRound(val float64, decimals int) float64 {
 	pow := 1.0
 	for i := 0; i < decimals; i++ {

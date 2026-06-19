@@ -825,6 +825,240 @@ body {
 .diff-file-list .diff-delta { font-size: 10px; color: var(--dim); margin-left: auto; }
 
 /* ============================================================
+   Version Tab Enhanced (v0.8.0)
+   ============================================================ */
+.version-subtabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0;
+}
+.version-subtabs .vst {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.version-subtabs .vst:hover { color: var(--ink); }
+.version-subtabs .vst.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.version-detail-panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid var(--rule);
+}
+.version-detail-panel .vdp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.version-detail-panel .vdp-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.version-detail-panel .vdp-close {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--dim);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.version-detail-panel .vdp-close:hover { background: rgba(255,255,255,0.05); color: var(--ink); }
+.version-detail-panel .vdp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.version-detail-panel .vdp-stat {
+  background: rgba(255,255,255,0.03);
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+.version-detail-panel .vdp-stat .vdp-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.version-detail-panel .vdp-stat .vdp-label {
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.changelog-panel { margin-top: 16px; }
+.changelog-panel .cl-entry {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.changelog-panel .cl-type-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.cl-type-tag.feat { background: rgba(0,122,255,0.15); color: var(--accent); }
+.cl-type-tag.fix { background: rgba(255,159,10,0.15); color: var(--orange); }
+.cl-type-tag.docs { background: rgba(48,209,88,0.15); color: var(--green); }
+.cl-type-tag.test { background: rgba(175,82,222,0.15); color: #af52de; }
+.cl-type-tag.refactor { background: rgba(94,194,250,0.15); color: #5ac8fa; }
+.cl-type-tag.perf { background: rgba(255,55,95,0.15); color: #ff375f; }
+.cl-type-tag.chore { background: rgba(255,255,255,0.1); color: var(--dim); }
+.cl-type-tag.breaking { background: rgba(255,69,58,0.2); color: var(--red); font-weight: 700; }
+
+.release-pipeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+.release-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+.release-step .rs-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-bottom: 8px;
+  border: 2px solid;
+}
+.release-step .rs-icon.pending { border-color: var(--dim); color: var(--dim); background: rgba(255,255,255,0.02); }
+.release-step .rs-icon.success { border-color: var(--green); color: var(--green); background: rgba(48,209,88,0.1); }
+.release-step .rs-icon.failed { border-color: var(--red); color: var(--red); background: rgba(255,69,58,0.1); }
+.release-step .rs-icon.running { border-color: var(--accent); color: var(--accent); background: rgba(0,122,255,0.1); animation: pulse 1.5s infinite; }
+.release-step .rs-name { font-size: 10px; color: var(--dim); text-align: center; }
+.release-step .rs-arrow {
+  width: 30px;
+  height: 2px;
+  background: var(--rule);
+  margin: 0 4px;
+  align-self: center;
+  margin-bottom: 28px;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.adr-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.adr-card:hover { border-color: var(--accent); }
+.adr-card .adr-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.adr-card .adr-id {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+.adr-card .adr-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.adr-card .adr-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--dim);
+}
+.adr-status-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.adr-status-tag.proposed { background: rgba(0,122,255,0.15); color: var(--accent); }
+.adr-status-tag.accepted { background: rgba(48,209,88,0.15); color: var(--green); }
+.adr-status-tag.deprecated { background: rgba(255,159,10,0.15); color: var(--orange); }
+.adr-status-tag.superseded { background: rgba(255,255,255,0.1); color: var(--dim); }
+
+.arch-change-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.arch-change-card .acc-type {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.arch-change-card .acc-info { flex: 1; }
+.arch-change-card .acc-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.arch-change-card .acc-scope { font-size: 11px; color: var(--dim); }
+.arch-change-card .acc-breaking { font-size: 9px; color: var(--red); font-weight: 700; }
+.arch-change-card .acc-actions { display: flex; gap: 6px; }
+
+/* Search input for changelog */
+.version-search {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.version-search:focus { outline: none; border-color: var(--accent); }
+
+/* ============================================================
+   Version Tab Enhanced (v0.8.0) — END
+   ============================================================ */
+
+/* ============================================================
    Guidance Tab (v0.6.0)
    ============================================================ */
 .guide-hero {
@@ -2292,8 +2526,10 @@ document.addEventListener('keydown', e => {
 });
 
 // ============================================================
-// Version Tab — 版本管理 (v0.6.0)
+// Version Tab — 版本管理 (v0.8.0 Enhanced)
 // ============================================================
+let versionSubTab = 'overview';
+
 function renderVersionTab() {
   fetch('/api/version').then(r => r.json()).then(data => {
     versionData = data;
@@ -2309,68 +2545,272 @@ function renderVersionContent() {
 
   let h = '';
 
-  // 版本对比模式
   if (diffMode) {
     h += renderDiffView();
     document.getElementById('versionContent').innerHTML = h;
     return;
   }
 
-  // 头部
   h += '<div class="version-header">';
-  h += '<div class="version-current"><span class="v">v</span>' + (vd.current_version || '0.5.1') + '</div>';
+  h += '<div class="version-current"><span class="v">v</span>' + (vd.current_version || '0.8.0') + '</div>';
   h += '<div class="version-actions">';
   h += '<button class="btn primary" onclick="createSnapshot()">创建快照</button>';
   h += '<button class="btn" onclick="enterDiffMode()">版本对比</button>';
   h += '</div>';
   h += '</div>';
 
-  // 版本时间线
+  h += '<div class="version-subtabs">';
+  h += '<button class="vst' + (versionSubTab === 'overview' ? ' active' : '') + '" onclick="versionSubTab=\'overview\';renderVersionContent()">概览</button>';
+  h += '<button class="vst' + (versionSubTab === 'changelog' ? ' active' : '') + '" onclick="versionSubTab=\'changelog\';renderVersionContent()">Changelog</button>';
+  h += '<button class="vst' + (versionSubTab === 'adr' ? ' active' : '') + '" onclick="versionSubTab=\'adr\';renderVersionContent()">ADR</button>';
+  h += '<button class="vst' + (versionSubTab === 'arch-change' ? ' active' : '') + '" onclick="versionSubTab=\'arch-change\';renderVersionContent()">变更意图</button>';
+  h += '<button class="vst' + (versionSubTab === 'release' ? ' active' : '') + '" onclick="versionSubTab=\'release\';renderVersionContent()">发布</button>';
+  h += '</div>';
+
+  h += '<div id="versionSubContent">';
+  switch (versionSubTab) {
+    case 'overview': h += renderVersionOverview(vd); break;
+    case 'changelog': h += '<div id="changelogContent">加载中...</div>'; break;
+    case 'adr': h += '<div id="adrContent">加载中...</div>'; break;
+    case 'arch-change': h += '<div id="archChangeContent">加载中...</div>'; break;
+    case 'release': h += '<div id="releaseContent">加载中...</div>'; break;
+  }
+  h += '</div>';
+
+  document.getElementById('versionContent').innerHTML = h;
+
+  if (versionSubTab === 'changelog') loadChangelog();
+  else if (versionSubTab === 'adr') loadADRs();
+  else if (versionSubTab === 'arch-change') loadArchChanges();
+  else if (versionSubTab === 'release') loadReleaseView();
+}
+
+function renderVersionOverview(vd) {
+  let h = '';
   if (vd.versions && vd.versions.length > 0) {
     h += '<div class="version-timeline">';
     vd.versions.forEach(v => {
-      h += '<div class="version-entry">';
+      h += '<div class="version-entry" onclick="toggleVersionDetail(\'' + v.version + '\')" style="cursor:pointer">';
       h += '<div class="ve-header"><span class="ve-version">v' + v.version + '</span><span class="ve-date">' + (v.timestamp ? new Date(v.timestamp).toLocaleString('zh-CN') : '') + '</span></div>';
       h += '<div class="ve-stats">';
-      h += '<span>文件: ' + v.files + '</span>';
-      h += '<span>行数: ' + v.lines + '</span>';
-      h += '<span>符号: ' + v.symbols + '</span>';
+      h += '<span>文件: ' + v.files + '</span><span>行数: ' + v.lines + '</span><span>符号: ' + v.symbols + '</span>';
       h += '</div>';
-      if (v.changelog_len > 0) {
-        h += '<div class="ve-changelog">变更: ' + v.changelog_len + ' 条</div>';
-      }
+      if (v.changelog_len > 0) h += '<div class="ve-changelog">变更: ' + v.changelog_len + ' 条</div>';
       h += '</div>';
     });
     h += '</div>';
+    h += '<div id="versionDetailPanel"></div>';
   } else {
     h += '<div class="empty">暂无版本快照，点击"创建快照"生成第一个版本记录</div>';
   }
+  return h;
+}
 
-  document.getElementById('versionContent').innerHTML = h;
+function toggleVersionDetail(version) {
+  const panel = document.getElementById('versionDetailPanel');
+  if (!panel) return;
+  if (panel.dataset.version === version) { panel.innerHTML = ''; panel.dataset.version = ''; return; }
+  panel.dataset.version = version;
+  panel.innerHTML = '<div class="version-detail-panel"><div class="vdp-header"><span class="vdp-title">加载中...</span><button class="vdp-close" onclick="document.getElementById(\'versionDetailPanel\').innerHTML=\'\';document.getElementById(\'versionDetailPanel\').dataset.version=\'\'">x</button></div></div>';
+  fetch('/api/version/changelog?v=' + version)
+    .then(r => r.json()).then(data => {
+      let h = '<div class="version-detail-panel">';
+      h += '<div class="vdp-header"><span class="vdp-title">v' + version + ' 详情</span><button class="vdp-close" onclick="document.getElementById(\'versionDetailPanel\').innerHTML=\'\';document.getElementById(\'versionDetailPanel\').dataset.version=\'\'">x</button></div>';
+      h += '<div class="vdp-stats"><div class="vdp-stat"><div class="vdp-val">' + (data.changelog ? data.changelog.length : 0) + '</div><div class="vdp-label">变更条目</div></div></div>';
+      if (data.changelog && data.changelog.length > 0) {
+        h += '<div class="changelog-panel"><div style="font-size:12px;color:var(--dim);margin-bottom:8px">变更记录</div>';
+        data.changelog.forEach(e => {
+          h += '<div class="cl-entry"><span class="cl-type-tag ' + e.type + '">' + e.type + '</span><span>' + escapeHTML(e.message) + '</span></div>';
+        });
+        h += '</div>';
+      }
+      h += '</div>';
+      panel.innerHTML = h;
+    }).catch(e => { panel.innerHTML = '<div class="version-detail-panel"><div class="empty">加载失败: ' + e.message + '</div></div>'; });
+}
+
+function loadChangelog() {
+  fetch('/api/version/changelog').then(r => r.json()).then(data => {
+    let h = '<input class="version-search" placeholder="搜索 Changelog..." oninput="filterChangelog(this.value)" id="changelogSearch">';
+    h += '<div class="changelog-panel" id="changelogList">';
+    if (data.changelog && data.changelog.length > 0) {
+      data.changelog.forEach(e => {
+        h += '<div class="cl-entry cl-item" data-type="' + e.type + '" data-msg="' + (e.message || '').toLowerCase() + '">';
+        h += '<span class="cl-type-tag ' + e.type + '">' + e.type + '</span>';
+        if (e.scope) h += '<span style="font-size:10px;color:var(--dim);margin-right:4px">(' + e.scope + ')</span>';
+        h += '<span>' + escapeHTML(e.message) + '</span></div>';
+      });
+    } else { h += '<div class="empty">暂无 Changelog 数据</div>'; }
+    h += '</div>';
+    document.getElementById('changelogContent').innerHTML = h;
+  }).catch(e => { document.getElementById('changelogContent').innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; });
+}
+
+function filterChangelog(val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('.cl-item').forEach(el => {
+    el.style.display = (!q || (el.dataset.type || '').includes(q) || (el.dataset.msg || '').includes(q)) ? '' : 'none';
+  });
+}
+
+function loadADRs() {
+  fetch('/api/version/adr').then(r => r.json()).then(data => {
+    let h = '';
+    if (data && data.adrs && data.adrs.length > 0) {
+      h += '<div style="color:var(--dim);font-size:11px;margin-bottom:8px">共 ' + data.total + ' 条记录</div>';
+      data.adrs.forEach(adr => {
+        const sc = (adr.status || '').toLowerCase();
+        h += '<div class="adr-card" onclick="toggleADRDetail(\'' + adr.id + '\')"><div class="adr-header"><span class="adr-id">' + adr.id + '</span><span class="adr-title">' + escapeHTML(adr.title) + '</span></div>';
+        h += '<div class="adr-meta"><span class="adr-status-tag ' + sc + '">' + (adr.status || 'Proposed') + '</span>';
+        if (adr.version) h += '<span>v' + adr.version + '</span>';
+        if (adr.date) h += '<span>' + adr.date + '</span>';
+        h += '</div>';
+        h += '<div id="adr-detail-' + adr.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:12px;color:var(--dim)">';
+        if (adr.context) h += '<div style="margin-bottom:8px"><strong style="color:var(--ink)">Context:</strong> ' + escapeHTML(adr.context) + '</div>';
+        if (adr.decision) h += '<div style="margin-bottom:8px"><strong style="color:var(--ink)">Decision:</strong> ' + escapeHTML(adr.decision) + '</div>';
+        if (adr.consequences) h += '<div><strong style="color:var(--ink)">Consequences:</strong> ' + escapeHTML(adr.consequences) + '</div>';
+        h += '</div></div>';
+      });
+    } else { h += '<div class="empty">暂无 ADR 记录</div>'; }
+    h += '<button class="btn primary" style="margin-top:12px" onclick="showCreateADRForm()">+ 创建 ADR</button><div id="createADRForm" style="display:none;margin-top:12px"></div>';
+    document.getElementById('adrContent').innerHTML = h;
+  }).catch(e => { document.getElementById('adrContent').innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; });
+}
+
+function toggleADRDetail(id) { const el = document.getElementById('adr-detail-' + id); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+
+function showCreateADRForm() {
+  const el = document.getElementById('createADRForm'); if (!el) return;
+  let h = '<div class="version-detail-panel"><div class="vdp-header"><span class="vdp-title">创建 ADR</span><button class="vdp-close" onclick="document.getElementById(\'createADRForm\').style.display=\'none\'">x</button></div>';
+  h += '<input id="adrTitle" placeholder="标题" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px">';
+  h += '<input id="adrVersion" placeholder="关联版本 (如 0.8.0)" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px">';
+  h += '<textarea id="adrContext" placeholder="Context" rows="3" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px;resize:vertical"></textarea>';
+  h += '<textarea id="adrDecision" placeholder="Decision" rows="3" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px;resize:vertical"></textarea>';
+  h += '<textarea id="adrConsequences" placeholder="Consequences" rows="3" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px;resize:vertical"></textarea>';
+  h += '<button class="btn primary" onclick="createADR()">提交</button></div>';
+  el.innerHTML = h; el.style.display = 'block';
+}
+
+function createADR() {
+  const body = { title: document.getElementById('adrTitle')?.value || '', version: document.getElementById('adrVersion')?.value || '', context: document.getElementById('adrContext')?.value || '', decision: document.getElementById('adrDecision')?.value || '', consequences: document.getElementById('adrConsequences')?.value || '', status: 'Accepted' };
+  fetch('/api/version/adr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.json()).then(data => {
+      if (data.error) { toast('创建失败: ' + data.error, 'error'); return; }
+      toast('ADR 创建成功', 'ok'); document.getElementById('createADRForm').style.display = 'none'; loadADRs();
+    }).catch(e => toast('创建失败: ' + e.message, 'error'));
+}
+
+function loadArchChanges() {
+  fetch('/api/version/arch-change').then(r => r.json()).then(data => {
+    let h = '';
+    if (data && data.changes && data.changes.length > 0) {
+      h += '<div style="color:var(--dim);font-size:11px;margin-bottom:8px">共 ' + data.total + ' 个变更意图</div>';
+      data.changes.forEach(c => {
+        h += '<div class="arch-change-card"><span class="acc-type cl-type-tag ' + c.type + '">' + c.type + '</span>';
+        h += '<div class="acc-info"><div class="acc-title">' + escapeHTML(c.title) + '</div>';
+        if (c.scope) h += '<div class="acc-scope">范围: ' + c.scope + '</div>';
+        if (c.breaking) h += '<div class="acc-breaking">BREAKING CHANGE</div>';
+        h += '</div><div class="acc-actions"><button class="btn" style="font-size:10px;padding:4px 8px" onclick="deleteArchChange(\'' + c.id + '\')">删除</button></div></div>';
+      });
+    } else { h += '<div class="empty">暂无变更意图</div>'; }
+    h += '<button class="btn primary" style="margin-top:12px" onclick="showCreateChangeForm()">+ 创建变更意图</button><div id="createChangeForm" style="display:none;margin-top:12px"></div>';
+    document.getElementById('archChangeContent').innerHTML = h;
+  }).catch(e => { document.getElementById('archChangeContent').innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; });
+}
+
+function showCreateChangeForm() {
+  const el = document.getElementById('createChangeForm'); if (!el) return;
+  let h = '<div class="version-detail-panel"><div class="vdp-header"><span class="vdp-title">创建变更意图</span><button class="vdp-close" onclick="document.getElementById(\'createChangeForm\').style.display=\'none\'">x</button></div>';
+  h += '<input id="changeTitle" placeholder="标题" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px">';
+  h += '<select id="changeType" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px">';
+  ['feat','fix','docs','refactor','perf','test','chore','breaking'].forEach(t => { h += '<option value="' + t + '">' + t + '</option>'; });
+  h += '</select>';
+  h += '<input id="changeScope" placeholder="范围 (如 version)" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px">';
+  h += '<textarea id="changeDesc" placeholder="描述" rows="3" style="width:100%;padding:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--rule);border-radius:6px;color:var(--ink);font-size:12px;resize:vertical"></textarea>';
+  h += '<label style="font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="changeBreaking"> BREAKING CHANGE</label>';
+  h += '<button class="btn primary" onclick="createArchChange()">提交</button></div>';
+  el.innerHTML = h; el.style.display = 'block';
+}
+
+function createArchChange() {
+  const body = { title: document.getElementById('changeTitle')?.value || '', type: document.getElementById('changeType')?.value || 'feat', scope: document.getElementById('changeScope')?.value || '', description: document.getElementById('changeDesc')?.value || '', breaking: document.getElementById('changeBreaking')?.checked || false };
+  fetch('/api/version/arch-change', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.json()).then(data => {
+      if (data.error) { toast('创建失败: ' + data.error, 'error'); return; }
+      toast('变更意图创建成功', 'ok'); document.getElementById('createChangeForm').style.display = 'none'; loadArchChanges();
+    }).catch(e => toast('创建失败: ' + e.message, 'error'));
+}
+
+function deleteArchChange(id) {
+  if (!confirm('确定删除此变更意图?')) return;
+  fetch('/api/version/arch-change?id=' + id, { method: 'DELETE' })
+    .then(r => r.json()).then(data => {
+      if (data.error) { toast('删除失败: ' + data.error, 'error'); return; }
+      toast('已删除', 'ok'); loadArchChanges();
+    }).catch(e => toast('删除失败: ' + e.message, 'error'));
+}
+
+function loadReleaseView() {
+  fetch('/api/version/commit-analyze').then(r => r.json()).then(data => {
+    let h = '';
+    if (data && data.commits) {
+      h += '<div style="margin-bottom:16px"><div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px">提交分析</div>';
+      h += '<div class="vdp-stats" style="grid-template-columns:repeat(5,1fr)">';
+      h += '<div class="vdp-stat"><div class="vdp-val">' + (data.total || 0) + '</div><div class="vdp-label">总提交</div></div>';
+      h += '<div class="vdp-stat"><div class="vdp-val">' + (data.current || '0.7.0') + '</div><div class="vdp-label">当前版本</div></div>';
+      h += '<div class="vdp-stat"><div class="vdp-val" style="color:var(--accent)">' + (data.next_version || '0.8.0') + '</div><div class="vdp-label">推断版本</div></div>';
+      const cl = data.classification || {};
+      h += '<div class="vdp-stat"><div class="vdp-val">' + (cl.breaking || 0) + '</div><div class="vdp-label" style="color:var(--red)">Breaking</div></div>';
+      h += '<div class="vdp-stat"><div class="vdp-val">' + (cl.feat || 0) + ' / ' + (cl.fix || 0) + '</div><div class="vdp-label">feat / fix</div></div>';
+      h += '</div></div>';
+    }
+    const steps = [{n:'Analyze',i:'1'},{n:'Infer',i:'2'},{n:'Merge',i:'3'},{n:'Changelog',i:'4'},{n:'ADR',i:'5'},{n:'Tag',i:'6'}];
+    h += '<div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px">发布流水线</div><div class="release-pipeline">';
+    steps.forEach((s,i) => {
+      h += '<div class="release-step"><div class="rs-icon pending">' + s.i + '</div><div class="rs-name">' + s.n + '</div></div>';
+      if (i < steps.length - 1) h += '<div class="rs-arrow"></div>';
+    });
+    h += '</div><div style="margin-top:20px;display:flex;gap:12px">';
+    h += '<button class="btn primary" onclick="executeRelease(true)">Dry Run 预演</button>';
+    h += '<button class="btn" style="background:var(--orange);color:#fff;border-color:var(--orange)" onclick="executeRelease(false)">执行发布</button>';
+    h += '</div><div id="releaseResult" style="margin-top:16px"></div>';
+    document.getElementById('releaseContent').innerHTML = h;
+  }).catch(e => { document.getElementById('releaseContent').innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; });
+}
+
+function executeRelease(dryRun) {
+  const resultEl = document.getElementById('releaseResult'); if (!resultEl) return;
+  resultEl.innerHTML = '<div style="color:var(--dim);font-size:12px">执行中...</div>';
+  fetch('/api/version/release', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dry_run: dryRun }) })
+    .then(r => r.json()).then(data => {
+      if (data.error) { resultEl.innerHTML = '<div style="color:var(--red);font-size:12px">错误: ' + data.error + '</div>'; return; }
+      let h = '<div class="version-detail-panel"><div class="vdp-header"><span class="vdp-title">' + (dryRun ? 'Dry Run 结果' : '发布结果') + '</span></div>';
+      if (data.plan && data.plan.version) h += '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">版本: ' + (data.plan.version.String || data.plan.version) + '</div>';
+      if (data.result && data.result.steps) {
+        h += '<div class="release-pipeline">';
+        data.result.steps.forEach((s, i) => {
+          h += '<div class="release-step"><div class="rs-icon ' + (s.status || 'pending') + '">' + (i + 1) + '</div><div class="rs-name">' + (s.name || '') + '</div></div>';
+          if (i < (data.result.steps.length - 1)) h += '<div class="rs-arrow"></div>';
+        });
+        h += '</div>';
+        if (data.result.success) h += '<div style="color:var(--green);font-size:12px;margin-top:8px">发布成功!</div>';
+      }
+      h += '</div>'; resultEl.innerHTML = h;
+    }).catch(e => { resultEl.innerHTML = '<div style="color:var(--red);font-size:12px">请求失败: ' + e.message + '</div>'; });
 }
 
 function createSnapshot() {
-  const version = versionData?.current_version || '0.5.1';
+  const version = versionData?.current_version || '0.8.0';
   fetch('/api/version/snapshot?version=' + version, { method: 'POST' })
-    .then(r => r.json())
-    .then(data => {
-      if (data.error) {
-        toast('创建快照失败: ' + data.error, 'error');
-      } else {
-        toast('版本快照 v' + version + ' 创建成功', 'ok');
-        renderVersionTab();
-      }
-    })
-    .catch(e => toast('创建快照失败: ' + e.message, 'error'));
+    .then(r => r.json()).then(data => {
+      if (data.error) { toast('创建快照失败: ' + data.error, 'error'); }
+      else { toast('版本快照 v' + version + ' 创建成功', 'ok'); renderVersionTab(); }
+    }).catch(e => toast('创建快照失败: ' + e.message, 'error'));
 }
 
 function enterDiffMode() {
   const versions = versionData?.versions || [];
-  if (versions.length < 2) {
-    toast('需要至少 2 个版本快照才能对比', 'info');
-    return;
-  }
-  // 默认对比最近两个版本
+  if (versions.length < 2) { toast('需要至少 2 个版本快照才能对比', 'info'); return; }
   diffMode = { v1: versions[1].version, v2: versions[0].version };
   renderDiffViewData();
 }
@@ -2378,84 +2818,47 @@ function enterDiffMode() {
 function renderDiffView() {
   if (!diffMode) return '';
   const versions = versionData?.versions || [];
-  let h = '<div class="version-header">';
-  h += '<div class="version-current" style="font-size:20px">版本对比</div>';
-  h += '<div class="version-actions">';
+  let h = '<div class="version-header"><div class="version-current" style="font-size:20px">版本对比</div><div class="version-actions">';
   h += '<select id="diffV1" onchange="diffMode.v1=this.value;renderDiffViewData()" style="background:#1c1c1e;color:#f5f5f7;border:1px solid #2c2c2e;border-radius:6px;padding:6px 10px;font-size:12px">';
-  versions.forEach(v => {
-    h += '<option value="' + v.version + '"' + (v.version === diffMode.v1 ? ' selected' : '') + '>v' + v.version + '</option>';
-  });
-  h += '</select>';
-  h += '<span style="color:var(--dim)">→</span>';
+  versions.forEach(v => { h += '<option value="' + v.version + '"' + (v.version === diffMode.v1 ? ' selected' : '') + '>v' + v.version + '</option>'; });
+  h += '</select><span style="color:var(--dim)">→</span>';
   h += '<select id="diffV2" onchange="diffMode.v2=this.value;renderDiffViewData()" style="background:#1c1c1e;color:#f5f5f7;border:1px solid #2c2c2e;border-radius:6px;padding:6px 10px;font-size:12px">';
-  versions.forEach(v => {
-    h += '<option value="' + v.version + '"' + (v.version === diffMode.v2 ? ' selected' : '') + '>v' + v.version + '</option>';
-  });
-  h += '</select>';
-  h += '<button class="btn" onclick="diffMode=null;renderVersionContent()">退出对比</button>';
-  h += '</div>';
-  h += '</div>';
-  h += '<div id="diffDetail">加载中...</div>';
+  versions.forEach(v => { h += '<option value="' + v.version + '"' + (v.version === diffMode.v2 ? ' selected' : '') + '>v' + v.version + '</option>'; });
+  h += '</select><button class="btn" onclick="diffMode=null;renderVersionContent()">退出对比</button>';
+  h += '</div></div><div id="diffDetail">加载中...</div>';
   return h;
 }
 
 function renderDiffViewData() {
   if (!diffMode || !diffMode.v1 || !diffMode.v2) return;
   fetch('/api/version/diff?v1=' + diffMode.v1 + '&v2=' + diffMode.v2)
-    .then(r => r.json())
-    .then(diff => {
-      renderDiffDetail(diff);
-    })
-    .catch(e => {
-      document.getElementById('diffDetail').innerHTML = '<div class="empty">对比失败: ' + e.message + '</div>';
-    });
+    .then(r => r.json()).then(diff => { renderDiffDetail(diff); })
+    .catch(e => { document.getElementById('diffDetail').innerHTML = '<div class="empty">对比失败: ' + e.message + '</div>'; });
 }
 
 function renderDiffDetail(diff) {
-  if (diff.error) {
-    document.getElementById('diffDetail').innerHTML = '<div class="empty">对比失败: ' + diff.error + '</div>';
-    return;
-  }
+  if (diff.error) { document.getElementById('diffDetail').innerHTML = '<div class="empty">对比失败: ' + diff.error + '</div>'; return; }
   let h = '<div class="diff-container">';
-
-  // 左侧: v1
   const linesAdded = diff.total_diff?.lines_added || 0;
   const linesRemoved = Math.abs(linesAdded < 0 ? linesAdded : 0);
   const symbolsAdded = diff.total_diff?.symbols_added || 0;
-
-  h += '<div class="diff-column">';
-  h += '<div class="dc-title">v' + diff.version_from + ' → v' + diff.version_to + '</div>';
-  h += '<div class="diff-stats">';
+  h += '<div class="diff-column"><div class="dc-title">v' + diff.version_from + ' → v' + diff.version_to + '</div><div class="diff-stats">';
   if (diff.files_added?.length) h += '<span class="added">+ ' + diff.files_added.length + ' 新增</span>';
   if (diff.files_removed?.length) h += '<span class="removed">- ' + diff.files_removed.length + ' 删除</span>';
   if (diff.files_changed?.length) h += '<span style="color:var(--orange)">~ ' + diff.files_changed.length + ' 修改</span>';
-  h += '</div>';
-  h += '<div class="diff-stats">';
+  h += '</div><div class="diff-stats">';
   h += '<span class="added">+ ' + (linesAdded > 0 ? linesAdded : 0) + ' 行</span>';
-  h += '<span class="removed">- ' + (linesRemoved) + ' 行</span>';
+  h += '<span class="removed">- ' + linesRemoved + ' 行</span>';
   h += '<span class="added">+ ' + (symbolsAdded > 0 ? symbolsAdded : 0) + ' 符号</span>';
-  h += '</div>';
-  h += '</div>';
-
-  // 右侧: 文件变更列表
-  h += '<div class="diff-column">';
-  h += '<div class="dc-title">变更详情</div>';
-  h += '<ul class="diff-file-list">';
-  (diff.files_added || []).forEach(f => {
-    h += '<li><span class="diff-tag added">新增</span>' + f + '</li>';
-  });
-  (diff.files_removed || []).forEach(f => {
-    h += '<li><span class="diff-tag removed">删除</span>' + f + '</li>';
-  });
+  h += '</div></div>';
+  h += '<div class="diff-column"><div class="dc-title">变更详情</div><ul class="diff-file-list">';
+  (diff.files_added || []).forEach(f => { h += '<li><span class="diff-tag added">新增</span>' + f + '</li>'; });
+  (diff.files_removed || []).forEach(f => { h += '<li><span class="diff-tag removed">删除</span>' + f + '</li>'; });
   (diff.files_changed || []).forEach(f => {
     const delta = f.lines_after - f.lines_before;
-    const deltaStr = delta >= 0 ? '+' + delta : '' + delta;
-    h += '<li><span class="diff-tag changed">修改</span>' + f.name + '<span class="diff-delta">' + deltaStr + '行</span></li>';
+    h += '<li><span class="diff-tag changed">修改</span>' + f.name + '<span class="diff-delta">' + (delta >= 0 ? '+' + delta : '' + delta) + '行</span></li>';
   });
-  h += '</ul>';
-  h += '</div>';
-  h += '</div>';
-
+  h += '</ul></div></div>';
   document.getElementById('diffDetail').innerHTML = h;
 }
 

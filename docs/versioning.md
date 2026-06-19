@@ -17,7 +17,7 @@ MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 ## 0.x 阶段约定
 
-当前框架处于 0.x 阶段（当前版本：**0.7.0**），采用以下约定：
+当前框架处于 0.x 阶段（当前版本：**0.8.0**），采用以下约定：
 
 - 0.x 版本中，MINOR 版本号的递增等同于 MAJOR 级别的变更——即 0.x 到 0.(x+1) 之间**不保证**向后兼容
 - 0.x 版本中，PATCH 版本号用于**向后兼容的修复**，与 1.0+ 的 PATCH 语义一致
@@ -76,6 +76,38 @@ Go module 路径中的版本号遵循 Go 官方规范：
 采用 [Keep a Changelog](https://keepachangelog.com/) 格式：
 
 ```markdown
+## [0.8.0] - 2026-06-19
+
+### Added
+- 通用版本管理模块 (`go-core/version_*.go`)：8 个文件，涵盖全生命周期
+  - `version_types.go`：Semver、ConventionalCommit、ChangeIntent、ADR、ReleasePlan 等 15+ 核心类型
+  - `version_semver.go`：SemVer 2.0.0 解析器 + 自动版本推断引擎
+  - `version_commit.go`：Conventional Commits 1.0.0 完整解析器（支持 !、BREAKING CHANGE、多行 body）
+  - `version_change.go`：ArchChange 意图文件系统（仿 changesets 模式）
+  - `version_changelog.go`：Keep a Changelog 格式生成器
+  - `version_git.go`：Git 操作 Sidecar 适配器（log、tag、branch、diff）
+  - `version_adr.go`：架构决策记录 (ADR) 系统
+  - `version_composer.go`：6 步发布流水线编排器
+- 版本管理 API 端点（5 个新增）：
+  - `GET /api/version/commit-analyze`：提交分析
+  - `GET /api/version/next-version`：下一版本自动推断
+  - `GET/POST/DELETE /api/version/arch-change`：ArchChange 意图文件 CRUD
+  - `GET/POST /api/version/adr`：ADR 创建与查询
+  - `POST /api/version/release`：发布流水线执行
+- 版本管理前端增强：5 个子 Tab（概览、Changelog、ADR、ArchChange、发布流水线）
+- 版本管理单元测试：29 个测试用例 + 8 个性能基准，全部通过
+- 开发文档：`docs/version-management-v080-dev/version-management-v080-dev.html`（19 个任务 × 10 条验收标准）
+
+### Changed
+- `cmd/arch-manager/version.go`：重构为使用 go-core 版本管理模块
+- `cmd/arch-manager/main.go`：版本号从硬编码 0.5.1 改为动态获取，所有 API 端点增加 CORS 头
+- `go.mod`：增加 go-core 子模块依赖（`replace low-entropy-core/go-core => ./go-core`）
+- `arch-manager.html`：版本管理 Tab 从单页升级为 5 个子 Tab 面板
+
+### Fixed
+- Conventional Commits 解析器 body/footer 边界判定逻辑修复
+- 非十六进制 hash 导致的提交解析跳过问题
+
 ## [0.7.0] - 2026-06-19
 
 ### Added

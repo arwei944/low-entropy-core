@@ -1,0 +1,506 @@
+{
+  "version": "0.8.0",
+  "timestamp": "2026-06-19T19:34:44.0702442+08:00",
+  "semver": {
+    "major": 0,
+    "minor": 8,
+    "patch": 0
+  },
+  "snapshot": {
+    "files": {
+      "adapter.go": {
+        "hash": "sha256:752ac74117815444ae8686271707b152c590b92f4f8e18d4d2f284a77ba5acee",
+        "lines": 42,
+        "symbols": 5
+      },
+      "agent_runner.go": {
+        "hash": "sha256:8aaa618734b50df059f71e3973eb04c579894f8f6ad9ab54a4ff9929927c4c0f",
+        "lines": 180,
+        "symbols": 4
+      },
+      "agent_submit.go": {
+        "hash": "sha256:5fe88d3d0e37bbfc5c12c47826f23e4aeaacdd52873c459af3bdd38a90cd2e02",
+        "lines": 450,
+        "symbols": 22
+      },
+      "app.go": {
+        "hash": "sha256:b14ff748e6a85415f41659fa917143637c78790c6ef6fd444243996d7d0479ac",
+        "lines": 134,
+        "symbols": 4
+      },
+      "architecture_registry.go": {
+        "hash": "sha256:336100cdf5fcd0bfd5b746de16c998c10efc1ee9b182104ea7441a66f85b0ab7",
+        "lines": 117,
+        "symbols": 11
+      },
+      "atom.go": {
+        "hash": "sha256:723cb9a5c83842d36007586b3e9afca17d74bb01c25aedbf4ef56c76f53e1e2d",
+        "lines": 7,
+        "symbols": 0
+      },
+      "auto_detect.go": {
+        "hash": "sha256:e91c0b8984e2eecf5a4d38a58a99b46f6c4fd4f09c6f2d27d4d999c53ce9b53b",
+        "lines": 168,
+        "symbols": 4
+      },
+      "complexity_profile.go": {
+        "hash": "sha256:b79c7a809055ed6bfefd8c7b315b3cf66a4b41ce16b7da9974e4111ed270b2d2",
+        "lines": 142,
+        "symbols": 16
+      },
+      "composer.go": {
+        "hash": "sha256:8d6b26d0e3fd77dc84785d6349dbf52bc8691cd7a12bacd70736ba73dc3f5cdd",
+        "lines": 638,
+        "symbols": 39
+      },
+      "config.go": {
+        "hash": "sha256:24cb2e0fe872b094de1eee97787bdb65761f0b821012e3f95c5542907681c82a",
+        "lines": 445,
+        "symbols": 22
+      },
+      "degradation.go": {
+        "hash": "sha256:ef7f57a00b9d0344583e1cc2d3b2e1a4660268db7c90157606391aff48c8af96",
+        "lines": 103,
+        "symbols": 11
+      },
+      "entropy_metrics.go": {
+        "hash": "sha256:d64f5f36dfe5feb0afa0425c6ccaeddeef96be5b384adf6325ddb471ef33c500",
+        "lines": 145,
+        "symbols": 7
+      },
+      "errors.go": {
+        "hash": "sha256:3996c041bc54d670c6aaa6b745abab8ab27ba78de8fe6e04e394e2a3646ef780",
+        "lines": 175,
+        "symbols": 25
+      },
+      "eventbus.go": {
+        "hash": "sha256:ce6f16cc1cd948f9c56e37dde50edf2905a0cb905be70309559e43b3025c8ec2",
+        "lines": 196,
+        "symbols": 10
+      },
+      "eventbus_persistent.go": {
+        "hash": "sha256:7df916dc0116fc55bb48f7c040cec152da44bc2aa152c56726c553b2e36478f6",
+        "lines": 133,
+        "symbols": 8
+      },
+      "eventstore.go": {
+        "hash": "sha256:d092ca5bd1b66f6d20d97195a5e03a0a5810169418ebf1945fccb99fbb897dcf",
+        "lines": 198,
+        "symbols": 12
+      },
+      "eventstore_persistent.go": {
+        "hash": "sha256:45cd73a3349f23daf4e42e1452956833253f3369454cd16c57046f95394c6b00",
+        "lines": 216,
+        "symbols": 12
+      },
+      "eventstore_upgrade.go": {
+        "hash": "sha256:8a0d89e86439f2478092493d2a33e99f16570d0f76ee32cd66b501230aae73b4",
+        "lines": 618,
+        "symbols": 39
+      },
+      "fastpath.go": {
+        "hash": "sha256:3213453f7623040236cd6496affc1fcf1efcae73ea7142fccd02dca9652e25bf",
+        "lines": 107,
+        "symbols": 8
+      },
+      "guardian_decision.go": {
+        "hash": "sha256:c71b6d73e4e240e9ac60999014d4d3badcf673632745ab1d0800fa533b62dc6d",
+        "lines": 374,
+        "symbols": 19
+      },
+      "guardian_dependency.go": {
+        "hash": "sha256:762ac40fa75f0a7d88d45db7f96a14dcef9c5cd69d12d2527b04294a71a749d1",
+        "lines": 614,
+        "symbols": 31
+      },
+      "guardian_entropy.go": {
+        "hash": "sha256:a5e9295f1ef3480df3ecf93299d3c665ba1a1db7548681934876895091706601",
+        "lines": 771,
+        "symbols": 55
+      },
+      "guardian_static.go": {
+        "hash": "sha256:c74d46d2997a2163b1f839022991b22e585c79bef188b58b7cea623fb886d95e",
+        "lines": 665,
+        "symbols": 7
+      },
+      "guardian_transparency.go": {
+        "hash": "sha256:5a6e86c2b07d913f44444b6e3f6d1ef6f8059bca1eafc6a1651ec28a1f7d85e7",
+        "lines": 401,
+        "symbols": 18
+      },
+      "handoff.go": {
+        "hash": "sha256:af18a3a4b8246ef5a8e2e87cefef6e84d49587ba94d1929b53a12589863c09bf",
+        "lines": 673,
+        "symbols": 54
+      },
+      "handoff_persistence.go": {
+        "hash": "sha256:5ca5ae355ce336468f76887730599cd33dc8f92e04cbbc781e191dee2720a0f5",
+        "lines": 246,
+        "symbols": 19
+      },
+      "idempotent.go": {
+        "hash": "sha256:421b7a323f9bcf9f0ab6c7a833a892367d17490e257ba4715d83d5d9f3223aea",
+        "lines": 197,
+        "symbols": 12
+      },
+      "migration_adopt.go": {
+        "hash": "sha256:875033db09dfd751084468c3251c78162cc6743ccdba1b47c1ae96ef6e68a404",
+        "lines": 69,
+        "symbols": 3
+      },
+      "migration_analyze.go": {
+        "hash": "sha256:807dfe6933a3f7eb63292c9b7cd655c80c30e49a49571da9387d4d3b4b76b190",
+        "lines": 311,
+        "symbols": 22
+      },
+      "migration_validate.go": {
+        "hash": "sha256:41fad102008ba313e3ec25df84bde80659ad84c6291f9897937b773260447692",
+        "lines": 127,
+        "symbols": 4
+      },
+      "observation.go": {
+        "hash": "sha256:ee0a27ce464d087be74e406baf64881e3754b20ab9f303984ec24bbd86c51c85",
+        "lines": 372,
+        "symbols": 26
+      },
+      "observation_aggregator.go": {
+        "hash": "sha256:9cb74ecddcf41db22e5c92af3ea44b0687c5b2691c14fdcfd2ed08bbafe0a32c",
+        "lines": 675,
+        "symbols": 19
+      },
+      "observation_api.go": {
+        "hash": "sha256:515e313288693d7a8f45f120782d3eb16d7cf1e972733b8b813b11c69c18f9e7",
+        "lines": 210,
+        "symbols": 3
+      },
+      "observation_pipeline.go": {
+        "hash": "sha256:e95529cb530af61497685da180f584f09bf5249fe7b52dc39ea51cff8b49ca32",
+        "lines": 202,
+        "symbols": 13
+      },
+      "observation_sampler.go": {
+        "hash": "sha256:30f95878137e5f6700e891b84f2c521d3bdbf8a1304c5c8e96194a4b3b0a8783",
+        "lines": 172,
+        "symbols": 18
+      },
+      "observation_store.go": {
+        "hash": "sha256:85f47495cdf5a8df6107cc6f4ac554a61f7cf96f8976df10cc694b47346a8307",
+        "lines": 173,
+        "symbols": 9
+      },
+      "patterns_distributed.go": {
+        "hash": "sha256:77a290ad9e514d584acc6050062db13e9859c94e9877ca04654d6bee378db502",
+        "lines": 554,
+        "symbols": 37
+      },
+      "patterns_resilience.go": {
+        "hash": "sha256:fbd74d3cc6ec742c3dba05bf44073bd8d593b1018991a6769c0eec1a7ade6dc8",
+        "lines": 537,
+        "symbols": 27
+      },
+      "perf_core.go": {
+        "hash": "sha256:fa087216b41c396d30ba008a3f041a46a0ad4c0fd1e177b2db5460a697a1fba5",
+        "lines": 645,
+        "symbols": 39
+      },
+      "perf_sharded_observation.go": {
+        "hash": "sha256:be92ceb09b95d0e1dab68574eda1edc817c62c3bdec6b0e4726fe564a851377e",
+        "lines": 710,
+        "symbols": 19
+      },
+      "perf_tdigest.go": {
+        "hash": "sha256:fcf33f76957f0c5c87e7fd3e67d07eb6a6d91bcea38fba1a15f6e8803730c9c8",
+        "lines": 474,
+        "symbols": 31
+      },
+      "port.go": {
+        "hash": "sha256:79e1f82ccb1f597ab4faad89f5316b27a9dd10bc8dbd075b57da5ffed178b605",
+        "lines": 41,
+        "symbols": 5
+      },
+      "port_contract.go": {
+        "hash": "sha256:c67b3782eb87991923e8fc0c385289198308fc3de9a4a734f383b29272cb2bc7",
+        "lines": 150,
+        "symbols": 6
+      },
+      "projection.go": {
+        "hash": "sha256:3e0759a01be709a458d949a81639f62b4f6d9a18849501f62f485892805377b2",
+        "lines": 114,
+        "symbols": 7
+      },
+      "remote_composer.go": {
+        "hash": "sha256:6c50b0265dc1e87524eb28d5a362a3b46ef4a0786433469f8307f1b434c89bb5",
+        "lines": 79,
+        "symbols": 5
+      },
+      "scheduler.go": {
+        "hash": "sha256:3227f65a224991145ada1507071669deecb0b89dbc4ce750889feda82896135b",
+        "lines": 497,
+        "symbols": 44
+      },
+      "schema.go": {
+        "hash": "sha256:d77075380ef44e2c9dc1084f9cfbc0b50a9490de5e0b44969e910537a382f464",
+        "lines": 365,
+        "symbols": 19
+      },
+      "security.go": {
+        "hash": "sha256:14ebbe3fc7810ebd5a2876606fbd56a5e2be7609a90e0eb16789b916d6b3b30d",
+        "lines": 538,
+        "symbols": 48
+      },
+      "step.go": {
+        "hash": "sha256:024a86182495611b7caf1a5fa51c1522a408e5056f5a0055de4d4414de4d6412",
+        "lines": 51,
+        "symbols": 6
+      },
+      "storage_fs.go": {
+        "hash": "sha256:681be0171722ab38ed2a93f896292c03e5b373a79919e56f451107fc960b6360",
+        "lines": 313,
+        "symbols": 13
+      },
+      "tenant.go": {
+        "hash": "sha256:644d815b7288f494f73cab2e5a6eae3ce3dea540a0717baac2b1f13ed946de39",
+        "lines": 55,
+        "symbols": 6
+      },
+      "tier_bridge.go": {
+        "hash": "sha256:ae9797bc969fbef18f65d15a5706be43f0083a10c6c05c721f0c133cbb6252fa",
+        "lines": 155,
+        "symbols": 3
+      },
+      "tier_check.go": {
+        "hash": "sha256:dcd65d3800a2041979e97b15cdab84d3edefc809caedb09abfdf42ec5c468f7f",
+        "lines": 65,
+        "symbols": 5
+      },
+      "tier_drift.go": {
+        "hash": "sha256:b50e0a7be25147b8b88ab43155dcbccecab3610a3d15d6ba012697e8758b8b1b",
+        "lines": 198,
+        "symbols": 9
+      },
+      "tier_transition.go": {
+        "hash": "sha256:ea75be8589f8570b30024b81c1ef823ef1d07640eda0d51300d6b5b897f95f39",
+        "lines": 216,
+        "symbols": 14
+      },
+      "transaction.go": {
+        "hash": "sha256:e98f97ebee823da59e721af503125a84933462ba1842532fb3ba50d613a2d114",
+        "lines": 116,
+        "symbols": 6
+      },
+      "types.go": {
+        "hash": "sha256:ceb1a916a48da4863ab476068a58f65d9874f4eff09e23eb1a5d4d06535394f7",
+        "lines": 85,
+        "symbols": 10
+      },
+      "understand_adapter.go": {
+        "hash": "sha256:ead5eb085c2824a93201dfb5edd8d5d0c161609dcacce0404aecffecde90324e",
+        "lines": 211,
+        "symbols": 10
+      },
+      "understand_migration.go": {
+        "hash": "sha256:7e0456a442e0808229da61d981e20e77c49fe442d44c90708c9045be01cda2fc",
+        "lines": 524,
+        "symbols": 16
+      },
+      "understand_observer.go": {
+        "hash": "sha256:6812751de4f7cb88943079d0bb1c243ec20d01efba84953b651cd8d346d8276d",
+        "lines": 366,
+        "symbols": 18
+      },
+      "understand_supervisor.go": {
+        "hash": "sha256:cfedcc4fe39d441ef5270f489342e5a910d534c83a4acb7466aa7b04f2f0f00c",
+        "lines": 435,
+        "symbols": 12
+      },
+      "understand_types.go": {
+        "hash": "sha256:78dce85665b05452102b91403edf2bb41f65a0bffcb198fc2adaff58ac3ce4b7",
+        "lines": 315,
+        "symbols": 71
+      },
+      "version_adr.go": {
+        "hash": "sha256:f214a143f40b5d6ba1f5d111231df6d61584181ef23efd98017550c00b0d892d",
+        "lines": 312,
+        "symbols": 6
+      },
+      "version_change.go": {
+        "hash": "sha256:667903f2a7761c839a6f2696f9109227563ae8168767817adf208153b8829632",
+        "lines": 260,
+        "symbols": 9
+      },
+      "version_changelog.go": {
+        "hash": "sha256:19c822e318de81294709b411eade215ed33e1b430f66a9da6484c776b92bc713",
+        "lines": 181,
+        "symbols": 6
+      },
+      "version_commit.go": {
+        "hash": "sha256:bd07076190837cd3fa7ca4b92bc5857312c7f45f0d0b8096b852e23bf59dcde6",
+        "lines": 275,
+        "symbols": 10
+      },
+      "version_composer.go": {
+        "hash": "sha256:3c2b8944eb546c0dc1ab6bcc36912be41158e5060319c2cc19a7276b9795606c",
+        "lines": 242,
+        "symbols": 10
+      },
+      "version_git.go": {
+        "hash": "sha256:12c12613ae328f702e7f2fc2df8487ba8c0a3255f4ffd8711bdc5fbb7adec0aa",
+        "lines": 172,
+        "symbols": 10
+      },
+      "version_semver.go": {
+        "hash": "sha256:7d418fcd406f854b70232f0adf1239523ae71e33867da54f159d4777f53bd124",
+        "lines": 281,
+        "symbols": 14
+      },
+      "version_types.go": {
+        "hash": "sha256:94885eca1e25afbd4d69b1b0d929f169111d6ca38e6efcb775d2232385a5392c",
+        "lines": 291,
+        "symbols": 29
+      }
+    },
+    "layer_stats": {
+      "L0": {
+        "layer": "L0",
+        "name": "错误处理",
+        "files": 6,
+        "lines": 2196,
+        "symbols": 132,
+        "color": "#7f8ea3"
+      },
+      "L1": {
+        "layer": "L1",
+        "name": "四原语定义",
+        "files": 5,
+        "lines": 779,
+        "symbols": 55,
+        "color": "#00d4aa"
+      },
+      "L2": {
+        "layer": "L2",
+        "name": "单机韧性",
+        "files": 2,
+        "lines": 640,
+        "symbols": 38,
+        "color": "#60a5fa"
+      },
+      "L3": {
+        "layer": "L3",
+        "name": "分布式韧性",
+        "files": 1,
+        "lines": 554,
+        "symbols": 37,
+        "color": "#38bdf8"
+      },
+      "L4": {
+        "layer": "L4",
+        "name": "Guardian 监督",
+        "files": 4,
+        "lines": 2160,
+        "symbols": 123,
+        "color": "#ef4444"
+      },
+      "L5": {
+        "layer": "L5",
+        "name": "Observation 可观测",
+        "files": 6,
+        "lines": 1804,
+        "symbols": 88,
+        "color": "#34d399"
+      },
+      "L6": {
+        "layer": "L6",
+        "name": "EventStore 事件溯源",
+        "files": 7,
+        "lines": 1494,
+        "symbols": 92,
+        "color": "#f472b6"
+      },
+      "L7": {
+        "layer": "L7",
+        "name": "应用层",
+        "files": 39,
+        "lines": 10662,
+        "symbols": 606,
+        "color": "#f59e0b"
+      }
+    },
+    "total": {
+      "files": 70,
+      "lines": 20289,
+      "symbols": 1171
+    }
+  },
+  "changelog": [
+    {
+      "type": "fix",
+      "scope": "",
+      "message": "rename v0.7.0 snapshot file (remove duplicate v prefix)"
+    },
+    {
+      "type": "feat",
+      "scope": "",
+      "message": "v0.7.0 UA Integration - Understand-Anything as migration, supervision, and observation layers"
+    },
+    {
+      "type": "feat",
+      "scope": "",
+      "message": "add Progressive Complexity Model (v0.5.0) and TierMigration+Drift (v0.5.1)"
+    },
+    {
+      "type": "docs",
+      "scope": "",
+      "message": "add Windows-scale upgrade analysis + Progressive Complexity Model"
+    },
+    {
+      "type": "chore",
+      "scope": "",
+      "message": "add root go.mod, CI workflow, and arch-manager CLI"
+    },
+    {
+      "type": "feat",
+      "scope": "",
+      "message": "add architecture visualization artifacts (9 HTML dashboards)"
+    },
+    {
+      "type": "docs",
+      "scope": "",
+      "message": "add Phase 5-7 development plans"
+    },
+    {
+      "type": "test",
+      "scope": "",
+      "message": "Phase 5+6 - agent E2E, static guard, storage, patterns tests"
+    },
+    {
+      "type": "refactor",
+      "scope": "core",
+      "message": "Phase 5+6 - file consolidation, new modules, Branch/Handoff fixes"
+    },
+    {
+      "type": "test",
+      "scope": "phase7",
+      "message": "add EventStore/EventBus/Projection/Idempotent/Degradation/Guardian tests + agent-demo README"
+    },
+    {
+      "type": "feat",
+      "scope": "core",
+      "message": "v4.0 production-grade upgrade for billion-scale throughput"
+    },
+    {
+      "type": "docs",
+      "scope": "",
+      "message": "添加三大核心升级文档（100万行规模模拟）"
+    },
+    {
+      "type": "docs",
+      "scope": "",
+      "message": "添加中文 README、MIT LICENSE 和 GitHub Actions CI"
+    },
+    {
+      "type": "feat",
+      "scope": "",
+      "message": "migrate full low-entropy core with complete primitives and tools"
+    }
+  ]
+}

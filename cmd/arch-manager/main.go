@@ -27,6 +27,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	core "low-entropy-core/go-core"
 )
 
 // ============================================================================
@@ -1644,10 +1646,7 @@ func handleVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentVersion := "0.5.1"
-	if len(versions) > 0 {
-		currentVersion = versions[0].Version
-	}
+	currentVersion := GetCurrentVersion()
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"current_version": currentVersion,
@@ -1665,7 +1664,7 @@ func handleVersionSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	version := r.URL.Query().Get("version")
 	if version == "" {
-		version = "0.5.1"
+		version = GetCurrentVersion()
 	}
 
 	snapshot, err := CreateSnapshot(version)
@@ -1688,6 +1687,8 @@ func handleVersionSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // handleVersionDiff 返回两个版本的 diff
 func handleVersionDiff(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	v1 := r.URL.Query().Get("v1")
 	v2 := r.URL.Query().Get("v2")
 
@@ -1707,35 +1708,295 @@ func handleVersionDiff(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(diff)
 }
 
 // handleVersionChangelog 返回指定版本的 Changelog
 func handleVersionChangelog(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	version := r.URL.Query().Get("v")
 	if version == "" {
-		version = "0.5.1"
+		version = GetCurrentVersion()
 	}
 
 	entries, err := LoadChangelog(version)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":     err.Error(),
-			"changelog": []ChangelogEntry{},
+			"changelog": []core.ChangelogEntry{},
 		})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"version":   version,
 		"changelog": entries,
 		"total":     len(entries),
 	})
+}
+
+// handleVersionCommitAnalyze 分析 Git 提交并推断版本号增量 (v0.8.0)
+func handleVersionCommitAnalyze(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	since := r.URL.Query().Get("since")
+	result, err := AnalyzeCommitsWrapper(since)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(result)
+}
+
+// handleVersionNextVersion 推断下一版本号 (v0.8.0)
+func handleVersionNextVersion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	current := r.URL.Query().Get("current")
+	result, err := NextVersionWrapper(current)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(result)
+}
+
+// handleVersionArchChange ArchChange 变更意图 API (v0.8.0)
+func handleVersionArchChange(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	repoDir := filepath.Join(sourceDir, "..")
+
+	switch r.Method {
+	case http.MethodGet:
+		changes, err := core.ListChanges(repoDir)
+		if err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"changes": changes,
+			"total":   len(changes),
+		})
+
+	case http.MethodPost:
+		var body map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": "invalid JSON body",
+			})
+			return
+		}
+
+		intent := core.ChangeIntent{
+			Title:       getString(body, "title", ""),
+			Type:        getString(body, "type", "feat"),
+			Scope:       getString(body, "scope", ""),
+			Description: getString(body, "description", ""),
+			Breaking:    getBool(body, "breaking", false),
+		}
+
+		if err := core.CreateChange(repoDir, intent); err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":  "created",
+			"message": "change intent created",
+		})
+
+	case http.MethodDelete:
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": "missing id parameter",
+			})
+			return
+		}
+		if err := core.DeleteChangeByID(repoDir, id); err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":  "deleted",
+			"message": "change intent deleted",
+		})
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// handleVersionADR ADR 架构决策记录 API (v0.8.0)
+func handleVersionADR(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	repoDir := filepath.Join(sourceDir, "..")
+
+	switch r.Method {
+	case http.MethodGet:
+		version := r.URL.Query().Get("version")
+		if version != "" {
+			if sv, err := core.ParseSemver(version); err == nil {
+				adrs, err := core.ADRByVersion(repoDir, sv)
+				if err != nil {
+					json.NewEncoder(w).Encode(map[string]interface{}{
+						"error": err.Error(),
+					})
+					return
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"adrs":  adrs,
+					"total": len(adrs),
+				})
+				return
+			}
+		}
+
+		adrs, err := core.ListADRs(repoDir)
+		if err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"adrs":  adrs,
+			"total": len(adrs),
+		})
+
+	case http.MethodPost:
+		var body map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": "invalid JSON body",
+			})
+			return
+		}
+
+		adr := core.ADR{
+			Title:        getString(body, "title", ""),
+			Status:       getString(body, "status", core.ADRStatusProposed),
+			Version:      getString(body, "version", ""),
+			Context:      getString(body, "context", ""),
+			Decision:     getString(body, "decision", ""),
+			Consequences: getString(body, "consequences", ""),
+		}
+
+		if err := core.CreateADR(repoDir, adr); err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":  "created",
+			"message": "ADR created",
+		})
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// handleVersionRelease 发布流水线 API (v0.8.0)
+func handleVersionRelease(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "invalid JSON body",
+		})
+		return
+	}
+
+	dryRun := getBool(body, "dry_run", true)
+	repoDir := filepath.Join(sourceDir, "..")
+
+	rc := core.NewReleaseComposer(repoDir)
+
+	if dryRun {
+		plan, err := rc.DryRun()
+		if err != nil {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"plan":    plan,
+			"dry_run": true,
+		})
+		return
+	}
+
+	plan, err := rc.PlanRelease()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	result, err := rc.ExecuteRelease(plan)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"plan":   plan,
+		"result": result,
+	})
+}
+
+// getString 从 map 中安全获取字符串值。
+func getString(m map[string]interface{}, key string, defaultVal string) string {
+	if v, ok := m[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return defaultVal
+}
+
+// getBool 从 map 中安全获取布尔值。
+func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
+	if v, ok := m[key]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+	}
+	return defaultVal
 }
 
 // ============================================================================
@@ -2515,6 +2776,11 @@ func main() {
 	mux.HandleFunc("/api/version/snapshot", handleVersionSnapshot)
 	mux.HandleFunc("/api/version/diff", handleVersionDiff)
 	mux.HandleFunc("/api/version/changelog", handleVersionChangelog)
+	mux.HandleFunc("/api/version/commit-analyze", handleVersionCommitAnalyze)
+	mux.HandleFunc("/api/version/next-version", handleVersionNextVersion)
+	mux.HandleFunc("/api/version/arch-change", handleVersionArchChange)
+	mux.HandleFunc("/api/version/adr", handleVersionADR)
+	mux.HandleFunc("/api/version/release", handleVersionRelease)
 	mux.HandleFunc("/api/version", handleVersion)
 
 	// 引导层 API 路由 (v0.6.0)
