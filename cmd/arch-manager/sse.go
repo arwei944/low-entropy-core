@@ -210,6 +210,10 @@ func watchFiles(dir string, interval time.Duration) {
 				File: f, Action: "created",
 				Message: fmt.Sprintf("新文件创建: %s", f),
 			})
+			changelogStore.Append(ArchChangeEntry{
+				Category: "file_add", Severity: "info", File: f,
+				Detail: fmt.Sprintf("新文件创建: %s", f), Source: "watch",
+			})
 		}
 		for _, f := range changedFiles {
 			eventBus.publish(DevEvent{
@@ -217,12 +221,20 @@ func watchFiles(dir string, interval time.Duration) {
 				File: f, Action: "modified",
 				Message: fmt.Sprintf("文件修改: %s", f),
 			})
+			changelogStore.Append(ArchChangeEntry{
+				Category: "file_modify", Severity: "info", File: f,
+				Detail: fmt.Sprintf("文件修改: %s", f), Source: "watch",
+			})
 		}
 		for _, f := range deletedFiles {
 			eventBus.publish(DevEvent{
 				Type: "file_changed", Timestamp: time.Now().Format(time.RFC3339),
 				File: f, Action: "deleted",
 				Message: fmt.Sprintf("文件删除: %s", f),
+			})
+			changelogStore.Append(ArchChangeEntry{
+				Category: "file_delete", Severity: "warning", File: f,
+				Detail: fmt.Sprintf("文件删除: %s", f), Source: "watch",
 			})
 		}
 
@@ -254,6 +266,12 @@ func watchFiles(dir string, interval time.Duration) {
 				Message: fmt.Sprintf("检测到 %d 条架构违规", len(violations)),
 				Data:    violations,
 			})
+			for _, v := range violations {
+				changelogStore.Append(ArchChangeEntry{
+					Category: "violation_add", Severity: v.Severity,
+					File: v.File, Detail: v.Message, Source: "watch",
+				})
+			}
 		}
 		log.Printf("[watch] 刷新完成")
 	}

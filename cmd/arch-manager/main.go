@@ -250,6 +250,24 @@ func main() {
 
 	// Guardian API
 	initGuardian()
+
+	// 迁移引擎 API (v0.11.0)
+	initMigrateState(filepath.Join(sourceDir, ".migration-logs"))
+	mux.HandleFunc("/api/migrate/analyze", handleMigrateAnalyze)
+	mux.HandleFunc("/api/migrate/validate", handleMigrateValidate)
+	mux.HandleFunc("/api/migrate/sessions", handleMigrateSessions)
+	mux.HandleFunc("/api/migrate/sessions/", handleMigrateSessionDetail)
+	mux.HandleFunc("/api/migrate/logs", handleMigrateLogs)
+	mux.HandleFunc("/api/migrate/logs/export", handleMigrateLogsExport)
+	mux.HandleFunc("/api/migrate/status", handleMigrateStatus)
+	mux.HandleFunc("/api/sse/migrate", handleMigrateSSE)
+
+	// 架构变动日志 API
+	changelogStore = NewArchChangelogStore(filepath.Join(sourceDir, ".arch-changelog"))
+	mux.HandleFunc("/api/arch-changelog", handleArchChangelog)
+	mux.HandleFunc("/api/arch-changelog/stats", handleArchChangelogStats)
+	mux.HandleFunc("/api/sse/arch-changelog", handleArchChangelogSSE)
+
 	mux.HandleFunc("/api/guardian/snapshot", handleGuardianSnapshot)
 	mux.HandleFunc("/api/guardian/sse", handleGuardianSSE)
 	mux.HandleFunc("/api/guardian/thresholds", func(w http.ResponseWriter, r *http.Request) {
