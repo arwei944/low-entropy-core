@@ -24,31 +24,7 @@ import (
 )
 
 // ──────────────────────────────────────────────
-// SECTION 1: StorageBackend 接口
-// ──────────────────────────────────────────────
-
-// StorageBackend 定义了持久化存储的统一接口。
-// 实现可以是文件系统、Redis、对象存储等。
-type StorageBackend interface {
-	// Save 保存数据到指定 key。
-	Save(ctx context.Context, key string, data []byte) error
-
-	// Load 从指定 key 加载数据。
-	// 数据不存在时返回 (nil, os.ErrNotExist) 或等价错误。
-	Load(ctx context.Context, key string) ([]byte, error)
-
-	// Delete 删除指定 key 的数据。
-	Delete(ctx context.Context, key string) error
-
-	// List 列出指定前缀下的所有 key。
-	List(ctx context.Context, prefix string) ([]string, error)
-
-	// Close 关闭后端，释放资源。
-	Close() error
-}
-
-// ──────────────────────────────────────────────
-// SECTION 2: FileStorageBackend — 文件系统实现
+// FileStorageBackend — 文件系统实现
 // ──────────────────────────────────────────────
 
 // FileStorageBackend 是 StorageBackend 的文件系统实现。

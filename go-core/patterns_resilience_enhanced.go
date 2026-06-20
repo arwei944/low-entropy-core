@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package core — 韧性增强模块 (v0.9.0)
 //
 // 提供企业级韧性能力：

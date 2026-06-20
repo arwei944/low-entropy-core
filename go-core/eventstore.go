@@ -98,7 +98,7 @@ func (es *EventStore) Execute(ctx context.Context, input EventEnvelope) (AppendR
 
 // Stream returns all events for the aggregate from the given version (inclusive),
 // sorted by version in ascending order.
-func (es *EventStore) Stream(aggregateID string, fromVersion int64) []EventEnvelope {
+func (es *EventStore) streamNoCtx(aggregateID string, fromVersion int64) []EventEnvelope {
 	es.mu.RLock()
 	defer es.mu.RUnlock()
 	all := es.events[aggregateID]
@@ -128,7 +128,7 @@ func (es *EventStore) StreamAll(aggregateID string) []EventEnvelope {
 }
 
 // SaveSnapshot saves a snapshot for the aggregate.
-func (es *EventStore) SaveSnapshot(aggregateID string, version int64, state []byte) {
+func (es *EventStore) saveSnapshotNoCtx(aggregateID string, version int64, state []byte) {
 	es.mu.Lock()
 	defer es.mu.Unlock()
 	es.snapshots[aggregateID] = &Snapshot{
@@ -141,7 +141,7 @@ func (es *EventStore) SaveSnapshot(aggregateID string, version int64, state []by
 
 // GetSnapshot gets the latest snapshot for the aggregate.
 // Returns the snapshot and true if found, or nil and false otherwise.
-func (es *EventStore) GetSnapshot(aggregateID string) (*Snapshot, bool) {
+func (es *EventStore) getSnapshotNoCtx(aggregateID string) (*Snapshot, bool) {
 	es.mu.RLock()
 	defer es.mu.RUnlock()
 	s, ok := es.snapshots[aggregateID]
@@ -150,7 +150,7 @@ func (es *EventStore) GetSnapshot(aggregateID string) (*Snapshot, bool) {
 
 // GetLatestVersion returns the latest version number for the aggregate.
 // Returns 0 if no events have been appended.
-func (es *EventStore) GetLatestVersion(aggregateID string) int64 {
+func (es *EventStore) getLatestVersionNoCtx(aggregateID string) int64 {
 	es.mu.RLock()
 	defer es.mu.RUnlock()
 	return es.getLatestVersionLocked(aggregateID)
@@ -230,18 +230,18 @@ func (es *EventStore) Append(ctx context.Context, event EventEnvelope, expectedV
 	}, nil
 }
 
-// StreamCtx 实现 EventStoreBackend.Stream（带 context）。
-func (es *EventStore) StreamCtx(_ context.Context, aggregateID string, fromVersion int64) ([]EventEnvelope, error) {
-	return es.Stream(aggregateID, fromVersion), nil
+// Stream 实现 EventStoreBackend.Stream（带 context）。
+func (es *EventStore) Stream(_ context.Context, aggregateID string, fromVersion int64) ([]EventEnvelope, error) {
+	return es.streamNoCtx(aggregateID, fromVersion), nil
 }
 
-// GetLatestVersionCtx 实现 EventStoreBackend.GetLatestVersion（带 context）。
-func (es *EventStore) GetLatestVersionCtx(_ context.Context, aggregateID string) (int64, error) {
-	return es.GetLatestVersion(aggregateID), nil
+// GetLatestVersion 实现 EventStoreBackend.GetLatestVersion（带 context）。
+func (es *EventStore) GetLatestVersion(_ context.Context, aggregateID string) (int64, error) {
+	return es.getLatestVersionNoCtx(aggregateID), nil
 }
 
-// SaveSnapshotObj 实现 EventStoreBackend.SaveSnapshot（接受 Snapshot 对象）。
-func (es *EventStore) SaveSnapshotObj(_ context.Context, snapshot Snapshot) error {
+// SaveSnapshot 实现 EventStoreBackend.SaveSnapshot（接受 Snapshot 对象）。
+func (es *EventStore) SaveSnapshot(_ context.Context, snapshot Snapshot) error {
 	es.mu.Lock()
 	defer es.mu.Unlock()
 	es.snapshots[snapshot.AggregateID] = &Snapshot{
@@ -253,8 +253,8 @@ func (es *EventStore) SaveSnapshotObj(_ context.Context, snapshot Snapshot) erro
 	return nil
 }
 
-// GetSnapshotObj 实现 EventStoreBackend.GetSnapshot（返回 *Snapshot, error）。
-func (es *EventStore) GetSnapshotObj(_ context.Context, aggregateID string) (*Snapshot, error) {
+// GetSnapshot 实现 EventStoreBackend.GetSnapshot（返回 *Snapshot, error）。
+func (es *EventStore) GetSnapshot(_ context.Context, aggregateID string) (*Snapshot, error) {
 	es.mu.RLock()
 	defer es.mu.RUnlock()
 	s, ok := es.snapshots[aggregateID]

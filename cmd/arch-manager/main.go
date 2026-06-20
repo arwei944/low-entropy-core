@@ -1734,22 +1734,22 @@ func handleVersionChangelog(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getBuiltinChangelog(version string) []core.ChangelogEntry {
-	all := []core.ChangelogEntry{
-		{Type: "feat", Scope: "core", Message: "四原语架构：Atom/Port/Adapter/Composer 统一计算模型"},
-		{Type: "feat", Scope: "core", Message: "渐进复杂度模型：8 级 Build Tag (L0-L7) 按需编译"},
-		{Type: "feat", Scope: "composer", Message: "Pipeline/Branch/Parallel/Retry/Timeout/Stream/FanOut 编排模式"},
-		{Type: "feat", Scope: "resilience", Message: "熔断器、限流器、退避重试、超时控制"},
-		{Type: "feat", Scope: "guardian", Message: "Guardian 熵管理层：EntropyWatcher、DecisionEngine、HealthChecker"},
-		{Type: "feat", Scope: "observation", Message: "Observation 观测层：ExecutionStep 追踪、Pipeline 指标采集"},
-		{Type: "feat", Scope: "eventstore", Message: "EventStore 事件溯源：投影、升级、EventBus 发布订阅"},
-		{Type: "feat", Scope: "observability", Message: "ObservabilityProvider 接口：Tracer/Span/Meter/Logger 统一抽象"},
-		{Type: "feat", Scope: "security", Message: "安全模块：JWT 认证、RBAC 权限、API Key 管理"},
-		{Type: "feat", Scope: "storage", Message: "数据库适配器：PostgreSQL (pgx) + Redis，Build Tag 隔离"},
-		{Type: "feat", Scope: "config", Message: "增强配置：JSON 加载、密钥解析、热重载"},
-		{Type: "feat", Scope: "errors", Message: "RichError：分类、堆栈追踪、HTTP/gRPC 状态码映射"},
-		{Type: "refactor", Scope: "core", Message: "go.mod 零外部依赖：仅 require go 1.22"},
-		{Type: "fix", Scope: "resilience", Message: "修复滑动窗口熔断器 HalfOpen 状态转换边界条件"},
+func getBuiltinChangelog(version string) []map[string]interface{} {
+	all := []map[string]interface{}{
+		{"type": "feat", "scope": "core", "message": "四原语架构：Atom/Port/Adapter/Composer 统一计算模型"},
+		{"type": "feat", "scope": "core", "message": "渐进复杂度模型：8 级 Build Tag (L0-L7) 按需编译"},
+		{"type": "feat", "scope": "composer", "message": "Pipeline/Branch/Parallel/Retry/Timeout/Stream/FanOut 编排模式"},
+		{"type": "feat", "scope": "resilience", "message": "熔断器、限流器、退避重试、超时控制"},
+		{"type": "feat", "scope": "guardian", "message": "Guardian 熵管理层：EntropyWatcher、DecisionEngine、HealthChecker"},
+		{"type": "feat", "scope": "observation", "message": "Observation 观测层：ExecutionStep 追踪、Pipeline 指标采集"},
+		{"type": "feat", "scope": "eventstore", "message": "EventStore 事件溯源：投影、升级、EventBus 发布订阅"},
+		{"type": "feat", "scope": "observability", "message": "ObservabilityProvider 接口：Tracer/Span/Meter/Logger 统一抽象"},
+		{"type": "feat", "scope": "security", "message": "安全模块：JWT 认证、RBAC 权限、API Key 管理"},
+		{"type": "feat", "scope": "storage", "message": "数据库适配器：PostgreSQL (pgx) + Redis，Build Tag 隔离"},
+		{"type": "feat", "scope": "config", "message": "增强配置：JSON 加载、密钥解析、热重载"},
+		{"type": "feat", "scope": "errors", "message": "RichError：分类、堆栈追踪、HTTP/gRPC 状态码映射"},
+		{"type": "refactor", "scope": "core", "message": "go.mod 零外部依赖：仅 require go 1.22"},
+		{"type": "fix", "scope": "resilience", "message": "修复滑动窗口熔断器 HalfOpen 状态转换边界条件"},
 	}
 	if version == "0.8.0" {
 		return all[:8]

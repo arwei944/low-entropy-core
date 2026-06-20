@@ -9,9 +9,9 @@ import (
 )
 
 // ctxKey is a private context key type for RemoteComposer.
-type ctxKey string
+type remoteCtxKey string
 
-const ctxKeyTraceID ctxKey = "trace_id"
+const remoteCtxKeyTraceID remoteCtxKey = "trace_id"
 
 // RemoteCallRequest JSON-RPC 风格远程调用请求。
 type RemoteCallRequest struct {
@@ -53,7 +53,7 @@ func (rc *RemoteComposer) RegisterRemoteHandlers(mux *http.ServeMux) {
 			writeJSONResponse(w, 400, RemoteCallResponse{Error: "invalid json: " + err.Error()})
 			return
 		}
-		ctx := context.WithValue(r.Context(), ctxKeyTraceID, TraceID(req.TraceID))
+		ctx := context.WithValue(r.Context(), remoteCtxKeyTraceID, TraceID(req.TraceID))
 		result, steps, err := rc.composer.Run(ctx, req.Params)
 		if rc.obs != nil && len(steps) > 0 {
 			rc.obs.Record(steps)

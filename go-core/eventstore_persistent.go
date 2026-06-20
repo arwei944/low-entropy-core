@@ -78,7 +78,7 @@ func (pes *PersistentEventStore) Execute(ctx context.Context, input EventEnvelop
 
 // Stream 返回指定 Aggregate 的事件流（从内存读取）。
 func (pes *PersistentEventStore) Stream(aggregateID string, fromVersion int64) []EventEnvelope {
-	return pes.inner.Stream(aggregateID, fromVersion)
+	return pes.inner.streamNoCtx(aggregateID, fromVersion)
 }
 
 // StreamAll 返回指定 Aggregate 的所有事件（从内存读取）。
@@ -88,7 +88,7 @@ func (pes *PersistentEventStore) StreamAll(aggregateID string) []EventEnvelope {
 
 // SaveSnapshot 保存快照到内存和后端。
 func (pes *PersistentEventStore) SaveSnapshot(aggregateID string, version int64, state []byte) {
-	pes.inner.SaveSnapshot(aggregateID, version, state)
+	pes.inner.saveSnapshotNoCtx(aggregateID, version, state)
 
 	// 持久化快照
 	snapshot := Snapshot{
@@ -103,12 +103,12 @@ func (pes *PersistentEventStore) SaveSnapshot(aggregateID string, version int64,
 
 // GetSnapshot 获取快照（从内存读取）。
 func (pes *PersistentEventStore) GetSnapshot(aggregateID string) (*Snapshot, bool) {
-	return pes.inner.GetSnapshot(aggregateID)
+	return pes.inner.getSnapshotNoCtx(aggregateID)
 }
 
 // GetLatestVersion 获取最新版本。
 func (pes *PersistentEventStore) GetLatestVersion(aggregateID string) int64 {
-	return pes.inner.GetLatestVersion(aggregateID)
+	return pes.inner.getLatestVersionNoCtx(aggregateID)
 }
 
 // Count 返回事件数量。
@@ -167,7 +167,7 @@ func (pes *PersistentEventStore) restore(ctx context.Context) error {
 		if err := LoadJSON(ctx, pes.backend, key, &snapshot); err != nil {
 			continue
 		}
-		pes.inner.SaveSnapshot(snapshot.AggregateID, snapshot.Version, snapshot.State)
+		pes.inner.saveSnapshotNoCtx(snapshot.AggregateID, snapshot.Version, snapshot.State)
 	}
 
 	return nil

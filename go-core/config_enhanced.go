@@ -1,4 +1,4 @@
-//go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
+//go:build ignore
 
 // Package core — 配置增强模块 (v0.9.0)
 //

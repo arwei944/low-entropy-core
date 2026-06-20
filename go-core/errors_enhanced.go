@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package core — 错误处理增强 (v0.9.0)
 //
 // 提供企业级错误处理能力：

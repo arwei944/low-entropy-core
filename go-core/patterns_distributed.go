@@ -462,93 +462,93 @@ func (dr *DistributedRateLimiter[K]) UsageRate() float64 {
 // HealthCheck — 健康检查端点 (T5.4)
 // =============================================================================
 
-// HealthStatus 表示组件健康状态。
-type HealthStatus string
+// DistHealthStatus 表示组件健康状态。
+type DistHealthStatus string
 
 const (
-	HealthUp       HealthStatus = "UP"
-	HealthDown     HealthStatus = "DOWN"
-	HealthDegraded HealthStatus = "DEGRADED"
+	DistHealthUp       DistHealthStatus = "UP"
+	DistHealthDown     DistHealthStatus = "DOWN"
+	DistHealthDegraded DistHealthStatus = "DEGRADED"
 )
 
-// HealthCheckResponse 是健康检查的响应结构。
-type HealthCheckResponse struct {
-	Status     HealthStatus              `json:"status"`
-	Components map[string]ComponentHealth `json:"components"`
+// DistHealthCheckResponse 是健康检查的响应结构。
+type DistHealthCheckResponse struct {
+	Status     DistHealthStatus              `json:"status"`
+	Components map[string]DistComponentHealth `json:"components"`
 	Timestamp  time.Time                 `json:"timestamp"`
 }
 
-// ComponentHealth 是单个组件的健康状态。
-type ComponentHealth struct {
-	Status  HealthStatus `json:"status"`
+// DistComponentHealth 是单个组件的健康状态。
+type DistComponentHealth struct {
+	Status  DistHealthStatus `json:"status"`
 	Details string       `json:"details,omitempty"`
 }
 
-// HealthChecker 是健康检查的接口。
-type HealthChecker interface {
-	CheckHealth() HealthCheckResponse
-	CheckReadiness() HealthCheckResponse
-	CheckLiveness() HealthCheckResponse
+// DistHealthChecker 是健康检查的接口。
+type DistHealthChecker interface {
+	CheckHealth() DistHealthCheckResponse
+	CheckReadiness() DistHealthCheckResponse
+	CheckLiveness() DistHealthCheckResponse
 }
 
-// DefaultHealthChecker 是默认的健康检查实现。
+// DistDefaultDistHealthChecker 是默认的健康检查实现。
 // 检查所有已注册组件的健康状态。
-type DefaultHealthChecker struct {
+type DistDefaultDistHealthChecker struct {
 	mu         sync.RWMutex
-	components map[string]func() HealthStatus
+	components map[string]func() DistHealthStatus
 }
 
-// NewDefaultHealthChecker 创建默认健康检查器。
-func NewDefaultHealthChecker() *DefaultHealthChecker {
-	return &DefaultHealthChecker{
-		components: make(map[string]func() HealthStatus),
+// NewDistDistDefaultDistHealthChecker 创建默认健康检查器。
+func NewDistDistDefaultDistHealthChecker() *DistDefaultDistHealthChecker {
+	return &DistDefaultDistHealthChecker{
+		components: make(map[string]func() DistHealthStatus),
 	}
 }
 
 // RegisterComponent 注册一个健康检查组件。
-func (hc *DefaultHealthChecker) RegisterComponent(name string, check func() HealthStatus) {
+func (hc *DistDefaultDistHealthChecker) RegisterComponent(name string, check func() DistHealthStatus) {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
 	hc.components[name] = check
 }
 
 // CheckHealth 检查所有组件的健康状态。
-func (hc *DefaultHealthChecker) CheckHealth() HealthCheckResponse {
+func (hc *DistDefaultDistHealthChecker) CheckHealth() DistHealthCheckResponse {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
 
-	resp := HealthCheckResponse{
-		Components: make(map[string]ComponentHealth),
+	resp := DistHealthCheckResponse{
+		Components: make(map[string]DistComponentHealth),
 		Timestamp:  time.Now(),
 	}
 	allUp := true
 
 	for name, check := range hc.components {
 		status := check()
-		resp.Components[name] = ComponentHealth{Status: status}
-		if status != HealthUp {
+		resp.Components[name] = DistComponentHealth{Status: status}
+		if status != DistHealthUp {
 			allUp = false
 		}
 	}
 
 	if allUp {
-		resp.Status = HealthUp
+		resp.Status = DistHealthUp
 	} else {
-		resp.Status = HealthDegraded
+		resp.Status = DistHealthDegraded
 	}
 	return resp
 }
 
 // CheckReadiness 检查就绪状态（所有依赖可用）。
-func (hc *DefaultHealthChecker) CheckReadiness() HealthCheckResponse {
+func (hc *DistDefaultDistHealthChecker) CheckReadiness() DistHealthCheckResponse {
 	return hc.CheckHealth()
 }
 
 // CheckLiveness 检查存活状态（进程存活）。
-func (hc *DefaultHealthChecker) CheckLiveness() HealthCheckResponse {
-	return HealthCheckResponse{
-		Status:     HealthUp,
-		Components: make(map[string]ComponentHealth),
+func (hc *DistDefaultDistHealthChecker) CheckLiveness() DistHealthCheckResponse {
+	return DistHealthCheckResponse{
+		Status:     DistHealthUp,
+		Components: make(map[string]DistComponentHealth),
 		Timestamp:  time.Now(),
 	}
 }
