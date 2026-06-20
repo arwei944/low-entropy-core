@@ -1,5 +1,3 @@
-//go:build ignore
-
 // Package core — 错误处理增强 (v0.9.0)
 //
 // 提供企业级错误处理能力：
@@ -211,7 +209,7 @@ const (
 	ErrCodeInternal          = "INTERNAL"
 	ErrCodeUnavailable       = "UNAVAILABLE"
 	ErrCodeDataLoss          = "DATA_LOSS"
-	ErrCodeVersionConflict   = "VERSION_CONFLICT"
+	ErrCodeVerConflict   = "VER_CONFLICT"
 	ErrCodeTimeout           = "TIMEOUT"
 	ErrCodeCircuitOpen       = "CIRCUIT_OPEN"
 	ErrCodeRateLimited       = "RATE_LIMITED"
@@ -232,7 +230,7 @@ var (
 	ErrUnimplemented     = &RichError{Code: ErrCodeUnimplemented, Message: "unimplemented", Category: CatError}
 	ErrUnavailable       = &RichError{Code: ErrCodeUnavailable, Message: "service unavailable", Category: CatError}
 	ErrDataLoss          = &RichError{Code: ErrCodeDataLoss, Message: "data loss", Category: CatFatal}
-	ErrVersionConflict   = &RichError{Code: ErrCodeVersionConflict, Message: "version conflict", Category: CatError}
+	ErrVersionConflict   = &RichError{Code: ErrCodeVerConflict, Message: "version conflict", Category: CatError}
 
 	// 韧性相关哨兵错误
 	ErrCircuitBreakerOpen = &RichError{Code: ErrCodeCircuitOpen, Message: "circuit breaker open", Category: CatWarning}
@@ -287,9 +285,9 @@ func NewErrorResponse(err error) *ErrorResponse {
 }
 
 // NewVersionConflictError 创建版本冲突错误。
-func NewVersionConflictError(expected, actual int64) error {
+func NewVersionConflictErrorEnhanced(expected, actual int64) error {
 	return &RichError{
-		Code:     ErrCodeVersionConflict,
+		Code:     ErrCodeVerConflict,
 		Message:  fmt.Sprintf("version conflict: expected %d, got %d", expected, actual),
 		Category: CatError,
 		Stack:    CaptureStackTrace(1, 32),

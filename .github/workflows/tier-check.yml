@@ -34,7 +34,7 @@ jobs:
           echo "=== Testing all tiers ==="
           for tier in 0 1 2 3 4 5; do
             echo "Testing tier $tier..."
-            go test -tags "lecore_tier${tier}" -count=1 . || exit 1
+            go test -race -tags "lecore_tier${tier}" -count=1 . || exit 1
           done
           echo "All tiers test OK"
 

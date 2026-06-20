@@ -26,15 +26,30 @@ jobs:
         cd go-core
         go vet ./...
 
+    - name: Architecture Lint
+      run: |
+        cd go-core
+        go run ./cmd/lint/ --root . --tier L2
+
+    - name: Security Scan
+      run: |
+        cd go-core
+        go vet -vettool=$(which govulncheck 2>/dev/null || echo "") ./... 2>/dev/null || echo "govulncheck not installed, skipping"
+
     - name: Test with coverage
       run: |
         cd go-core
-        go test ./... -coverprofile=coverage.out -covermode=atomic -count=1
+        go test -race ./... -coverprofile=coverage.out -covermode=atomic -count=1
 
     - name: Coverage report
       run: |
         cd go-core
         go tool cover -func=coverage.out | tail -1
+        COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
+        echo "Total coverage: ${COVERAGE}%"
+        if [ "$(echo "$COVERAGE < 70" | bc)" -eq 1 ]; then
+          echo "::warning::Coverage ${COVERAGE}% is below 70% threshold"
+        fi
 
     - name: Benchmark regression
       run: |

@@ -408,18 +408,16 @@ type mapComposer[T, U any] struct {
 	mapper func(T) U
 }
 
-func (m *mapComposer[T, U]) Run(ctx context.Context, input U) (U, []ExecutionStep, error) {
+func (m *mapComposer[T, U]) Run(ctx context.Context, _ U) (U, []ExecutionStep, error) {
+	// Map 忽略外部输入，使用零值 T 驱动内部 Composer，
+	// 然后通过 mapper 将 T 结果映射为 U。
 	var tInput T
-	if any(input) == nil {
-		result, steps, err := m.inner.Run(ctx, tInput)
-		if err != nil {
-			var zero U
-			return zero, steps, err
-		}
-		return m.mapper(result), steps, nil
+	result, steps, err := m.inner.Run(ctx, tInput)
+	if err != nil {
+		var zero U
+		return zero, steps, err
 	}
-	var zero U
-	return zero, nil, &StepError{Code: "MAP_ERROR", Message: "Map requires same input type or nil input", Recoverable: false}
+	return m.mapper(result), steps, nil
 }
 
 // ============================================================================
@@ -672,10 +670,11 @@ func NewDebounce[T any](inner Composer[T], interval time.Duration) *Debounce[T] 
 }
 
 func (db *Debounce[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, error) {
+	// 原子地检查并更新 lastCall，确保静默期内的调用被跳过。
 	db.mu.Lock()
 	if time.Since(db.lastCall) < db.interval {
 		db.mu.Unlock()
-		return input, nil, nil // 跳过：静默期内
+		return input, nil, nil
 	}
 	db.lastCall = time.Now()
 	db.mu.Unlock()

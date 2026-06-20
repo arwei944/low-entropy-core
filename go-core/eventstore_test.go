@@ -65,7 +65,10 @@ func TestEventStore_Stream(t *testing.T) {
 		AggregateID: "agg-3", AggregateType: "Order", EventType: "Updated", EventData: []byte("2"),
 	})
 
-	events := store.Stream("agg-3", 0)
+	events, err := store.Stream(ctx, "agg-3", 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if len(events) != 2 {
 		t.Errorf("expected 2 events, got %d", len(events))
 	}
@@ -73,7 +76,12 @@ func TestEventStore_Stream(t *testing.T) {
 
 func TestEventStore_StreamEmpty(t *testing.T) {
 	store := NewEventStore()
-	events := store.Stream("nonexistent", 0)
+	ctx := context.Background()
+
+	events, err := store.Stream(ctx, "nonexistent", 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if len(events) != 0 {
 		t.Errorf("expected 0 events, got %d", len(events))
 	}
@@ -87,10 +95,20 @@ func TestEventStore_Snapshot(t *testing.T) {
 		AggregateID: "agg-4", AggregateType: "Order", EventType: "Created", EventData: []byte("1"),
 	})
 
-	store.SaveSnapshot("agg-4", 1, []byte(`{"state":"done"}`))
+	err := store.SaveSnapshot(ctx, Snapshot{
+		AggregateID: "agg-4",
+		Version:     1,
+		State:       []byte(`{"state":"done"}`),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	snap, ok := store.GetSnapshot("agg-4")
-	if !ok {
+	snap, err := store.GetSnapshot(ctx, "agg-4")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if snap == nil {
 		t.Fatal("expected snapshot, got nil")
 	}
 	if snap.Version != 1 {
@@ -109,12 +127,18 @@ func TestEventStore_GetLatestVersion(t *testing.T) {
 		AggregateID: "agg-5", AggregateType: "Order", EventType: "Created", EventData: []byte("1"),
 	})
 
-	v := store.GetLatestVersion("agg-5")
+	v, err := store.GetLatestVersion(ctx, "agg-5")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if v != 1 {
 		t.Errorf("expected version 1, got %d", v)
 	}
 
-	v = store.GetLatestVersion("nonexistent")
+	v, err = store.GetLatestVersion(ctx, "nonexistent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if v != 0 {
 		t.Errorf("expected version 0, got %d", v)
 	}

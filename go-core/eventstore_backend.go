@@ -13,14 +13,14 @@ import (
 	"fmt"
 )
 
-// ErrVersionConflict 乐观并发冲突错误。
-var ErrVersionConflict = errors.New("version conflict: expected version does not match")
+// ErrESVersionConflict 乐观并发冲突错误（事件存储级别）。
+var ErrESVersionConflict = errors.New("version conflict: expected version does not match")
 
 // EventStoreBackend 事件存储后端接口。
 // 为事件溯源专门设计，支持乐观并发控制、快照、聚合列举。
 type EventStoreBackend interface {
 	// Append 追加事件到指定聚合的事件流。
-	// 使用乐观并发控制：如果 expectedVersion 不匹配，返回 ErrVersionConflict。
+	// 使用乐观并发控制：如果 expectedVersion 不匹配，返回 ErrESVersionConflict。
 	Append(ctx context.Context, event EventEnvelope, expectedVersion int64) (AppendResult, error)
 
 	// Stream 读取指定聚合的事件流，从 fromVersion 开始（含）。
@@ -60,5 +60,5 @@ const (
 
 // NewVersionConflictError 创建版本冲突错误。
 func NewVersionConflictError(expected, got int64) error {
-	return fmt.Errorf("%w: expected %d, got %d", ErrVersionConflict, expected, got)
+	return fmt.Errorf("%w: expected %d, got %d", ErrESVersionConflict, expected, got)
 }

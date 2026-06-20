@@ -1,4 +1,4 @@
-//go:build ignore
+//go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
 // Package core — 配置增强模块 (v0.9.0)
 //
@@ -195,7 +195,7 @@ func resolveSecretRef(value string, resolvers map[string]SecretResolver) (string
 
 // ValidateConfig 验证配置完整性。
 // 返回所有验证错误，便于一次性修复。
-func ValidateConfig(cfg *AppConfig) []error {
+func ValidateConfigEnhanced(cfg *AppConfig) []error {
 	var errs []error
 
 	if cfg.Name == "" {
@@ -233,8 +233,8 @@ func ValidateConfig(cfg *AppConfig) []error {
 }
 
 // MustValidateConfig 验证配置，失败时 panic。
-func MustValidateConfig(cfg *AppConfig) {
-	errs := ValidateConfig(cfg)
+func MustValidateConfigEnhanced(cfg *AppConfig) {
+	errs := ValidateConfigEnhanced(cfg)
 	if len(errs) > 0 {
 		msg := "config validation failed:\n"
 		for _, err := range errs {

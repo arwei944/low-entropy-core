@@ -1,5 +1,3 @@
-//go:build ignore
-
 // Package core — 韧性增强模块 (v0.9.0)
 //
 // 提供企业级韧性能力：
@@ -24,9 +22,9 @@ import (
 // 限流器 — Token Bucket
 // ============================================================================
 
-// RateLimiter Token Bucket 限流器。
+// TokenBucketRateLimiter Token Bucket 限流器。
 // 线程安全，支持突发流量。
-type RateLimiter struct {
+type TokenBucketRateLimiter struct {
 	mu        sync.Mutex
 	rate      float64    // 每秒填充 token 数
 	burst     float64    // 最大 token 容量
@@ -37,14 +35,14 @@ type RateLimiter struct {
 // NewRateLimiter 创建限流器。
 // rate: 每秒允许的请求数
 // burst: 允许的最大突发请求数（0 = rate）
-func NewRateLimiter(rate, burst float64) *RateLimiter {
+func NewTokenBucketRateLimiter(rate, burst float64) *TokenBucketRateLimiter {
 	if burst <= 0 {
 		burst = rate
 	}
 	if burst < 1 {
 		burst = 1
 	}
-	return &RateLimiter{
+	return &TokenBucketRateLimiter{
 		rate:     rate,
 		burst:    burst,
 		tokens:   burst,
@@ -54,12 +52,12 @@ func NewRateLimiter(rate, burst float64) *RateLimiter {
 
 // Allow 检查是否允许请求通过。
 // 消耗 1 个 token，如果 token 不足返回 false。
-func (rl *RateLimiter) Allow() bool {
+func (rl *TokenBucketRateLimiter) Allow() bool {
 	return rl.AllowN(1)
 }
 
 // AllowN 检查是否允许 N 个请求通过。
-func (rl *RateLimiter) AllowN(n float64) bool {
+func (rl *TokenBucketRateLimiter) AllowN(n float64) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -79,7 +77,7 @@ func (rl *RateLimiter) AllowN(n float64) bool {
 }
 
 // Wait 阻塞等待直到允许通过或 ctx 取消。
-func (rl *RateLimiter) Wait(ctx context.Context) error {
+func (rl *TokenBucketRateLimiter) Wait(ctx context.Context) error {
 	for {
 		if rl.Allow() {
 			return nil
@@ -107,14 +105,14 @@ func (rl *RateLimiter) Wait(ctx context.Context) error {
 }
 
 // Tokens 返回当前可用 token 数。
-func (rl *RateLimiter) Tokens() float64 {
+func (rl *TokenBucketRateLimiter) Tokens() float64 {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	return rl.tokens
 }
 
 // SetRate 动态调整速率。
-func (rl *RateLimiter) SetRate(rate float64) {
+func (rl *TokenBucketRateLimiter) SetRate(rate float64) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	rl.rate = rate
@@ -124,31 +122,31 @@ func (rl *RateLimiter) SetRate(rate float64) {
 // 熔断器 — 滑动窗口
 // ============================================================================
 
-// CircuitState 熔断器状态。
-type CircuitState int
+// EnhancedCircuitState 熔断器状态。
+type EnhancedCircuitState int
 
 const (
-	CircuitClosed   CircuitState = iota // 正常，请求通过
-	CircuitOpen                         // 熔断，快速失败
-	CircuitHalfOpen                     // 半开，探测恢复
+	EnhancedCircuitClosed   EnhancedCircuitState = iota // 正常，请求通过
+	EnhancedCircuitOpen                         // 熔断，快速失败
+	EnhancedCircuitHalfOpen                     // 半开，探测恢复
 )
 
-func (s CircuitState) String() string {
+func (s EnhancedCircuitState) String() string {
 	switch s {
-	case CircuitClosed:
+	case EnhancedCircuitClosed:
 		return "closed"
-	case CircuitOpen:
+	case EnhancedCircuitOpen:
 		return "open"
-	case CircuitHalfOpen:
+	case EnhancedCircuitHalfOpen:
 		return "half-open"
 	default:
 		return "unknown"
 	}
 }
 
-// CircuitBreaker 滑动窗口熔断器。
+// EnhancedCircuitBreaker 滑动窗口熔断器。
 // 在滑动时间窗口内统计失败率，超过阈值时熔断。
-type CircuitBreaker struct {
+type EnhancedCircuitBreaker struct {
 	mu sync.RWMutex
 
 	// 配置
@@ -158,7 +156,7 @@ type CircuitBreaker struct {
 	halfOpenMaxReqs  int           // 半开状态最大探测请求数
 
 	// 状态
-	state        CircuitState
+	state        EnhancedCircuitState
 	lastFailure  time.Time
 	openedAt     time.Time
 	halfOpenReqs int
@@ -197,7 +195,7 @@ func DefaultCircuitBreakerConfig() CircuitBreakerConfig {
 }
 
 // NewCircuitBreaker 创建熔断器。
-func NewCircuitBreaker(cfg CircuitBreakerConfig) *CircuitBreaker {
+func NewEnhancedCircuitBreaker(cfg CircuitBreakerConfig) *EnhancedCircuitBreaker {
 	if cfg.FailureThreshold <= 0 {
 		cfg.FailureThreshold = 0.5
 	}
@@ -219,7 +217,7 @@ func NewCircuitBreaker(cfg CircuitBreakerConfig) *CircuitBreaker {
 		buckets[i] = &windowBucket{}
 	}
 
-	return &CircuitBreaker{
+	return &EnhancedCircuitBreaker{
 		failureThreshold: cfg.FailureThreshold,
 		windowSize:       cfg.WindowSize,
 		cooldownPeriod:   cfg.CooldownPeriod,
@@ -227,31 +225,31 @@ func NewCircuitBreaker(cfg CircuitBreakerConfig) *CircuitBreaker {
 		buckets:          buckets,
 		bucketSize:       cfg.WindowSize / time.Duration(cfg.NumBuckets),
 		numBuckets:       cfg.NumBuckets,
-		state:            CircuitClosed,
+		state:            EnhancedCircuitClosed,
 	}
 }
 
 // Execute 执行受熔断器保护的操作。
-// 如果熔断器打开，返回 ErrCircuitBreakerOpen。
+// 如果熔断器打开，返回 ErrCircuitOpen。
 // 如果操作成功，记录成功；失败则记录失败。
-func (cb *CircuitBreaker) Execute(fn func() error) error {
+func (cb *EnhancedCircuitBreaker) Execute(fn func() error) error {
 	cb.mu.Lock()
 
 	// 检查状态
-	if cb.state == CircuitOpen {
+	if cb.state == EnhancedCircuitOpen {
 		if time.Since(cb.openedAt) >= cb.cooldownPeriod {
-			cb.state = CircuitHalfOpen
+			cb.state = EnhancedCircuitHalfOpen
 			cb.halfOpenReqs = 0
 		} else {
 			cb.mu.Unlock()
-			return ErrCircuitBreakerOpen
+			return NewStepErrorWithCode(ErrCircuitOpen, "")
 		}
 	}
-
-	if cb.state == CircuitHalfOpen {
+	// 半开状态
+	if cb.state == EnhancedCircuitHalfOpen {
 		if cb.halfOpenReqs >= cb.halfOpenMaxReqs {
 			cb.mu.Unlock()
-			return ErrCircuitBreakerOpen
+			return NewStepErrorWithCode(ErrCircuitOpen, "")
 		}
 		cb.halfOpenReqs++
 	}
@@ -271,9 +269,9 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 		cb.lastFailure = time.Now()
 
 		// 检查是否需要熔断
-		if cb.state == CircuitClosed || cb.state == CircuitHalfOpen {
+		if cb.state == EnhancedCircuitClosed || cb.state == EnhancedCircuitHalfOpen {
 			if cb.shouldOpen() {
-				cb.state = CircuitOpen
+				cb.state = EnhancedCircuitOpen
 				cb.openedAt = time.Now()
 			}
 		}
@@ -281,8 +279,8 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 		bucket.successes++
 
 		// 半开状态成功，恢复闭合
-		if cb.state == CircuitHalfOpen {
-			cb.state = CircuitClosed
+		if cb.state == EnhancedCircuitHalfOpen {
+			cb.state = EnhancedCircuitClosed
 			cb.resetBuckets()
 		}
 	}
@@ -291,14 +289,14 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 }
 
 // State 返回当前熔断器状态。
-func (cb *CircuitBreaker) State() CircuitState {
+func (cb *EnhancedCircuitBreaker) State() EnhancedCircuitState {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
 	return cb.state
 }
 
 // Stats 返回当前统计信息。
-func (cb *CircuitBreaker) Stats() (successes, failures int64, failureRate float64) {
+func (cb *EnhancedCircuitBreaker) Stats() (successes, failures int64, failureRate float64) {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
 
@@ -316,22 +314,22 @@ func (cb *CircuitBreaker) Stats() (successes, failures int64, failureRate float6
 }
 
 // Reset 重置熔断器到闭合状态。
-func (cb *CircuitBreaker) Reset() {
+func (cb *EnhancedCircuitBreaker) Reset() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	cb.state = CircuitClosed
+	cb.state = EnhancedCircuitClosed
 	cb.halfOpenReqs = 0
 	cb.resetBuckets()
 }
 
 // shouldOpen 检查是否应该熔断（需持有锁）。
-func (cb *CircuitBreaker) shouldOpen() bool {
+func (cb *EnhancedCircuitBreaker) shouldOpen() bool {
 	_, _, failureRate := cb.Stats()
 	return failureRate >= cb.failureThreshold
 }
 
 // advanceWindow 推进滑动窗口（需持有锁）。
-func (cb *CircuitBreaker) advanceWindow() {
+func (cb *EnhancedCircuitBreaker) advanceWindow() {
 	now := time.Now()
 	elapsed := now.Sub(cb.lastFailure)
 	steps := int(elapsed / cb.bucketSize)
@@ -345,12 +343,12 @@ func (cb *CircuitBreaker) advanceWindow() {
 }
 
 // advanceWindowUnsafe 推进滑动窗口（读锁版本）。
-func (cb *CircuitBreaker) advanceWindowUnsafe() {
+func (cb *EnhancedCircuitBreaker) advanceWindowUnsafe() {
 	// 读锁版本不推进窗口，仅用于统计
 }
 
 // resetBuckets 重置所有桶。
-func (cb *CircuitBreaker) resetBuckets() {
+func (cb *EnhancedCircuitBreaker) resetBuckets() {
 	for i := range cb.buckets {
 		cb.buckets[i] = &windowBucket{}
 	}
@@ -502,13 +500,13 @@ func IsRetryable(err error) bool {
 		return false
 	}
 	// 熔断器打开、限流等临时错误可重试
-	if err == ErrCircuitBreakerOpen || err == ErrTooManyRequests || err == ErrUnavailable {
+	if IsErrorCode(err, ErrCircuitOpen.Code) || err == ErrTooManyRequests || err == ErrUnavailable {
 		return true
 	}
 	if re, ok := err.(*RichError); ok {
 		return re.Code == ErrCodeUnavailable ||
 			re.Code == ErrCodeTimeout ||
-			re.Code == ErrCodeCircuitOpen ||
+			re.Code == ErrCircuitOpen.Code ||
 			re.Code == ErrCodeRateLimited
 	}
 	return false
@@ -529,7 +527,7 @@ func RetryableError(err error) error {
 // ============================================================================
 
 // RateLimitMiddleware 创建 HTTP 限流中间件。
-func RateLimitMiddleware(limiter *RateLimiter) func(http.Handler) http.Handler {
+func RateLimitMiddleware(limiter *TokenBucketRateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !limiter.Allow() {
