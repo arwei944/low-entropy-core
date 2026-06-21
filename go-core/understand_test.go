@@ -918,8 +918,7 @@ func TestUnderstandAdapter_Config(t *testing.T) {
 // TestUnderstandAdapter_LoadGraph 测试从文件加载图谱
 func TestUnderstandAdapter_LoadGraph(t *testing.T) {
 	// 创建临时目录和图谱文件
-	tmpDir := filepath.Join(os.TempDir(), "ua-test-"+time.Now().Format("20060102150405"))
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	outputDir := filepath.Join(tmpDir, ".understand-anything")
 	os.MkdirAll(outputDir, 0755)
@@ -946,8 +945,7 @@ func TestUnderstandAdapter_LoadGraph(t *testing.T) {
 
 // TestUnderstandAdapter_HasGraph 测试图谱文件存在性检查
 func TestUnderstandAdapter_HasGraph(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "ua-test-hasgraph-"+time.Now().Format("20060102150405"))
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	outputDir := filepath.Join(tmpDir, ".understand-anything")
 	os.MkdirAll(outputDir, 0755)
@@ -979,8 +977,7 @@ func TestUnderstandAdapter_HasGraph(t *testing.T) {
 
 // TestMigrationAdapter_CreateBaseline 测试创建基线
 func TestMigrationAdapter_CreateBaseline(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "ua-migration-test-"+time.Now().Format("20060102150405"))
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	outputDir := filepath.Join(tmpDir, ".understand-anything")
 	os.MkdirAll(outputDir, 0755)
@@ -1009,8 +1006,7 @@ func TestMigrationAdapter_CreateBaseline(t *testing.T) {
 
 // TestMigrationAdapter_SaveAndLoadBaseline 测试基线持久化
 func TestMigrationAdapter_SaveAndLoadBaseline(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "ua-save-test-"+time.Now().Format("20060102150405"))
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	outputDir := filepath.Join(tmpDir, ".understand-anything")
 	os.MkdirAll(outputDir, 0755)
@@ -1054,8 +1050,7 @@ func TestMigrationAdapter_SaveAndLoadBaseline(t *testing.T) {
 
 // TestNewMigrationStep 测试迁移 Step 包装
 func TestNewMigrationStep(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "ua-step-test-"+time.Now().Format("20060102150405"))
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	outputDir := filepath.Join(tmpDir, ".understand-anything")
 	os.MkdirAll(outputDir, 0755)
