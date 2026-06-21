@@ -19,12 +19,12 @@ func NewSchemaRegistry() *SchemaRegistry {
 	return &SchemaRegistry{}
 }
 
-func (r *SchemaRegistry) Register(typeName string, version string, schema interface{}) {
+func (r *SchemaRegistry) Register(typeName string, version string, schema any) {
 	key := buildSchemaKey(typeName, version)
 	r.entries.Store(key, schema)
 }
 
-func (r *SchemaRegistry) Get(typeName string, version string) (interface{}, error) {
+func (r *SchemaRegistry) Get(typeName string, version string) (any, error) {
 	key := buildSchemaKey(typeName, version)
 	val, ok := r.entries.Load(key)
 	if !ok {
@@ -33,29 +33,56 @@ func (r *SchemaRegistry) Get(typeName string, version string) (interface{}, erro
 	return val, nil
 }
 
-func (r *SchemaRegistry) ListVersions(typeName string) []string {
+// SchemaRegistryT is a typed schema registry that preserves type safety.
+// Use this instead of the untyped SchemaRegistry when possible.
+type SchemaRegistryT[T any] struct {
+	entries sync.Map
+}
+
+// NewSchemaRegistryT creates a typed schema registry.
+func NewSchemaRegistryT[T any]() *SchemaRegistryT[T] {
+	return &SchemaRegistryT[T]{}
+}
+
+// Register stores a schema for a given type name and version.
+func (r *SchemaRegistryT[T]) Register(typeName string, version string, schema T) {
+	key := buildSchemaKey(typeName, version)
+	r.entries.Store(key, schema)
+}
+
+// Get retrieves a schema by type name and version. Returns (zero value, false) if not found.
+func (r *SchemaRegistryT[T]) Get(typeName string, version string) (T, bool) {
+	key := buildSchemaKey(typeName, version)
+	val, ok := r.entries.Load(key)
+	if !ok {
+		var zero T
+		return zero, false
+	}
+	schema, ok := val.(T)
+	return schema, ok
+}
+
+// ListVersions lists all versions for a given type name.
+func (r *SchemaRegistryT[T]) ListVersions(typeName string) []string {
 	prefix := typeName + ":"
 	var versions []string
-
-	r.entries.Range(func(key, value interface{}) bool {
+	r.entries.Range(func(key, value any) bool {
 		k, ok := key.(string)
 		if !ok {
 			return true
 		}
 		if strings.HasPrefix(k, prefix) {
-			version := strings.TrimPrefix(k, prefix)
-			versions = append(versions, version)
+			versions = append(versions, strings.TrimPrefix(k, prefix))
 		}
 		return true
 	})
-
 	return versions
 }
 
-func (r *SchemaRegistry) ListTypes() []string {
+// ListTypes lists all registered type names.
+func (r *SchemaRegistryT[T]) ListTypes() []string {
 	typeSet := make(map[string]struct{})
-
-	r.entries.Range(func(key, value interface{}) bool {
+	r.entries.Range(func(key, value any) bool {
 		k, ok := key.(string)
 		if !ok {
 			return true
@@ -65,7 +92,6 @@ func (r *SchemaRegistry) ListTypes() []string {
 		}
 		return true
 	})
-
 	types := make([]string, 0, len(typeSet))
 	for t := range typeSet {
 		types = append(types, t)
@@ -73,9 +99,10 @@ func (r *SchemaRegistry) ListTypes() []string {
 	return types
 }
 
-func (r *SchemaRegistry) Count() int {
+// Count returns the total number of registered schemas.
+func (r *SchemaRegistryT[T]) Count() int {
 	count := 0
-	r.entries.Range(func(key, value interface{}) bool {
+	r.entries.Range(func(key, value any) bool {
 		count++
 		return true
 	})

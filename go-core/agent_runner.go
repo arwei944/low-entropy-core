@@ -77,7 +77,7 @@ func (r *AgentRunner) BuildAndRun(ctx context.Context, submission AgentCodeSubmi
 	}
 
 	es1 := NewExecutionStep("AgentRunner", "WriteTempFile", "source code written to temp file", "Adapter")
-	es1.Metadata = map[string]interface{}{
+	es1.Metadata = map[string]any{
 		"file": mainFile,
 		"size": len(submission.SourceCode),
 	}
@@ -112,7 +112,7 @@ func (r *AgentRunner) BuildAndRun(ctx context.Context, submission AgentCodeSubmi
 
 	es2 := NewExecutionStep("AgentRunner", "Compile", "compilation succeeded", "Adapter")
 	es2.DurationMs = buildDuration
-	es2.Metadata = map[string]interface{}{
+	es2.Metadata = map[string]any{
 		"output": output,
 	}
 	steps = append(steps, es2)
@@ -128,7 +128,7 @@ func (r *AgentRunner) BuildAndRun(ctx context.Context, submission AgentCodeSubmi
 		es3 := NewExecutionStep("AgentRunner", "Execute", "execution failed", "Composer")
 		es3.Error = NewStepError("RUNTIME_ERROR", fmt.Sprintf("%v\n%s", runErr, string(runOut)), false)
 		es3.DurationMs = runDuration
-		es3.Metadata = map[string]interface{}{
+		es3.Metadata = map[string]any{
 			"output": string(runOut),
 		}
 		steps = append(steps, es3)
@@ -138,7 +138,7 @@ func (r *AgentRunner) BuildAndRun(ctx context.Context, submission AgentCodeSubmi
 
 	es3 := NewExecutionStep("AgentRunner", "Execute", "execution completed", "Composer")
 	es3.DurationMs = runDuration
-	es3.Metadata = map[string]interface{}{
+	es3.Metadata = map[string]any{
 		"output": strings.TrimSpace(string(runOut)),
 	}
 	steps = append(steps, es3)

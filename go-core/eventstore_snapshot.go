@@ -3,6 +3,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -41,16 +42,19 @@ type snapshotTracker struct {
 
 // AutoSnapshotTrigger 在事件数量或时间超过阈值时自动触发快照。
 type AutoSnapshotTrigger struct {
-	config    AutoSnapshotConfig
-	store     *ShardedEventStore
-	handler   SnapshotHandler
-	mu        sync.RWMutex
-	trackers  map[string]*snapshotTracker // aggregateID -> tracker
-	obs       ObservationAdapter
+	config   AutoSnapshotConfig
+	store    *ShardedEventStore
+	handler  SnapshotHandler
+	mu       sync.RWMutex
+	trackers map[string]*snapshotTracker // aggregateID -> tracker
+	obs      ObservationAdapter
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 // NewAutoSnapshotTrigger 创建自动快照触发器。
-func NewAutoSnapshotTrigger(config AutoSnapshotConfig, store *ShardedEventStore, handler SnapshotHandler, obs ObservationAdapter) *AutoSnapshotTrigger {
+// ctx: 外部 context，cancel 时 takeSnapshot goroutine 退出。
+func NewAutoSnapshotTrigger(ctx context.Context, config AutoSnapshotConfig, store *ShardedEventStore, handler SnapshotHandler, obs ObservationAdapter) *AutoSnapshotTrigger {
 	if config.MaxEventsPerSnapshot <= 0 {
 		config.MaxEventsPerSnapshot = 1000
 	}
@@ -60,12 +64,15 @@ func NewAutoSnapshotTrigger(config AutoSnapshotConfig, store *ShardedEventStore,
 	if obs == nil {
 		obs = &NoOpObservationAdapter{}
 	}
+	ctx, cancel := context.WithCancel(ctx)
 	return &AutoSnapshotTrigger{
 		config:   config,
 		store:    store,
 		handler:  handler,
 		trackers: make(map[string]*snapshotTracker),
 		obs:      obs,
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 }
 
@@ -88,7 +95,14 @@ func (t *AutoSnapshotTrigger) AfterExecute(aggregateID string) {
 
 	if needSnapshot {
 		if t.config.AsyncSnapshot {
-			go t.takeSnapshot(aggregateID)
+			go func() {
+				select {
+				case <-t.ctx.Done():
+					return
+				default:
+					t.takeSnapshot(aggregateID)
+				}
+			}()
 		} else {
 			t.takeSnapshot(aggregateID)
 		}
@@ -96,6 +110,7 @@ func (t *AutoSnapshotTrigger) AfterExecute(aggregateID string) {
 }
 
 // takeSnapshot 生成并保存快照。
+// 通过 t.ctx.Done() 管理生命周期。
 func (t *AutoSnapshotTrigger) takeSnapshot(aggregateID string) {
 	events := t.store.Stream(aggregateID, 0)
 	if len(events) == 0 {

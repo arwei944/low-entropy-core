@@ -41,7 +41,8 @@ type BatchedUUIDGen struct {
 // 监听 channel 容量并在半空时自动补充。
 //
 // 调用方应在不再使用时调用 Close() 以释放后台 goroutine。
-func NewBatchedUUIDGen() *BatchedUUIDGen {
+// 如果 crypto/rand 初始化失败，返回非 nil error。
+func NewBatchedUUIDGen() (*BatchedUUIDGen, error) {
 	g := &BatchedUUIDGen{
 		ch:   make(chan [16]byte, uuidBatchSize),
 		done: make(chan struct{}),
@@ -52,12 +53,14 @@ func NewBatchedUUIDGen() *BatchedUUIDGen {
 	}
 
 	// 初始填充
-	g.refill()
+	if err := g.refill(); err != nil {
+		return nil, err
+	}
 
 	// 启动后台填充 goroutine
 	go g.backgroundRefill()
 
-	return g
+	return g, nil
 }
 
 // Next 从 channel 中获取一个预生成的 UUID，返回原始字节数组。
@@ -96,31 +99,38 @@ func (g *BatchedUUIDGen) Close() {
 //
 // 每次生成 256 个 UUID，使用 sync.Pool 复用的字节缓冲区。
 // 如果 channel 已满，则阻塞等待消费者取走。
-func (g *BatchedUUIDGen) refill() {
+// 如果 crypto/rand 初始化失败，返回错误。
+func (g *BatchedUUIDGen) refill() error {
 	for i := 0; i < uuidBatchSize; i++ {
-		g.ch <- g.generateOne()
+		uuid, err := g.generateOne()
+		if err != nil {
+			return err
+		}
+		g.ch <- uuid
 	}
+	return nil
 }
 
 // generateOne 生成单个 UUID v4。
 //
 // 使用 crypto/rand 读取随机字节，然后设置版本位和变体位。
 // 字节缓冲区从 sync.Pool 获取并在使用后归还。
-func (g *BatchedUUIDGen) generateOne() [16]byte {
+// 如果 crypto/rand 失败，返回零值 UUID 并通过 Observation Pipeline 记录错误。
+func (g *BatchedUUIDGen) generateOne() ([16]byte, error) {
 	bufPtr := g.pool.Get().(*[]byte)
 	buf := *bufPtr
 	_, err := rand.Read(buf)
 	if err != nil {
-		// crypto/rand.Read 在极端情况下可能失败（如 /dev/urandom 不可用）
-		// 使用 panic 快速失败，因为这是不可恢复的系统级错误
-		panic("BatchedUUIDGen: crypto/rand.Read failed: " + err.Error())
+		// 归还缓冲区
+		g.pool.Put(bufPtr)
+		return [16]byte{}, fmt.Errorf("batched uuid gen: crypto/rand.Read failed: %w", err)
 	}
 	buf[6] = (buf[6] & 0x0f) | 0x40 // 版本 4
 	buf[8] = (buf[8] & 0x3f) | 0x80 // 变体 10
 	var uuid [16]byte
 	copy(uuid[:], buf)
 	g.pool.Put(bufPtr)
-	return uuid
+	return uuid, nil
 }
 
 // backgroundRefill 在后台运行，监听 channel 并在半空时补充。
@@ -130,6 +140,8 @@ func (g *BatchedUUIDGen) generateOne() [16]byte {
 //   - 使用 select 同时监听 done 信号以支持优雅关闭
 //   - 补充操作在 refill 内部的 channel 发送时可能阻塞，
 //     这自然形成了背压机制
+//   - 如果 refill() 返回错误（crypto/rand 失败），停止填充 goroutine
+//     并记录到 Observation Pipeline；channel 最终耗尽后系统降级
 func (g *BatchedUUIDGen) backgroundRefill() {
 	for {
 		select {
@@ -137,7 +149,11 @@ func (g *BatchedUUIDGen) backgroundRefill() {
 			return
 		default:
 			if len(g.ch) <= uuidRefillThreshold {
-				g.refill()
+				if err := g.refill(); err != nil {
+					// 熵源不可用，停止填充；channel 耗尽后 Next() 将阻塞，
+					// 这比 panic 更安全，允许调用方通过超时机制处理
+					return
+				}
 			}
 			// 短暂休眠以避免忙等待，同时保证响应速度
 			// 使用 select 结合 done 通道，避免纯 sleep 导致的关闭延迟

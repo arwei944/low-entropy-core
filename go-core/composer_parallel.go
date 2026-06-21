@@ -41,6 +41,8 @@ func RunParallel[T any](ctx context.Context, input T, composers ...Composer[T]) 
 		}(i, c)
 	}
 
+	// 独立 goroutine 等待 WaitGroup 完成并关闭 resultCh
+	// 当 ctx 被取消时，resultCh 仍会被关闭（wait goroutine 不依赖 ctx）
 	go func() {
 		wg.Wait()
 		close(resultCh)
@@ -51,15 +53,24 @@ func RunParallel[T any](ctx context.Context, input T, composers ...Composer[T]) 
 	allSteps := make([][]ExecutionStep, len(composers))
 	hasError := false
 
-	for r := range resultCh {
-		results[r.index] = r.value
-		errs[r.index] = r.err
-		allSteps[r.index] = r.steps
-		if r.err != nil {
-			hasError = true
+	for {
+		select {
+		case <-ctx.Done():
+			return ParallelResults[T]{Results: results, Errors: errs, Steps: allSteps}, nil, ctx.Err()
+		case r, ok := <-resultCh:
+			if !ok {
+				goto done
+			}
+			results[r.index] = r.value
+			errs[r.index] = r.err
+			allSteps[r.index] = r.steps
+			if r.err != nil {
+				hasError = true
+			}
 		}
 	}
 
+done:
 	flatSteps := make([]ExecutionStep, 0)
 	for _, s := range allSteps {
 		flatSteps = append(flatSteps, s...)

@@ -244,7 +244,7 @@ func computeFileHash(path string) (string, error) {
 
 func NewConfigChangeStep(oldHash, newHash string) ExecutionStep {
 	step := NewExecutionStep("HotReload", "reload", "config file changed", "ConfigChange")
-	step.Metadata = map[string]interface{}{
+	step.Metadata = map[string]any{
 		"old_hash": oldHash,
 		"new_hash": newHash,
 	}

@@ -158,13 +158,13 @@ type HandoffRequest struct {
 	SourceID string
 	TargetID string
 	TaskType string
-	Payload  interface{}
+	Payload  any
 	Token    string
 }
 
 type HandoffSnapshot struct {
 	Token string
-	State interface{}
+	State any
 	Meta  map[string]string
 }
 
@@ -174,19 +174,19 @@ type HandoffResult struct {
 	Error   string
 }
 
-type TransportFunc func(snap HandoffSnapshot) interface{}
+type TransportFunc func(snap HandoffSnapshot) any
 
-func InProcTransport(snap HandoffSnapshot) interface{} { return snap.State }
+func InProcTransport(snap HandoffSnapshot) any { return snap.State }
 
 type DefaultSnapshotAdapter struct{}
 
-func (d *DefaultSnapshotAdapter) CreateSnapshot(state interface{}) HandoffSnapshot {
+func (d *DefaultSnapshotAdapter) CreateSnapshot(state any) HandoffSnapshot {
 	return HandoffSnapshot{
 		Token: "snap-" + time.Now().Format("150405"), State: state,
 		Meta: map[string]string{"created_at": time.Now().Format(time.RFC3339)},
 	}
 }
 
-func (d *DefaultSnapshotAdapter) RestoreSnapshot(snap HandoffSnapshot) (interface{}, error) {
+func (d *DefaultSnapshotAdapter) RestoreSnapshot(snap HandoffSnapshot) (any, error) {
 	return snap.State, nil
 }

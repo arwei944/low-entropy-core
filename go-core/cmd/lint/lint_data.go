@@ -7,7 +7,7 @@
 // Rules:
 //   1. No non-4-primitive interface type definitions (ERROR)
 //   2. No I/O operations in Atom/Port function bodies (ERROR)
-//   3. No concrete type assertions beyond interface{} (ERROR)
+//   3. No concrete type assertions beyond any (ERROR)
 //   4. Pipeline steps must be <= 20 (WARNING)
 
 package main
@@ -255,7 +255,7 @@ func exprToString(expr ast.Expr) string {
 	case *ast.SelectorExpr:
 		return exprToString(t.X) + "." + t.Sel.Name
 	case *ast.InterfaceType:
-		return "interface{}"
+		return "any"
 	case *ast.ArrayType:
 		if t.Len == nil {
 			return "[]" + exprToString(t.Elt)

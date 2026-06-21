@@ -4,6 +4,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -48,24 +49,14 @@ func ValidateConfigEnhanced(cfg *AppConfig) []error {
 	return errs
 }
 
-// MustValidateConfigEnhanced 验证配置，失败时 panic。
-func MustValidateConfigEnhanced(cfg *AppConfig) {
-	errs := ValidateConfigEnhanced(cfg)
-	if len(errs) > 0 {
-		msg := "config validation failed:\n"
-		for _, err := range errs {
-			msg += "  - " + err.Error() + "\n"
-		}
-		panic(msg)
-	}
-}
-
 // ConfigWatcher 配置文件热重载监听器。
 // 使用轮询方式检测文件变更（无需外部依赖）。
 type ConfigWatcher struct {
 	loader   *ConfigLoader
 	path     string
 	interval time.Duration
+	ctx      context.Context
+	cancel   context.CancelFunc
 	stopCh   chan struct{}
 	modTime  time.Time
 }
@@ -84,7 +75,8 @@ func NewConfigWatcher(loader *ConfigLoader, path string, interval time.Duration)
 }
 
 // Start 启动配置热重载监听。
-func (w *ConfigWatcher) Start() error {
+// 调用方需通过 context 取消 goroutine 生命周期。
+func (w *ConfigWatcher) Start(ctx context.Context) error {
 	// 记录初始修改时间
 	info, err := os.Stat(w.path)
 	if err != nil {
@@ -92,35 +84,44 @@ func (w *ConfigWatcher) Start() error {
 	}
 	w.modTime = info.ModTime()
 
-	go func() {
-		ticker := time.NewTicker(w.interval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-w.stopCh:
-				return
-			case <-ticker.C:
-				info, err := os.Stat(w.path)
+	w.ctx, w.cancel = context.WithCancel(ctx)
+	go w.watch()
+	return nil
+}
+
+// watch 是配置热重载的后台 goroutine，通过 w.ctx.Done() 管理生命周期。
+func (w *ConfigWatcher) watch() {
+	ticker := time.NewTicker(w.interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-w.ctx.Done():
+			return
+		case <-w.stopCh:
+			return
+		case <-ticker.C:
+			info, err := os.Stat(w.path)
+			if err != nil {
+				continue
+			}
+			if info.ModTime().After(w.modTime) {
+				w.modTime = info.ModTime()
+				cfg, err := w.loader.LoadFromFile(w.path)
 				if err != nil {
+					// 重载失败，保留旧配置
 					continue
 				}
-				if info.ModTime().After(w.modTime) {
-					w.modTime = info.ModTime()
-					cfg, err := w.loader.LoadFromFile(w.path)
-					if err != nil {
-						// 重载失败，保留旧配置
-						continue
-					}
-					w.loader.reload(cfg)
-				}
+				w.loader.reload(cfg)
 			}
 		}
-	}()
-	return nil
+	}
 }
 
 // Stop 停止配置热重载监听。
 func (w *ConfigWatcher) Stop() {
+	if w.cancel != nil {
+		w.cancel()
+	}
 	select {
 	case <-w.stopCh:
 		// 已停止

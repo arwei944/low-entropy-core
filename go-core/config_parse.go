@@ -29,7 +29,12 @@ func isAllowedStepType(t string) bool {
 	return false
 }
 
-func ParseConfig(jsonBytes []byte) (*PipelineConfig, error) {
+// ParseConfig parses and validates a pipeline JSON configuration.
+// Declaration as AtomWithError signals that this is a pure computation
+// with no I/O side effects — errors are data (validation failures), not system failures.
+var ParseConfig AtomWithError[[]byte, *PipelineConfig] = parseConfig
+
+func parseConfig(jsonBytes []byte) (*PipelineConfig, error) {
 	if len(jsonBytes) == 0 {
 		return nil, fmt.Errorf("config: empty JSON input")
 	}
@@ -105,19 +110,19 @@ func ParseAndValidateConfig(jsonBytes []byte) (*PipelineConfig, []error, error) 
 
 // AdapterResolver resolves adapter names to Adapter instances based on environment.
 type AdapterResolver interface {
-	Resolve(name string, env string) (interface{}, error)
-	Register(name string, env string, factory interface{})
+	Resolve(name string, env string) (any, error)
+	Register(name string, env string, factory any)
 }
 
 // MapAdapterResolver is a simple map-based AdapterResolver.
 type MapAdapterResolver struct {
 	mu       sync.RWMutex
-	adapters map[string]interface{}
+	adapters map[string]any
 }
 
 func NewMapAdapterResolver() *MapAdapterResolver {
 	return &MapAdapterResolver{
-		adapters: make(map[string]interface{}),
+		adapters: make(map[string]any),
 	}
 }
 
@@ -125,7 +130,7 @@ func (r *MapAdapterResolver) key(name, env string) string {
 	return name + ":" + env
 }
 
-func (r *MapAdapterResolver) Resolve(name string, env string) (interface{}, error) {
+func (r *MapAdapterResolver) Resolve(name string, env string) (any, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -137,7 +142,7 @@ func (r *MapAdapterResolver) Resolve(name string, env string) (interface{}, erro
 	return adapter, nil
 }
 
-func (r *MapAdapterResolver) Register(name string, env string, factory interface{}) {
+func (r *MapAdapterResolver) Register(name string, env string, factory any) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.adapters[r.key(name, env)] = factory

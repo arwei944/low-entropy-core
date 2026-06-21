@@ -830,7 +830,10 @@ func TestStress_ObservationPipeline_HighThroughput(t *testing.T) {
 
 // TestStress_UUIDGen_Concurrent: 并发UUID生成
 func TestStress_UUIDGen_Concurrent(t *testing.T) {
-	gen := NewBatchedUUIDGen()
+	gen, err := NewBatchedUUIDGen()
+	if err != nil {
+		t.Fatalf("NewBatchedUUIDGen() failed: %v", err)
+	}
 	defer gen.Close()
 
 	const goroutines = 100

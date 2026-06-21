@@ -5,7 +5,7 @@
 // Rules:
 //   1. No non-4-primitive interface type definitions (ERROR)
 //   2. No I/O operations in Atom/Port function bodies (ERROR)
-//   3. No concrete type assertions beyond interface{} (ERROR)
+//   3. No concrete type assertions beyond any (ERROR)
 //   4. Pipeline steps must be <= 20 (WARNING)
 //
 // Usage: lint <directory>
@@ -77,7 +77,7 @@ func checkFile(path string) {
 // Helper: emit a violation to stderr and bump the global counter.
 // ---------------------------------------------------------------------------
 
-func report(level string, file string, line int, format string, args ...interface{}) {
+func report(level string, file string, line int, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	fmt.Fprintf(os.Stderr, "%s: %s:%d: %s\n", level, file, line, msg)
 	violations++

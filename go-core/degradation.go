@@ -62,7 +62,7 @@ func (d *DegradationManager) Degrade(mode DegradationMode) {
 		fmt.Sprintf("degradation mode changed from %q to %q", previous, mode),
 		"degradation",
 	)
-	es.Metadata = map[string]interface{}{
+	es.Metadata = map[string]any{
 		"previous_mode": string(previous),
 		"new_mode":      string(mode),
 		"timestamp":     time.Now(),

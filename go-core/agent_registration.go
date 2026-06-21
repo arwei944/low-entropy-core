@@ -16,10 +16,6 @@
 //   - 审核不通过时返回 Violation 列表（含修复建议），Agent 据此修改代码后重新提交
 package core
 
-import (
-	"strings"
-)
-
 // RegisterAgent 注册 Agent 到 AgentPool。
 // 通常由 Agent 初始化时调用。
 func RegisterAgent(pool *AgentPool, agentID string, capabilities []string, phase string) error {

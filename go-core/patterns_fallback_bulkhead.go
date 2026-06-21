@@ -1,5 +1,10 @@
 //go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
+// Package core — 降级与舱壁 (v4.0)
+//
+// 原语归属: L1 Composer
+// FallbackWrapper 和 BulkheadLimit 编排降级和资源隔离策略。
+// 内部 Execute 调用属于 Adapter（有 I/O）。
 package core
 
 import (

@@ -1,9 +1,6 @@
 //go:build lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
-// Package core — 持久化索引分片步骤存储
-//
-// 本文件提供 ShardedIndexedStepStore：基于 sync.Map 的持久化索引版本，
-// 支持并发安全的索引更新和查询。适合高并发写入场景。
+// Package core — ShardedIndexedStepStore: sync.Map 持久化索引分片
 package core
 
 import (
@@ -12,9 +9,7 @@ import (
 	"sync/atomic"
 )
 
-// ──────────────────────────────────────────────────────────────────────────────
 // ShardedIndexedStepStore — 持久化索引版本（sync.Map）
-// ──────────────────────────────────────────────────────────────────────────────
 
 // ShardedIndexedStepStore 是 ShardedStepStore 的增强版本，
 // 使用 sync.Map 作为索引存储，支持并发安全的索引更新和查询。

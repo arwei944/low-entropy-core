@@ -21,7 +21,7 @@ type ExecutionStep struct {
 	Pattern    string                 `json:"pattern,omitempty"`
 	DurationMs int64                  `json:"duration_ms,omitempty"`
 	Error      *StepError             `json:"error,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	Metadata   map[string]any `json:"metadata,omitempty"`
 }
 
 // CompactExecutionStep is ExecutionStep 的紧凑版本，专为十亿级热路径设计。
@@ -42,7 +42,7 @@ type CompactExecutionStep struct {
 	Pattern    string                  `json:"pattern,omitempty"`
 	DurationMs int64                   `json:"duration_ms,omitempty"`
 	Error      *StepError              `json:"error,omitempty"`
-	Metadata   *map[string]interface{} `json:"metadata,omitempty"` // nil = 无元数据
+	Metadata   *map[string]any `json:"metadata,omitempty"` // nil = 无元数据
 }
 
 // ToCompact 将 ExecutionStep 转换为 CompactExecutionStep。
@@ -67,7 +67,7 @@ func (s ExecutionStep) ToCompact() CompactExecutionStep {
 		cs.ParentID = CompactTraceIDFromString(s.ParentID)
 	}
 	if len(s.Metadata) > 0 {
-		md := make(map[string]interface{}, len(s.Metadata))
+		md := make(map[string]any, len(s.Metadata))
 		for k, v := range s.Metadata {
 			md[k] = v
 		}

@@ -77,6 +77,7 @@ func (eb *EventBus) Execute(ctx context.Context, input EventEnvelope) (PublishRe
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
+				// 使用 context 时注意：ctx 可能已取消，不阻塞 Execute 的快速返回
 				if err := sub.Handler(input); err != nil {
 					mu.Lock()
 					errorCount++
@@ -92,7 +93,8 @@ func (eb *EventBus) Execute(ctx context.Context, input EventEnvelope) (PublishRe
 		}
 	}
 
-	// Wait for async handlers to complete so we can report accurate counts.
+	// 等待异步处理器完成，确保报告准确。不使用 ctx 取消（ctx 可能已取消，
+	// 但 Execute 应在 ctx 取消后仍等待异步处理器完成以避免数据竞争）。
 	wg.Wait()
 
 	return PublishResult{

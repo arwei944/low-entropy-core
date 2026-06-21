@@ -1,6 +1,11 @@
-// Package core — 韧性增强模块 (v0.9.0)
+// Package core — 韧性增强模块 (v4.0)
 //
-// 提供企业级韧性能力：
+// 原语归属: L2 Adapter（单机韧性层）
+// Token Bucket 算法：纯内存状态 + 外部 I/O 填充。
+//
+// 包含:
+//   - TokenBucket: Token Bucket 算法，支持突发流量
+//   - TokenBucketConfig: 配置参数
 //   - 限流器: Token Bucket 算法，支持突发流量
 //   - 熔断器: 滑动窗口算法，三种状态 (Closed/Open/HalfOpen)
 //   - 退避策略: 指数退避 + 随机抖动

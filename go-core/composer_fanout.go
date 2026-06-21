@@ -37,12 +37,18 @@ func (fo *FanOut[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, erro
 			results[idx] = branchResult{s, e}
 		}(i, b)
 	}
+
+	// 等待所有分支完成（context 取消时仍等待完成，但分支 Run 会提前返回）
 	wg.Wait()
 
 	var allSteps []ExecutionStep
 	for _, br := range results {
 		allSteps = append(allSteps, br.steps...)
 		if br.err != nil {
+			// 检查 ctx 是否已被取消
+			if ctx.Err() != nil {
+				return input, allSteps, ctx.Err()
+			}
 			return input, allSteps, br.err
 		}
 	}

@@ -1,12 +1,4 @@
-// Package core — 通用版本管理模块 (v0.8.0)
-//
-// version_adr.go: 架构决策记录 (Architecture Decision Records)
-//
-// 功能：
-//   - ADR 文件的创建、读取、列表
-//   - 按版本号过滤 ADR
-//   - 自动生成 ADR ID
-
+// Package core — ADR (Architecture Decision Records) 管理
 package core
 
 import (
@@ -18,11 +10,10 @@ import (
 	"time"
 )
 
-// adrDirName ADR 文件存储目录。
+// adrDirName is the ADR file storage directory.
 const adrDirName = "docs/adr"
 
-// NextADRID 生成下一个 ADR ID。
-// 格式: ADR-NNNN（4 位数字，递增）
+// NextADRID generates the next ADR ID in format ADR-NNNN.
 func NextADRID(dir string) (string, error) {
 	adrs, err := ListADRs(dir)
 	if err != nil {
@@ -155,10 +146,6 @@ func (a ADR) StatusLabel() string {
 		return a.Status
 	}
 }
-
-// ============================================================================
-// 内部辅助
-// ============================================================================
 
 // validateADR 验证 ADR 的完整性。
 func validateADR(adr ADR) error {

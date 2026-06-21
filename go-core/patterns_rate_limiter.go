@@ -1,5 +1,10 @@
 //go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
+// Package core — 单机限流器 (v4.0)
+//
+// 原语归属: L1 Atom/Adapter
+// Allow() 方法属于 Atom（纯计算，无 I/O）。
+// Execute/Permit 方法属于 Adapter（带 I/O 调用）。
 package core
 
 import (

@@ -70,7 +70,7 @@ func DescribePortContract[In, Out any](name string, port Port[In, Out], pipeline
 }
 
 // typeName returns a human-readable name for a Go type.
-func typeName(v interface{}) string {
+func typeName(v any) string {
 	t := reflect.TypeOf(v)
 	if t == nil {
 		return "any"
@@ -107,7 +107,7 @@ type ContractComplianceResult struct {
 
 // CheckContractCompliance verifies that a value satisfies all validation rules
 // in a contract. This is a pure function — no side effects.
-func CheckContractCompliance(contract PortContract, input interface{}) ContractComplianceResult {
+func CheckContractCompliance(contract PortContract, input any) ContractComplianceResult {
 	result := ContractComplianceResult{
 		ContractName: contract.Name,
 		Compliant:    true,

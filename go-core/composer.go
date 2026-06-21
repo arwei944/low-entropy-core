@@ -13,18 +13,12 @@ import (
 	"time"
 )
 
-// ============================================================================
-// SECTION 1: Composer — 第四原语 (编排引擎)
-// ============================================================================
 
 // Composer is the fourth primitive: the orchestration engine.
 type Composer[T any] interface {
 	Run(ctx context.Context, input T) (T, []ExecutionStep, error)
 }
 
-// ============================================================================
-// SECTION 2: Pipeline — 线性步骤链
-// ============================================================================
 
 // Pipeline is a linear chain of Steps that transform T → T.
 // v0.9.0: 新增 ObservabilityProvider 支持，自动注入 Tracing/Metrics/Logging。
@@ -101,9 +95,15 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 			)
 		}
 
-		start := time.Now()
+		var nowFunc func() time.Time
+		if p.obsProv != nil && p.obsProv.NowFunc != nil {
+			nowFunc = p.obsProv.NowFunc
+		} else {
+			nowFunc = time.Now
+		}
+		start := nowFunc()
 		output, err := step.Execute(stepCtx, result)
-		elapsed := time.Since(start)
+		elapsed := nowFunc().Sub(start)
 
 		// v0.9.0: 可观测性 — 记录 Step 耗时
 		if p.obsProv != nil && p.obsProv.MeterProvider != nil {
@@ -120,7 +120,7 @@ func (p *Pipeline[T]) Run(ctx context.Context, input T) (T, []ExecutionStep, err
 		es := NewExecutionStepWithTrace(parentSpanID, step.UnitType(), "execute", "pipeline step", "")
 		es.TraceID = traceID
 		es.DurationMs = elapsed.Milliseconds()
-		es.Metadata = map[string]interface{}{
+		es.Metadata = map[string]any{
 			"step_index":  i,
 			"total_steps": len(p.steps),
 		}
@@ -193,9 +193,6 @@ func (p *Pipeline[T]) StepCount() int {
 	return len(p.steps)
 }
 
-// ============================================================================
-// SECTION 3: Branch — 条件路由
-// ============================================================================
 
 // NewBranch 创建条件分支 Composer。
 // 根据 condition 的结果选择执行 truePath 或 falsePath。
@@ -221,9 +218,6 @@ func (b *branchComposer[T]) Run(ctx context.Context, input T) (T, []ExecutionSte
 	return b.falsePath.Run(ctx, input)
 }
 
-// ============================================================================
-// SECTION 7: Map — 类型转换
-// ============================================================================
 
 func Map[T, U any](comp Composer[T], mapper func(T) U) Composer[U] {
 	return &mapComposer[T, U]{inner: comp, mapper: mapper}
@@ -246,9 +240,6 @@ func (m *mapComposer[T, U]) Run(ctx context.Context, _ U) (U, []ExecutionStep, e
 	return m.mapper(result), steps, nil
 }
 
-// ============================================================================
-// SECTION 8: Compose — 单步包装
-// ============================================================================
 
 func Compose[T any](obs ObservationAdapter, step Step[T, T]) Composer[T] {
 	return NewPipeline[T](obs, step)

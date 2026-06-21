@@ -158,7 +158,7 @@ func (gcb *GlobalCircuitBreaker) broadcastStateChange(serviceName, newState stri
 	if gcb.eventBus == nil {
 		return
 	}
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"service":      serviceName,
 		"state":        newState,
 		"failure_rate": failureRate,

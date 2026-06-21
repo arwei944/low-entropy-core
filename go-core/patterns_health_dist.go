@@ -2,11 +2,9 @@
 
 // Package core — 分布式健康检查 (v4.0)
 //
-// 包含:
-//   - DistHealthChecker: 健康检查接口
-//   - DistDefaultDistHealthChecker: 默认健康检查实现
-//
-// 检查所有已注册组件的健康状态。
+// 原语归属: L3 Adapter（分布式韧性层）
+// 通过 EventBus 广播健康状态变更，协调多实例降级。
+// Check/UpdateStatus 方法属于 Adapter（有 I/O）。
 package core
 
 import (

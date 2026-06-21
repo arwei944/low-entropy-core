@@ -15,7 +15,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"go/ast"
 	"go/parser"
 	"go/token"
 	"time"
@@ -101,7 +100,7 @@ func (g *StaticGuardPort) Validate(ctx context.Context, input AgentCodeSubmissio
 
 	es := NewExecutionStep("StaticGuardPort", "Validate", "static code review completed", "Port")
 	es.DurationMs = time.Since(start).Milliseconds()
-	es.Metadata = map[string]interface{}{
+	es.Metadata = map[string]any{
 		"agent_id":    input.AgentID,
 		"task_id":     input.TaskID,
 		"attempt":     input.Attempt,

@@ -6,11 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Low-Entropy Core v4.0 — 原子级开发规范文档</title>
 <style>
-@font-face { font-family: 'Work Sans'; src: url('./_shared/fonts/WorkSans-Regular.ttf') format('truetype'); font-weight: 400; }
-@font-face { font-family: 'Work Sans'; src: url('./_shared/fonts/WorkSans-Bold.ttf') format('truetype'); font-weight: 700; }
-@font-face { font-family: 'Work Sans'; src: url('./_shared/fonts/WorkSans-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
-@font-face { font-family: 'JetBrains Mono'; src: url('./_shared/fonts/JetBrainsMono-Regular.ttf') format('truetype'); font-weight: 400; }
-@font-face { font-family: 'JetBrains Mono'; src: url('./_shared/fonts/JetBrainsMono-Bold.ttf') format('truetype'); font-weight: 700; }
+@font-face { font-family: 'Work Sans'; src: url('../_shared/fonts/WorkSans-Regular.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'Work Sans'; src: url('../_shared/fonts/WorkSans-Bold.ttf') format('truetype'); font-weight: 700; }
+@font-face { font-family: 'Work Sans'; src: url('../_shared/fonts/WorkSans-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+@font-face { font-family: 'JetBrains Mono'; src: url('../_shared/fonts/JetBrainsMono-Regular.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'JetBrains Mono'; src: url('../_shared/fonts/JetBrainsMono-Bold.ttf') format('truetype'); font-weight: 700; }
 
 :root {
   --bg: #0d1117;
@@ -859,8 +859,8 @@ graph TB
 </main>
 
 <!-- ECharts + Mermaid -->
-<script src="./_shared/js/echarts.min.js"></script>
-<script src="./_shared/js/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
 mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose',
   themeVariables: {

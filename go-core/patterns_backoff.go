@@ -1,3 +1,13 @@
+// Package core — 退避策略 (v4.0)
+//
+// 原语归属: L1 Atom（纯计算）
+// 所有退避函数均为纯函数，无 I/O，无副作用。
+//
+// 包含:
+//   - ExponentialBackoff: 指数退避（初始 delay × 2^attempt + jitter）
+//   - LinearBackoff: 线性退避
+//   - ConstantBackoff: 常数退避
+//   - CalculateDelay: 策略分发器
 package core
 
 import (

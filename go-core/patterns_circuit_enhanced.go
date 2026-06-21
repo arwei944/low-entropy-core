@@ -1,3 +1,8 @@
+// Package core — 增强熔断器 (v4.0)
+//
+// 原语归属: L1 Adapter
+// 基于状态的熔断器，通过内部状态机管理外部 I/O 调用。
+// Execute 方法属于 Adapter（有 I/O），内部状态查询属于 Port。
 package core
 
 import (

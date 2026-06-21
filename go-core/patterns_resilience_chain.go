@@ -1,5 +1,10 @@
 //go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
+// Package core — 韧性链 (v4.0)
+//
+// 原语归属: L1 Composer
+// 编排多个韧性原语（熔断、重试、退避、降级）的执行顺序。
+// Run 方法属于 Composer（仅编排，无业务逻辑）。
 package core
 
 import (

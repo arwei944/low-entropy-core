@@ -1,5 +1,14 @@
 //go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
+// Package core — 熔断器 (v4.0)
+//
+// 原语归属: L1 Port/Composer
+// 熔断器状态机管理请求的通过/拒绝决策。
+// Execute 方法属于 Adapter（有外部 I/O 依赖，如 HTTP/RPC 调用）。
+// State() 方法属于 Port（状态查询，无 I/O）。
+//
+// 包含:
+//   - CircuitBreaker: 滑动窗口熔断器，三态自动切换
 package core
 
 import (

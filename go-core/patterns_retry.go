@@ -1,3 +1,8 @@
+// Package core — 重试策略 (v4.0)
+//
+// 原语归属: L1 Composer/Port
+// RetryIf 执行重试循环，属于 Composer（编排重试逻辑）。
+// ShouldRetry 检查器属于 Port（仅判断，无 I/O）。
 package core
 
 import (

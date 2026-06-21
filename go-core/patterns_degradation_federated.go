@@ -64,7 +64,7 @@ func NewFederatedDegradationManager(instanceID string, inner *DegradationManager
 func (fdm *FederatedDegradationManager) ProposeDegradation(mode DegradationMode, totalInstances int) string {
 	proposalID := fmt.Sprintf("degrade_%s_%d", fdm.instanceID, time.Now().UnixNano())
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"proposal_id":     proposalID,
 		"mode":            string(mode),
 		"proposer":        fdm.instanceID,
@@ -133,7 +133,7 @@ func (fdm *FederatedDegradationManager) executeDegradation(mode DegradationMode)
 		fmt.Sprintf("federated degradation: mode=%s, instance=%s", mode, fdm.instanceID),
 		"degradation",
 	)
-	es.Metadata = map[string]interface{}{
+	es.Metadata = map[string]any{
 		"mode":       string(mode),
 		"instance":   fdm.instanceID,
 		"federated":  true,
@@ -149,7 +149,7 @@ func (fdm *FederatedDegradationManager) broadcastDegradationConfirmation(proposa
 		eventType = "degradation.rejected"
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"proposal_id": proposalID,
 		"mode":        string(mode),
 		"confirmed":   confirmed,

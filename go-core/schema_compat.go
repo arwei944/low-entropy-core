@@ -13,8 +13,8 @@ import (
 // SchemaDiffRequest is the input to the compatibility checker.
 type SchemaDiffRequest struct {
 	TypeName   string
-	OldSchema  interface{}
-	NewSchema  interface{}
+	OldSchema  any
+	NewSchema  any
 	OldVersion string
 	NewVersion string
 }

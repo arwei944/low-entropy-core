@@ -87,7 +87,7 @@ func (c *EventCompactor) Compact(store *ShardedEventStore, aggregateID string) i
 			fmt.Sprintf("compacted %s: removed %d events, kept %d", aggregateID, removed, len(kept)),
 			"event_sourcing",
 		)
-		es.Metadata = map[string]interface{}{
+		es.Metadata = map[string]any{
 			"aggregate_id": aggregateID,
 			"removed":      removed,
 			"kept":         len(kept),

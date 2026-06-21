@@ -151,6 +151,17 @@ type ObservabilityProvider struct {
 	TracerProvider TracerProvider
 	MeterProvider  MeterProvider
 	Logger         Logger
+
+	// NowFunc 提供当前时间。Composer 层通过此函数获取时间，禁止直接调用 time.Now()。
+	// 默认为 time.Now，可通过测试时注入 mock 实现注入。
+	NowFunc func() time.Time
+}
+
+// NewObservabilityProvider 创建 ObservabilityProvider 并设置默认时间函数。
+func NewObservabilityProvider() *ObservabilityProvider {
+	return &ObservabilityProvider{
+		NowFunc: time.Now,
+	}
 }
 
 // Shutdown 关闭所有 Provider，刷新待发送数据。

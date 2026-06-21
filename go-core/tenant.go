@@ -24,7 +24,7 @@ type TenantContext struct {
 // TenantRequest wraps an input with tenant context.
 type TenantRequest struct {
 	TenantID TenantID
-	Request  interface{}
+	Request  any
 }
 
 // TenantIsolationPort validates that a request belongs to the correct tenant.

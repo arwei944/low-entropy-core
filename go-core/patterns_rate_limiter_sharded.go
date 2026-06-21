@@ -1,5 +1,10 @@
 //go:build lecore_tier2 || lecore_tier3 || lecore_tier4 || lecore_tier5 || lecore_tier6 || lecore_tier7
 
+// Package core — 分片限流器 (v4.0)
+//
+// 原语归属: L2 Adapter（单机韧性层）
+// 通过分片减少锁竞争，将请求分散到多个子限流器。
+// 每个分片持有独立的计数器，通过 sync.Mutex 保护。
 package core
 
 import (

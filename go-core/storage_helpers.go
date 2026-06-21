@@ -18,7 +18,7 @@ import (
 // ──────────────────────────────────────────────
 
 // SaveJSON 将对象序列化为 JSON 并保存。
-func SaveJSON(ctx context.Context, backend StorageBackend, key string, value interface{}) error {
+func SaveJSON(ctx context.Context, backend StorageBackend, key string, value any) error {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("storage: marshal %s: %w", key, err)
@@ -27,7 +27,7 @@ func SaveJSON(ctx context.Context, backend StorageBackend, key string, value int
 }
 
 // LoadJSON 从 key 加载 JSON 并反序列化到 value。
-func LoadJSON(ctx context.Context, backend StorageBackend, key string, value interface{}) error {
+func LoadJSON(ctx context.Context, backend StorageBackend, key string, value any) error {
 	data, err := backend.Load(ctx, key)
 	if err != nil {
 		return err

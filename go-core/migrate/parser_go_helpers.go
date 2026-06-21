@@ -155,7 +155,7 @@ func (g *GoParserBackend) exprString(expr ast.Expr) string {
 	case *ast.FuncType:
 		return "func" + g.fieldListString(e.Params) + g.fieldListString(e.Results)
 	case *ast.InterfaceType:
-		return "interface{}"
+		return "any"
 	case *ast.StructType:
 		return "struct{}"
 	case *ast.Ellipsis:

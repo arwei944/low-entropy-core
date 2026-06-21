@@ -93,7 +93,7 @@ func DefaultConstraints() []ConstraintRule {
 		},
 		{
 			Name:        "C6: 泛型优先",
-			Description: "新代码优先使用泛型，无 interface{} 使用",
+			Description: "新代码优先使用泛型，无 any 使用",
 			Severity:    "info",
 			Check:       checkGenericsFirst,
 		},
@@ -159,9 +159,9 @@ func checkStepUnification(kg *KnowledgeGraph) ConstraintResult {
 func checkGenericsFirst(kg *KnowledgeGraph) ConstraintResult {
 	result := ConstraintResult{
 		Name:        "C6: 泛型优先",
-		Description: "新代码优先使用泛型，无 interface{} 使用",
+		Description: "新代码优先使用泛型，无 any 使用",
 		Status:      ConstraintPass,
-		Detail:      "无 interface{} 使用",
+		Detail:      "无 any 使用",
 	}
 
 	genericsCount := 0

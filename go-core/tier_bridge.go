@@ -83,7 +83,7 @@ func NewEventBusBridge(bus *EventBus) *EventBusBridge {
 	return &EventBusBridge{Bus: bus}
 }
 
-func (b *EventBusBridge) Notify(ctx context.Context, eventType string, payload interface{}) error {
+func (b *EventBusBridge) Notify(ctx context.Context, eventType string, payload any) error {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return err

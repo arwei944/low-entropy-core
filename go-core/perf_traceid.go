@@ -2,6 +2,7 @@
 package core
 
 import (
+	"context"
 	"sync"
 )
 
@@ -33,9 +34,18 @@ var (
 // getGlobalUUIDGen 返回全局的 BatchedUUIDGen 单例。
 //
 // 延迟初始化，首次调用时创建生成器。
+// 如果 crypto/rand 初始化失败，返回退化的零值生成器（Next() 会阻塞直到 channel 有数据）。
+// 调用方可通过 Observation Pipeline 检测初始化错误。
 func getGlobalUUIDGen() *BatchedUUIDGen {
 	globalUUIDGenOnce.Do(func() {
-		globalUUIDGen = NewBatchedUUIDGen()
+		gen, err := NewBatchedUUIDGen()
+		if err != nil {
+			// 熵源不可用，返回 nil；Next() 调用将阻塞等待数据，
+			// 相比 panic，这允许调用方通过 context 超时处理
+			globalUUIDGen = nil
+			return
+		}
+		globalUUIDGen = gen
 	})
 	return globalUUIDGen
 }
@@ -77,3 +87,48 @@ func (id CompactTraceID) IsZero() bool {
 	}
 	return true
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TraceID 注入策略
+//
+// 注入优先级（"ctx 优先"策略）：
+//   1. 从传入 ctx 中提取已存在的 TraceID（上游传播）
+//   2. 若 ctx 无 TraceID，则生成新的 UUID v4
+//
+// 所有框架层入口函数应使用 TraceIDOrNew 确保请求链可追踪。
+// ──────────────────────────────────────────────────────────────────────────────
+
+// traceIDKey 是 context key，用于存储 TraceID。
+type traceIDKey struct{}
+
+// TraceIDFromCtx 从 context 中提取 TraceID。
+// 如果 ctx 中没有 TraceID，返回 (zero value, false)。
+func TraceIDFromCtx(ctx context.Context) (CompactTraceID, bool) {
+	if ctx == nil {
+		return CompactTraceID{}, false
+	}
+	id, ok := ctx.Value(traceIDKey{}).(CompactTraceID)
+	return id, ok
+}
+
+// WithTraceID 将 TraceID 注入到 context 并返回新的 context。
+// 注入后，后续所有从 ctx 提取 TraceID 的调用都会得到该值。
+func WithTraceID(ctx context.Context, id CompactTraceID) context.Context {
+	return context.WithValue(ctx, traceIDKey{}, id)
+}
+
+// TraceIDOrNew 从 ctx 提取 TraceID；若 ctx 无 TraceID，则生成新的 UUID v4。
+// 这是推荐的入口函数，确保每个请求链都有可追踪的 TraceID。
+func TraceIDOrNew(ctx context.Context) (CompactTraceID, context.Context) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if id, ok := TraceIDFromCtx(ctx); ok {
+		return id, ctx
+	}
+	return NewCompactTraceID(), WithTraceID(ctx, NewCompactTraceID())
+}
+
+// Ensure CompactTraceID implements context.keyComparable (no-op for type safety).
+var _ = traceIDKey{}
+

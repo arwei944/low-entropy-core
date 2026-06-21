@@ -72,7 +72,7 @@ func (rc *RemoteComposer) RegisterRemoteHandlers(mux *http.ServeMux) {
 }
 
 // writeJSONResponse 写入 JSON 响应。
-func writeJSONResponse(w http.ResponseWriter, status int, v interface{}) {
+func writeJSONResponse(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)

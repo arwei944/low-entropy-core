@@ -1,42 +1,10 @@
 //go:build lecore_pgx
 
-// Package core — PostgresEventStore PostgreSQL 事件存储适配器 (v0.9.0)
+// Package core — PostgresEventStore: PostgreSQL 事件存储适配器 (v4.0)
 //
-// 使用 pgx/v5 实现 EventStoreBackend 接口。
-// 通过 build tag lecore_pgx 隔离外部依赖。
-//
-// 表结构:
-//
-//	CREATE TABLE IF NOT EXISTS lc_events (
-//	    aggregate_id   TEXT NOT NULL,
-//	    aggregate_type TEXT NOT NULL,
-//	    event_id       TEXT NOT NULL,
-//	    event_type     TEXT NOT NULL,
-//	    event_data     BYTEA NOT NULL,
-//	    version        BIGINT NOT NULL,
-//	    timestamp      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//	    trace_id       TEXT,
-//	    PRIMARY KEY (aggregate_id, version)
-//	);
-//
-//	CREATE TABLE IF NOT EXISTS lc_snapshots (
-//	    aggregate_id TEXT PRIMARY KEY,
-//	    version      BIGINT NOT NULL,
-//	    state        BYTEA NOT NULL,
-//	    timestamp    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-//	);
-//
-// 乐观并发控制:
-//   - PRIMARY KEY (aggregate_id, version) 保证版本唯一性
-//   - Append 时如果版本冲突，pgx 返回 23505 (unique_violation)
-//   - 转换为 ErrVersionConflict 供上层处理
-//
-// 特性:
-//   - 连接池（pgxpool）自动管理连接生命周期
-//   - 乐观并发控制通过 UNIQUE 约束实现
-//   - 快照支持聚合状态恢复
-//   - 所有操作通过 context 支持超时和取消
-
+// 使用 pgx/v5 实现 EventStoreBackend 接口，通过 build tag lecore_pgx 隔离外部依赖。
+// 表结构: lc_events (PK: aggregate_id + version) + lc_snapshots (PK: aggregate_id)。
+// 乐观并发控制通过 PRIMARY KEY 约束实现，版本冲突时返回 pgx.ErrSQLState unique_violation。
 package core
 
 import (

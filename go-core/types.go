@@ -1,21 +1,23 @@
 package core
 
-// ──────────────────────────────────────────────
 // 4-Primitive Type Definitions (v2.0)
-// ──────────────────────────────────────────────
 
 // Atom is the first primitive: a pure function with no side effects.
 // It transforms In to Out deterministically — same input always yields same output.
 // No I/O, no randomness, no shared mutable state.
 type Atom[In, Out any] func(In) Out
 
+// AtomWithError is the error-aware variant of Atom.
+// Use when a pure computation can legitimately fail (e.g., parsing, validation).
+// Unlike Atom, this variant carries error semantics without triggering I/O.
+// For I/O-bearing operations, use Adapter instead.
+type AtomWithError[In, Out any] func(In) (Out, error)
+
 // AtomAny is a compatibility alias for untyped atoms.
 // Prefer typed Atom[In, Out] in new code.
 type AtomAny = Atom[any, any]
 
-// ──────────────────────────────────────────────
 // Shared Error Types
-// ──────────────────────────────────────────────
 
 // StepError represents a structured, observable error from any execution step.
 // It carries enough context for the observation layer to classify and render errors.
@@ -56,9 +58,7 @@ func NewStepError(code, message string, recoverable bool) *StepError {
 	}
 }
 
-// ──────────────────────────────────────────────
 // Trace Identity
-// ──────────────────────────────────────────────
 
 // TraceID is a unique identifier for a trace spanning multiple steps.
 type TraceID string

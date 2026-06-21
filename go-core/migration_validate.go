@@ -101,7 +101,7 @@ func (r *ValidationResult) checkCompliance(root string, _ ComplexityTier) {
 		// 检测常见的低 tier 模式
 		lowPatterns := []string{
 			"json.NewEncoder",
-			"map[string]interface{}",
+			"map[string]any",
 		}
 		for _, pat := range lowPatterns {
 			if strings.Contains(text, pat) {

@@ -153,7 +153,7 @@ func (s *Sampler) Apply(steps []ExecutionStep) []ExecutionStep {
 	if dropped > 0 {
 		// Create a summary step for the dropped batch
 		summary := NewExecutionStep("Sampler", "Sampled", "dropped steps", "Sampled")
-		summary.Metadata = map[string]interface{}{
+		summary.Metadata = map[string]any{
 			"dropped_count": dropped,
 			"kept_count":    len(kept),
 			"policy":        s.policy.Name(),

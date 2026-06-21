@@ -18,6 +18,8 @@ package core
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -115,7 +117,7 @@ func (w *DefaultAgentWorkbench) Submit(ctx context.Context, submission AgentCode
 	// 记录 ExecutionStep
 	es := NewExecutionStep("AgentWorkbench", "Submit", "submission reviewed", "Composer")
 	es.DurationMs = time.Since(start).Milliseconds()
-	es.Metadata = map[string]interface{}{
+	es.Metadata = map[string]any{
 		"submission_id": submissionID,
 		"agent_id":      submission.AgentID,
 		"task_id":       submission.TaskID,
@@ -155,7 +157,7 @@ func (w *DefaultAgentWorkbench) SubmitAndRun(ctx context.Context, submission Age
 	} else {
 		// P1 fallback: 返回空 ExecutionStep（标记为 Pending Execution）
 		es := NewExecutionStep("AgentWorkbench", "SubmitAndRun", "execution pending (AgentRunner not configured)", "Composer")
-		es.Metadata = map[string]interface{}{
+		es.Metadata = map[string]any{
 			"submission_id": result.SubmissionID,
 			"note":          "Configure AgentRunner for compilation and execution",
 		}

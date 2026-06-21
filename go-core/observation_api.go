@@ -183,7 +183,7 @@ func (api *ObservationAPI) handleArchitecture(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"total_steps": api.pipeline.Store().Count(),
 		"sampler_dropped": func() int {
 			if api.pipeline.Sampler() != nil {
@@ -204,7 +204,7 @@ func (api *ObservationAPI) handleArchitecture(w http.ResponseWriter, r *http.Req
 }
 
 // json writes a JSON response.
-func (api *ObservationAPI) json(w http.ResponseWriter, v interface{}) {
+func (api *ObservationAPI) json(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
 }

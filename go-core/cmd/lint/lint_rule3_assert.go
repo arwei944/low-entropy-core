@@ -31,17 +31,17 @@ var primitiveTypes = map[string]bool{
 	"int32": true, "int64": true, "uint": true, "uint8": true, "uint16": true,
 	"uint32": true, "uint64": true, "float32": true, "float64": true,
 	"byte": true, "rune": true, "complex64": true, "complex128": true,
-	"uintptr": true, "any": true, "interface{}": true,
+	"uintptr": true, "any": true,
 }
 
 // =========================================================================
-// Rule 3 – No concrete type assertions (only interface{} allowed)
+// Rule 3 – No concrete type assertions (only any allowed)
 // =========================================================================
 //
 // The codebase uses generics, so concrete type assertions like
 //   input.(Calculation)
 // are disallowed.  Only type-switch forms (assertion type == nil) and
-// assertions to the empty interface interface{} are permitted.
+// assertions to the empty interface any are permitted.
 // Exceptions: standard library types and error-handling types are allowed.
 
 func checkRule3_NoConcreteTypeAssertions(f *ast.File, fset *token.FileSet, path string) {
@@ -56,7 +56,7 @@ func checkRule3_NoConcreteTypeAssertions(f *ast.File, fset *token.FileSet, path 
 			return true
 		}
 
-		// interface{} (empty interface) is always allowed.
+		// any (empty interface) is always allowed.
 		if isEmptyInterface(ta.Type) {
 			return true
 		}
@@ -145,7 +145,7 @@ func isGenericTypeParam(name string) bool {
 	return true
 }
 
-// isEmptyInterface returns true when expr is exactly interface{} (the empty
+// isEmptyInterface returns true when expr is exactly any (the empty
 // interface type with no methods).
 func isEmptyInterface(expr ast.Expr) bool {
 	iface, ok := expr.(*ast.InterfaceType)

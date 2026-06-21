@@ -33,8 +33,8 @@ type IdempotentResult[Out any] struct {
 // IdempotentStore is the interface for idempotency result storage.
 // Different implementations can use memory, Redis, DB, etc.
 type IdempotentStore interface {
-	Get(key string) (interface{}, bool)
-	Set(key string, value interface{}, ttl time.Duration)
+	Get(key string) (any, bool)
+	Set(key string, value any, ttl time.Duration)
 	Delete(key string)
 	Clear()
 }
@@ -50,7 +50,7 @@ type InMemoryIdempotentStore struct {
 }
 
 type idempotentEntry struct {
-	value     interface{}
+	value     any
 	expiresAt time.Time
 }
 
@@ -63,7 +63,7 @@ func NewInMemoryIdempotentStore() *InMemoryIdempotentStore {
 
 // Get returns the value and true if found and not expired.
 // Returns zero value and false if not found or expired.
-func (s *InMemoryIdempotentStore) Get(key string) (interface{}, bool) {
+func (s *InMemoryIdempotentStore) Get(key string) (any, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -81,7 +81,7 @@ func (s *InMemoryIdempotentStore) Get(key string) (interface{}, bool) {
 }
 
 // Set stores a value with the given TTL. If the key already exists, it is overwritten.
-func (s *InMemoryIdempotentStore) Set(key string, value interface{}, ttl time.Duration) {
+func (s *InMemoryIdempotentStore) Set(key string, value any, ttl time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -89,6 +89,67 @@ func (s *InMemoryIdempotentStore) Set(key string, value interface{}, ttl time.Du
 		value:     value,
 		expiresAt: time.Now().Add(ttl),
 	}
+}
+
+// InMemoryIdempotentStoreT is a typed in-memory idempotent store with generics.
+// Use this instead of InMemoryIdempotentStore for type-safe caching.
+type InMemoryIdempotentStoreT[T any] struct {
+	mu    sync.RWMutex
+	store map[string]*idempotentEntryT[T]
+}
+
+type idempotentEntryT[T any] struct {
+	value     T
+	expiresAt time.Time
+}
+
+// NewInMemoryIdempotentStoreT creates a new typed in-memory idempotent store.
+func NewInMemoryIdempotentStoreT[T any]() *InMemoryIdempotentStoreT[T] {
+	return &InMemoryIdempotentStoreT[T]{
+		store: make(map[string]*idempotentEntryT[T]),
+	}
+}
+
+// Get returns the cached value and true if found and not expired.
+func (s *InMemoryIdempotentStoreT[T]) Get(key string) (T, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	entry, ok := s.store[key]
+	if !ok {
+		var zero T
+		return zero, false
+	}
+	if time.Now().After(entry.expiresAt) {
+		var zero T
+		return zero, false
+	}
+	return entry.value, true
+}
+
+// Set stores a typed value with the given TTL.
+func (s *InMemoryIdempotentStoreT[T]) Set(key string, value T, ttl time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.store[key] = &idempotentEntryT[T]{
+		value:     value,
+		expiresAt: time.Now().Add(ttl),
+	}
+}
+
+// Delete removes a single entry by key.
+func (s *InMemoryIdempotentStoreT[T]) Delete(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.store, key)
+}
+
+// Clear removes all entries from the store.
+func (s *InMemoryIdempotentStoreT[T]) Clear() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.store = make(map[string]*idempotentEntryT[T])
 }
 
 // Delete removes a single entry by key. No-op if the key does not exist.

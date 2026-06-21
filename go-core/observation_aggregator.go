@@ -8,53 +8,25 @@ import (
 	"time"
 )
 
-// ──────────────────────────────────────────────
 // Aggregator — time-window step aggregation
-// ──────────────────────────────────────────────
 
-// AggregateResult is the output of an aggregation window.
 type AggregateResult struct {
-	// WindowStart is the start time of the aggregation window.
-	WindowStart time.Time `json:"window_start"`
-
-	// WindowEnd is the end time of the aggregation window.
-	WindowEnd time.Time `json:"window_end"`
-
-	// WindowDuration is the duration of the window (1m, 5m, 1h).
-	WindowDuration string `json:"window_duration"`
-
-	// Pattern is the pattern being aggregated (empty = all).
-	Pattern string `json:"pattern,omitempty"`
-
-	// Unit is the unit type being aggregated (empty = all).
-	Unit string `json:"unit,omitempty"`
-
-	// Count is the total number of steps in the window.
-	Count int `json:"count"`
-
-	// ErrorCount is the number of steps with errors.
-	ErrorCount int `json:"error_count"`
-
-	// AvgDurationMs is the average duration in milliseconds.
-	AvgDurationMs float64 `json:"avg_duration_ms"`
-
-	// P50DurationMs is the 50th percentile (median) duration.
-	P50DurationMs int64 `json:"p50_duration_ms"`
-
-	// P99DurationMs is the 99th percentile duration.
-	P99DurationMs int64 `json:"p99_duration_ms"`
-
-	// MinDurationMs is the minimum duration.
-	MinDurationMs int64 `json:"min_duration_ms"`
-
-	// MaxDurationMs is the maximum duration.
-	MaxDurationMs int64 `json:"max_duration_ms"`
-
-	// v4.0: 分布漂移与异常标注
+	WindowStart      time.Time        `json:"window_start"`
+	WindowEnd        time.Time        `json:"window_end"`
+	WindowDuration   string           `json:"window_duration"`
+	Pattern          string           `json:"pattern,omitempty"`
+	Unit             string           `json:"unit,omitempty"`
+	Count            int              `json:"count"`
+	ErrorCount       int              `json:"error_count"`
+	AvgDurationMs    float64          `json:"avg_duration_ms"`
+	P50DurationMs    int64            `json:"p50_duration_ms"`
+	P99DurationMs    int64            `json:"p99_duration_ms"`
+	MinDurationMs    int64            `json:"min_duration_ms"`
+	MaxDurationMs    int64            `json:"max_duration_ms"`
 	DistributionDrifted bool            `json:"distribution_drifted,omitempty"`
-	DriftDirection      DriftDirection  `json:"drift_direction,omitempty"`
-	AnomalyLabel        AnomalyLabelType `json:"anomaly_label,omitempty"`
-	AnomalyScore        float64          `json:"anomaly_score,omitempty"`
+	DriftDirection   DriftDirection  `json:"drift_direction,omitempty"`
+	AnomalyLabel     AnomalyLabelType `json:"anomaly_label,omitempty"`
+	AnomalyScore     float64          `json:"anomaly_score,omitempty"`
 }
 
 // AggregatorConfig configures the aggregation windows.

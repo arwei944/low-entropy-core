@@ -6,7 +6,7 @@ package core
 import "fmt"
 
 // MigrationFunc is a function that transforms data from one version to another.
-type MigrationFunc func(source interface{}) (interface{}, error)
+type MigrationFunc func(source any) (any, error)
 
 // MigrationChain is a chain of migration functions that transform data
 // from one version to another. Uses BFS to find the shortest path.
@@ -25,7 +25,7 @@ func (m *MigrationChain) Register(fromVersion, toVersion string, fn MigrationFun
 	m.migrations[key] = fn
 }
 
-func (m *MigrationChain) Migrate(fromVersion, toVersion string, data interface{}) (interface{}, error) {
+func (m *MigrationChain) Migrate(fromVersion, toVersion string, data any) (any, error) {
 	if fromVersion == toVersion {
 		return data, nil
 	}
