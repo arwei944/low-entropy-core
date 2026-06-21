@@ -1,0 +1,19 @@
+// Package {{.Package}} — Adapter (L1)
+// 协议格式转换：输入格式 → 输出格式。
+package {{.Package}}
+
+// {{.Name}}Adapter 协议转换适配器。
+// 将 {{.Input}} 格式转换为 {{.Output}} 格式。
+type {{.Name}}Adapter struct{}
+
+// New{{.Name}}Adapter 创建适配器。
+func New{{.Name}}Adapter() *{{.Name}}Adapter {
+    return &{{.Name}}Adapter{}
+}
+
+// Adapt 执行格式转换。纯函数：无副作用。
+func (a *{{.Name}}Adapter) Adapt(input {{.Input}}) ({{.Output}}, error) {
+    // TODO: 实现协议/格式转换
+    var zero {{.Output}}
+    return zero, nil
+}

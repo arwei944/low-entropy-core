@@ -1,4 +1,4 @@
-module low-entropy-core/arch-manager
+module low-entropy-core
 
 go 1.22
 

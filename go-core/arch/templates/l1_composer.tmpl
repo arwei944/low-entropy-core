@@ -1,0 +1,40 @@
+// Package {{.Package}} — Composer (L1)
+// 编排多个 Atom/Port/Adapter 形成业务流程。
+package {{.Package}}
+
+import "context"
+
+// {{.Name}}Composer 业务流程编排器。
+// 按顺序执行多个步骤（Atom/Port/Adapter），输出最终结果。
+type {{.Name}}Composer struct {
+    steps []Step
+}
+
+// Step 单个步骤接口。
+type Step interface {
+    Run(ctx context.Context, input interface{}) (interface{}, error)
+}
+
+// New{{.Name}}Composer 创建编排器。
+func New{{.Name}}Composer(steps ...Step) *{{.Name}}Composer {
+    return &{{.Name}}Composer{steps: steps}
+}
+
+// Run 按顺序执行所有步骤。
+// 每个步骤的输出作为下一步的输入。
+func (c *{{.Name}}Composer) Run(ctx context.Context, input interface{}) (interface{}, error) {
+    current := input
+    var err error
+    for _, step := range c.steps {
+        select {
+        case <-ctx.Done():
+            return nil, ctx.Err()
+        default:
+            current, err = step.Run(ctx, current)
+            if err != nil {
+                return nil, err
+            }
+        }
+    }
+    return current, nil
+}

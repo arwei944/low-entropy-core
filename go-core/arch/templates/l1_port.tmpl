@@ -1,0 +1,25 @@
+// Package {{.Package}} — Port (L1)
+// 外部边界接口：封装 I/O、网络、消息队列等外部依赖。
+package {{.Package}}
+
+import "context"
+
+// {{.Name}}Port 定义外部系统交互的接口。
+// 所有 I/O 必须通过此 Port，禁止裸写 I/O。
+type {{.Name}}Port interface {
+    Execute(ctx context.Context, input {{.Input}}) ({{.Output}}, error)
+}
+
+// {{.Name}}Adapter 默认实现（使用标准库）。
+type default{{.Name}}Adapter struct{}
+
+// New{{.Name}}Port 创建默认实现。
+func New{{.Name}}Port() {{.Name}}Port {
+    return &default{{.Name}}Adapter{}
+}
+
+func (a *default{{.Name}}Adapter) Execute(ctx context.Context, input {{.Input}}) ({{.Output}}, error) {
+    // TODO: 实现与外部系统的交互
+    var zero {{.Output}}
+    return zero, nil
+}
