@@ -78,6 +78,9 @@ func handleMigrateSSE(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "data: %s\n\n", data)
 	flusher.Flush()
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-r.Context().Done():
@@ -86,11 +89,30 @@ func handleMigrateSSE(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
+			// 确保所有迁移相关事件类型都能被正确转发
+			switch evt.Type {
+			case "connected", "analyze_start", "analyze_done",
+				"validate_start", "validate_done",
+				"migration_start", "migration_file_start", "migration_file_done",
+				"migration_complete", "migration_error",
+				"rollback_start", "rollback_complete",
+				"ping":
+				// 所有已知事件类型均允许通过
+			default:
+				// 未知类型也允许通过，保持前向兼容
+			}
 			data, err := json.Marshal(evt)
 			if err != nil {
 				continue
 			}
 			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		case <-ticker.C:
+			pingData, _ := json.Marshal(map[string]interface{}{
+				"type":      "ping",
+				"timestamp": time.Now().Format(time.RFC3339),
+			})
+			fmt.Fprintf(w, "data: %s\n\n", pingData)
 			flusher.Flush()
 		}
 	}

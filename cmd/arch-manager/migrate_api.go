@@ -54,6 +54,31 @@ func handleMigrateSessions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(sessions)
 }
 
+// DELETE /api/migrate/sessions/{id}
+func handleMigrateSessionDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/migrate/sessions/")
+	if id == "" {
+		http.Error(w, "missing session id", http.StatusBadRequest)
+		return
+	}
+
+	migState.mu.Lock()
+	defer migState.mu.Unlock()
+	for i, s := range migState.sessions {
+		if s.SessionID == id {
+			migState.sessions = append(migState.sessions[:i], migState.sessions[i+1:]...)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"deleted": id})
+			return
+		}
+	}
+	http.Error(w, "session not found", http.StatusNotFound)
+}
+
 // GET /api/migrate/sessions/{id}
 func handleMigrateSessionDetail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -78,6 +103,15 @@ func handleMigrateSessionDetail(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "session not found", http.StatusNotFound)
 }
 
+// handleMigrateSessionDetailOrDelete 根据方法分发 GET/DELETE /api/migrate/sessions/{id}
+func handleMigrateSessionDetailOrDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodDelete {
+		handleMigrateSessionDelete(w, r)
+	} else {
+		handleMigrateSessionDetail(w, r)
+	}
+}
+
 // GET /api/migrate/logs
 func handleMigrateLogs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -100,7 +134,6 @@ func handleMigrateLogs(w http.ResponseWriter, r *http.Request) {
 	} else if action != "" {
 		entries = migState.logStore.QueryByActionType(action)
 	} else {
-		// 返回所有（通过 QueryByPhase 空字符串或直接返回空）
 		entries = migState.logStore.QueryByPhase("")
 	}
 
@@ -135,6 +168,48 @@ func handleMigrateLogsExport(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 	}
 	w.Write([]byte(content))
+}
+
+// DELETE /api/migrate/sessions/{id} — 取消迁移会话
+func handleMigrateSessionCancel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/migrate/sessions/")
+	if id == "" {
+		http.Error(w, "missing session id", http.StatusBadRequest)
+		return
+	}
+
+	migState.mu.Lock()
+	var found bool
+	for i := range migState.sessions {
+		if migState.sessions[i].SessionID == id {
+			migState.sessions[i].Status = "cancelled"
+			found = true
+			break
+		}
+	}
+	migState.mu.Unlock()
+
+	if !found {
+		http.Error(w, "session not found", http.StatusNotFound)
+		return
+	}
+
+	migEventBus.publish(MigrateEvent{
+		Type:      "migration_cancelled",
+		Timestamp: time.Now().Format(time.RFC3339),
+		SessionID: id,
+		Message:   "会话已取消",
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"session_id": id,
+		"status":     "cancelled",
+	})
 }
 
 // GET /api/migrate/status

@@ -179,8 +179,19 @@ func registerRoutes(mux *http.ServeMux) {
 	initMigrateState(filepath.Join(sourceDir, ".migration-logs"))
 	mux.HandleFunc("/api/migrate/analyze", handleMigrateAnalyze)
 	mux.HandleFunc("/api/migrate/validate", handleMigrateValidate)
+	mux.HandleFunc("/api/migrate/execute", handleMigrateExecute)
+	mux.HandleFunc("/api/migrate/rollback", handleMigrateRollback)
 	mux.HandleFunc("/api/migrate/sessions", handleMigrateSessions)
-	mux.HandleFunc("/api/migrate/sessions/", handleMigrateSessionDetail)
+	mux.HandleFunc("/api/migrate/sessions/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleMigrateSessionDetail(w, r)
+		case http.MethodDelete:
+			handleMigrateSessionCancel(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 	mux.HandleFunc("/api/migrate/logs", handleMigrateLogs)
 	mux.HandleFunc("/api/migrate/logs/export", handleMigrateLogsExport)
 	mux.HandleFunc("/api/migrate/status", handleMigrateStatus)
@@ -188,7 +199,17 @@ func registerRoutes(mux *http.ServeMux) {
 
 	// 架构变动日志 API
 	changelogStore = NewArchChangelogStore(filepath.Join(sourceDir, ".arch-changelog"))
-	mux.HandleFunc("/api/arch-changelog", handleArchChangelog)
+	mux.HandleFunc("/api/arch-changelog", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleArchChangelog(w, r)
+		case http.MethodPost:
+			handleArchChangelogCreate(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/api/arch-changelog/export", handleArchChangelogExport)
 	mux.HandleFunc("/api/arch-changelog/stats", handleArchChangelogStats)
 	mux.HandleFunc("/api/sse/arch-changelog", handleArchChangelogSSE)
 

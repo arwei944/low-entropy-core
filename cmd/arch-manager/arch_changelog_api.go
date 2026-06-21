@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -43,6 +45,103 @@ func handleArchChangelog(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(entries)
 }
 
+// POST /api/arch-changelog — 创建架构变动日志条目
+func handleArchChangelogCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Category string `json:"category"`
+		Severity string `json:"severity"`
+		Message  string `json:"message"`
+		File     string `json:"file"`
+		Source   string `json:"source"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Message == "" {
+		http.Error(w, "missing message", http.StatusBadRequest)
+		return
+	}
+	if req.Category == "" {
+		req.Category = "manual"
+	}
+	if req.Severity == "" {
+		req.Severity = "info"
+	}
+	if req.Source == "" {
+		req.Source = "manual"
+	}
+
+	entry := ArchChangeEntry{
+		Category: req.Category,
+		Severity: req.Severity,
+		Detail:   req.Message,
+		File:     req.File,
+		Source:   req.Source,
+	}
+	if err := changelogStore.Append(entry); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entry)
+}
+
+// GET /api/arch-changelog/export — 导出架构变动日志
+func handleArchChangelogExport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "json"
+	}
+
+	entries := changelogStore.Query(ArchChangeFilter{})
+
+	switch format {
+	case "json":
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(entries)
+	case "md":
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		var sb strings.Builder
+		sb.WriteString("| ID | SeqNo | Timestamp | Category | Severity | File | Detail | Source |\n")
+		sb.WriteString("|----|-------|-----------|----------|----------|------|--------|--------|\n")
+		for _, e := range entries {
+			fmt.Fprintf(&sb, "| %s | %d | %s | %s | %s | %s | %s | %s |\n",
+				e.ID, e.SeqNo, e.Timestamp.Format(time.RFC3339), e.Category, e.Severity, e.File, e.Detail, e.Source)
+		}
+		w.Write([]byte(sb.String()))
+	case "csv":
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.Header().Set("Content-Disposition", "attachment; filename=arch-changelog.csv")
+		cw := csv.NewWriter(w)
+		cw.Write([]string{"id", "seq_no", "timestamp", "category", "severity", "file", "detail", "source"})
+		for _, e := range entries {
+			cw.Write([]string{
+				e.ID,
+				strconv.FormatInt(e.SeqNo, 10),
+				e.Timestamp.Format(time.RFC3339),
+				e.Category,
+				e.Severity,
+				e.File,
+				e.Detail,
+				e.Source,
+			})
+		}
+		cw.Flush()
+	default:
+		http.Error(w, "unsupported format: "+format, http.StatusBadRequest)
+	}
+}
+
 // GET /api/arch-changelog/stats — 变动统计摘要
 func handleArchChangelogStats(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -51,6 +150,15 @@ func handleArchChangelogStats(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(changelogStore.Stats())
+}
+
+// handleArchChangelogOrPost 根据方法分发 GET/POST /api/arch-changelog
+func handleArchChangelogOrPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		handleArchChangelogCreate(w, r)
+	} else {
+		handleArchChangelog(w, r)
+	}
 }
 
 // GET /api/sse/arch-changelog — 架构变动实时事件流
@@ -78,6 +186,9 @@ func handleArchChangelogSSE(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "data: %s\n\n", data)
 	flusher.Flush()
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-r.Context().Done():
@@ -91,6 +202,13 @@ func handleArchChangelogSSE(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		case <-ticker.C:
+			pingData, _ := json.Marshal(map[string]interface{}{
+				"type":      "ping",
+				"timestamp": time.Now().Format(time.RFC3339),
+			})
+			fmt.Fprintf(w, "data: %s\n\n", pingData)
 			flusher.Flush()
 		}
 	}

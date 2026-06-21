@@ -84,12 +84,14 @@ func handleGuardianSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+	dataTicker := time.NewTicker(5 * time.Second)
+	defer dataTicker.Stop()
+	pingTicker := time.NewTicker(30 * time.Second)
+	defer pingTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-dataTicker.C:
 			gState.mu.RLock()
 			if gState.collector != nil {
 				snapshot := gState.collector.Collect()
@@ -100,6 +102,13 @@ func handleGuardianSSE(w http.ResponseWriter, r *http.Request) {
 			} else {
 				gState.mu.RUnlock()
 			}
+		case <-pingTicker.C:
+			pingData, _ := json.Marshal(map[string]interface{}{
+				"type":      "ping",
+				"timestamp": time.Now().Format(time.RFC3339),
+			})
+			fmt.Fprintf(w, "data: %s\n\n", pingData)
+			flusher.Flush()
 		case <-r.Context().Done():
 			return
 		}

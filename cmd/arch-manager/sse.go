@@ -72,7 +72,7 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -80,17 +80,11 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		case <-ticker.C:
-			archMu.RLock()
-			if archData == nil {
-				archMu.RUnlock()
-				continue
-			}
-			data, err := json.Marshal(archData)
-			archMu.RUnlock()
-			if err != nil {
-				continue
-			}
-			fmt.Fprintf(w, "data: %s\n\n", data)
+			pingData, _ := json.Marshal(map[string]interface{}{
+				"type":      "ping",
+				"timestamp": time.Now().Format(time.RFC3339),
+			})
+			fmt.Fprintf(w, "data: %s\n\n", pingData)
 			flusher.Flush()
 		}
 	}
@@ -117,6 +111,9 @@ func handleDevSSE(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "data: %s\n\n", data)
 	flusher.Flush()
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-r.Context().Done():
@@ -130,6 +127,13 @@ func handleDevSSE(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		case <-ticker.C:
+			pingData, _ := json.Marshal(map[string]interface{}{
+				"type":      "ping",
+				"timestamp": time.Now().Format(time.RFC3339),
+			})
+			fmt.Fprintf(w, "data: %s\n\n", pingData)
 			flusher.Flush()
 		}
 	}
