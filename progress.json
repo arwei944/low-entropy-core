@@ -1,0 +1,305 @@
+{
+  "name": "架构管理器重构",
+  "description": "架构管理器 + CLI 工具生产级可用化改造",
+  "created_at": "2026-06-23 02:53:36",
+  "updated_at": "2026-06-23 02:56:54",
+  "tasks": [
+    {
+      "id": "TU-1",
+      "title": "原语识别后端增强",
+      "phase": "Phase 1",
+      "priority": "P0",
+      "description": "让 /api/primitives 返回完整正确的原语数据",
+      "status": "in_progress",
+      "progress": 15,
+      "started_at": "2026-06-23 02:55:19",
+      "notes": [
+        "[2026-06-23 02:55:20] Phase 1 启动：后端核心三件套并行开发",
+        "[2026-06-23 02:56:53] 已分析现有原语识别逻辑：仅检测 var _ Atom[...] = (*Type)(nil) 接口断言模式，缺少 Layer/Description/Count 字段"
+      ]
+    },
+    {
+      "id": "TU-2",
+      "title": "拓扑图后端依赖数据增强",
+      "phase": "Phase 1",
+      "priority": "P0",
+      "description": "构建准确的文件依赖图，让拓扑图有真实数据",
+      "status": "in_progress",
+      "progress": 10,
+      "started_at": "2026-06-23 02:55:19",
+      "notes": [
+        "[2026-06-23 02:56:53] 已分析现有依赖构建逻辑：基于同包内符号引用而非真实 import 关系，导致很多文件无依赖边"
+      ]
+    },
+    {
+      "id": "TU-3",
+      "title": "前端启动数据加载编排",
+      "phase": "Phase 1",
+      "priority": "P0",
+      "description": "页面打开即有真实数据，不再空屏",
+      "status": "in_progress",
+      "progress": 10,
+      "started_at": "2026-06-23 02:55:19",
+      "notes": [
+        "[2026-06-23 02:56:54] 已分析前端启动逻辑：archData/healthScore/violations/primitives 变量仅声明无拉取"
+      ]
+    },
+    {
+      "id": "TU-4",
+      "title": "健康评分后端增强",
+      "phase": "Phase 1",
+      "priority": "P1",
+      "description": "健康评分返回详细解释信息和因子明细",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-5",
+      "title": "健康仪表前端增强",
+      "phase": "Phase 1",
+      "priority": "P1",
+      "description": "前端显示详细的五维雷达解释和评分原因",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-6",
+      "title": "违规规则集扩展（3→15+）",
+      "phase": "Phase 1",
+      "priority": "P1",
+      "description": "建立完整的架构违规检测规则引擎",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-7",
+      "title": "违规看板前端增强",
+      "phase": "Phase 1",
+      "priority": "P1",
+      "description": "违规按严重程度分组，显示后果和建议",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-8",
+      "title": "原语分布前端增强",
+      "phase": "Phase 2",
+      "priority": "P2",
+      "description": "原语数据可视化 + 清单 + 示例代码弹窗",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-9",
+      "title": "文件变更监测实现",
+      "phase": "Phase 2",
+      "priority": "P2",
+      "description": "自动监测源代码变更并写入变更日志",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-10",
+      "title": "架构变更日志可视化",
+      "phase": "Phase 2",
+      "priority": "P2",
+      "description": "前端显示架构变更时间线和统计",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-11",
+      "title": "数据流拓扑实现",
+      "phase": "Phase 3",
+      "priority": "P2",
+      "description": "实现数据流的可视化分析",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-12",
+      "title": "可观测性 - 执行步骤",
+      "phase": "Phase 3",
+      "priority": "P2",
+      "description": "提取函数调用链并可视化",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-13",
+      "title": "可观测性 - Pipeline 状态",
+      "phase": "Phase 3",
+      "priority": "P2",
+      "description": "列出活跃 Pipeline + 状态可视化",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-14",
+      "title": "可观测性 - 架构快照",
+      "phase": "Phase 3",
+      "priority": "P2",
+      "description": "记录和对比不同时间点的架构状态",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-15",
+      "title": "聚合指标趋势",
+      "phase": "Phase 3",
+      "priority": "P2",
+      "description": "展示文件数/行数/符号数/违规数等趋势图",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-16",
+      "title": "开发进度面板",
+      "phase": "Phase 4",
+      "priority": "P3",
+      "description": "展示架构重构进度可视化",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-17",
+      "title": "溯源面板 - 因果链",
+      "phase": "Phase 4",
+      "priority": "P3",
+      "description": "文件/函数调用因果关系可视化",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-18",
+      "title": "溯源面板 - 时间旅行",
+      "phase": "Phase 4",
+      "priority": "P3",
+      "description": "可查看历史架构快照并做对比",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-20",
+      "title": "SSE 事件连接",
+      "phase": "Phase 4",
+      "priority": "P3",
+      "description": "前端订阅服务端实时事件",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-19",
+      "title": "迁移引擎状态面板",
+      "phase": "Phase 5",
+      "priority": "P3",
+      "description": "显示迁移引擎运行状态和配置",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-21",
+      "title": "拓扑图布局增强",
+      "phase": "Phase 6",
+      "priority": "P3",
+      "description": "同心圆/分区布局突出层级关系",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-22",
+      "title": "CLI serve 增强",
+      "phase": "Phase 6",
+      "priority": "P3",
+      "description": "完善 arch serve 命令参数和行为",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-23",
+      "title": "CLI analyze 命令",
+      "phase": "Phase 6",
+      "priority": "P3",
+      "description": "命令行输出完整架构分析报告",
+      "status": "pending",
+      "progress": 0
+    },
+    {
+      "id": "TU-24",
+      "title": "CLI 其他命令",
+      "phase": "Phase 6",
+      "priority": "P3",
+      "description": "完善 arch check / primitives / health / dashboard",
+      "status": "pending",
+      "progress": 0
+    }
+  ],
+  "events": [
+    {
+      "time": "2026-06-23 02:53:36",
+      "task_id": "*",
+      "action": "init",
+      "detail": "进度追踪工具初始化"
+    },
+    {
+      "time": "2026-06-23 02:55:19",
+      "task_id": "TU-1",
+      "action": "start",
+      "detail": "开始任务: 原语识别后端增强"
+    },
+    {
+      "time": "2026-06-23 02:55:19",
+      "task_id": "TU-2",
+      "action": "start",
+      "detail": "开始任务: 拓扑图后端依赖数据增强"
+    },
+    {
+      "time": "2026-06-23 02:55:20",
+      "task_id": "TU-3",
+      "action": "start",
+      "detail": "开始任务: 前端启动数据加载编排"
+    },
+    {
+      "time": "2026-06-23 02:55:20",
+      "task_id": "TU-1",
+      "action": "note",
+      "detail": "Phase 1 启动：后端核心三件套并行开发"
+    },
+    {
+      "time": "2026-06-23 02:56:53",
+      "task_id": "TU-1",
+      "action": "note",
+      "detail": "已分析现有原语识别逻辑：仅检测 var _ Atom[...] = (*Type)(nil) 接口断言模式，缺少 Layer/Description/Count 字段"
+    },
+    {
+      "time": "2026-06-23 02:56:53",
+      "task_id": "TU-1",
+      "action": "progress",
+      "detail": "进度更新到 15%"
+    },
+    {
+      "time": "2026-06-23 02:56:53",
+      "task_id": "TU-2",
+      "action": "note",
+      "detail": "已分析现有依赖构建逻辑：基于同包内符号引用而非真实 import 关系，导致很多文件无依赖边"
+    },
+    {
+      "time": "2026-06-23 02:56:54",
+      "task_id": "TU-2",
+      "action": "progress",
+      "detail": "进度更新到 10%"
+    },
+    {
+      "time": "2026-06-23 02:56:54",
+      "task_id": "TU-3",
+      "action": "note",
+      "detail": "已分析前端启动逻辑：archData/healthScore/violations/primitives 变量仅声明无拉取"
+    },
+    {
+      "time": "2026-06-23 02:56:54",
+      "task_id": "TU-3",
+      "action": "progress",
+      "detail": "进度更新到 10%"
+    }
+  ]
+}

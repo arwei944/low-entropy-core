@@ -263,16 +263,16 @@ func watchFiles(dir string, interval time.Duration) {
 		})
 
 		// 检查违规
-		violations := detectViolations(newData)
-		if len(violations) > 0 {
+		resp := detectViolations(newData)
+		if resp.Total > 0 {
 			eventBus.publish(DevEvent{
 				Type: "violation_found", Timestamp: time.Now().Format(time.RFC3339),
-				Message: fmt.Sprintf("检测到 %d 条架构违规", len(violations)),
-				Data:    violations,
+				Message: fmt.Sprintf("检测到 %d 条架构违规", resp.Total),
+				Data:    resp,
 			})
-			for _, v := range violations {
+			for _, v := range resp.Items {
 				changelogStore.Append(ArchChangeEntry{
-					Category: "violation_add", Severity: v.Severity,
+					Category: "violation_add", Severity: string(v.Severity),
 					File: v.File, Detail: v.Message, Source: "watch",
 				})
 			}

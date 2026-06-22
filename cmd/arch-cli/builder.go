@@ -16,7 +16,13 @@ import (
 // 架构数据构建
 // ============================================================================
 
-// buildArchData 扫描目录并构建完整架构数据
+// buildArchData 扫描目录并构建完整架构数据。
+//
+// 依赖图构建分为三阶段，确保拓扑图中有真实有意义的依赖边：
+//
+//   阶段 A: buildImportIndex —— 从文件路径反向构建「包路径 → 文件名」索引
+//   阶段 B: import-based    —— 对每个文件，解析其 imports → 定位目标文件名
+//   阶段 C: symbol-based    —— 保留原有 AST 函数调用名 → 定义文件 的匹配逻辑（补充）
 func buildArchData(dir string) (*ArchData, error) {
 	data := &ArchData{
 		GeneratedAt: time.Now(),
@@ -70,48 +76,87 @@ func buildArchData(dir string) (*ArchData, error) {
 		data.Files = append(data.Files, r.info)
 	}
 
-	// 排序
+	// 排序文件（稳定输出）
 	sort.Slice(data.Files, func(i, j int) bool {
 		return data.Files[i].Name < data.Files[j].Name
 	})
 
-	// 构建符号→文件索引：记录每个导出符号定义在哪个文件
+	// ============================================================
+	// 阶段 A：构建 import → 文件 的反向索引
+	// ============================================================
+	pkgPathIndex, pkgBaseIndex := buildImportIndex(data.Files)
+
+	// 构建符号→文件索引（阶段 C 使用）：记录每个导出符号定义在哪个文件
 	symbolToFile := make(map[string]string)
 	for _, f := range data.Files {
 		for _, s := range f.Symbols {
-			// 如果多个文件定义同名符号，保留第一个（通常不会发生）
 			if _, exists := symbolToFile[s.Name]; !exists {
 				symbolToFile[s.Name] = f.Name
 			}
 		}
 	}
 
-	// 基于符号引用的跨文件依赖分析：
-	// 重新解析每个文件，收集所有标识符引用，匹配到定义文件
+	// ============================================================
+	// 阶段 B：基于 import 推断跨文件依赖
+	// 阶段 C：保留原有 symbol-based 依赖分析（作为补充）
+	// ============================================================
 	for i := range data.Files {
-		fset := token.NewFileSet()
-		astFile, err := parser.ParseFile(fset, data.Files[i].Path, nil, 0)
-		if err != nil {
-			continue
-		}
-		refs := collectCalledFunctions(astFile)
 		seen := make(map[string]bool)
-		seen[data.Files[i].Name] = true // 跳过自身
-		// 过滤：只保留同包内其他文件定义的导出符号
-		for _, ref := range refs {
-			// 只关注首字母大写的导出符号（同包内引用其他文件的导出符号）
-			if len(ref) == 0 || ref[0] < 'A' || ref[0] > 'Z' {
+		seen[data.Files[i].Name] = true
+		deps := make([]string, 0)
+
+		// ---- 阶段 B: import-based 依赖 ----
+		for _, imp := range data.Files[i].Imports {
+			// 只关注内部包
+			if !strings.Contains(imp, "low-entropy-core/") {
 				continue
 			}
-			if defFile, ok := symbolToFile[ref]; ok && !seen[defFile] {
-				seen[defFile] = true
-				data.Files[i].DependsOn = append(data.Files[i].DependsOn, defFile)
+			// 先在完整包路径索引查找
+			if names, ok := pkgPathIndex[imp]; ok {
+				for _, n := range names {
+					if !seen[n] {
+						seen[n] = true
+						deps = append(deps, n)
+					}
+				}
+				continue
+			}
+			// 退化：去 low-entropy-core 前缀的基础路径查找
+			base := strings.TrimPrefix(imp, "low-entropy-core/")
+			if names, ok := pkgBaseIndex[base]; ok {
+				for _, n := range names {
+					if !seen[n] {
+						seen[n] = true
+						deps = append(deps, n)
+					}
+				}
 			}
 		}
-		sort.Strings(data.Files[i].DependsOn)
+
+		// ---- 阶段 C: symbol-based 依赖（补充）----
+		fset := token.NewFileSet()
+		astFile, err := parser.ParseFile(fset, data.Files[i].Path, nil, 0)
+		if err == nil {
+			refs := collectCalledFunctions(astFile)
+			for _, ref := range refs {
+				// 只关注导出符号（首字母大写）
+				if len(ref) == 0 || ref[0] < 'A' || ref[0] > 'Z' {
+					continue
+				}
+				if defFile, ok := symbolToFile[ref]; ok && !seen[defFile] {
+					seen[defFile] = true
+					deps = append(deps, defFile)
+				}
+			}
+		}
+
+		sort.Strings(deps)
+		data.Files[i].DependsOn = deps
 	}
 
-	// 计算被依赖关系
+	// ============================================================
+	// 阶段 D：从 DependsOn 反向计算 DependedBy
+	// ============================================================
 	dependedBy := make(map[string]map[string]bool)
 	for _, f := range data.Files {
 		for _, dep := range f.DependsOn {
@@ -130,7 +175,9 @@ func buildArchData(dir string) (*ArchData, error) {
 		}
 	}
 
+	// ============================================================
 	// 统计
+	// ============================================================
 	data.TotalFiles = len(data.Files)
 	layerStats := make(map[string]*LayerStat)
 	for _, f := range data.Files {
@@ -139,7 +186,6 @@ func buildArchData(dir string) (*ArchData, error) {
 		for _, s := range f.Symbols {
 			data.SymbolKinds[s.Kind]++
 		}
-
 		if _, ok := layerStats[f.Layer]; !ok {
 			layerStats[f.Layer] = &LayerStat{
 				Layer: f.Layer,
@@ -152,13 +198,15 @@ func buildArchData(dir string) (*ArchData, error) {
 		ls.Lines += f.Lines
 		ls.Symbols += len(f.Symbols)
 	}
-
 	for _, ls := range layerStats {
 		data.Layers = append(data.Layers, *ls)
 	}
 	sort.Slice(data.Layers, func(i, j int) bool {
 		return data.Layers[i].Layer < data.Layers[j].Layer
 	})
+
+	// 填充 Primitives 字段（检测四原语）
+	data.Primitives = detectPrimitives(data)
 
 	return data, nil
 }

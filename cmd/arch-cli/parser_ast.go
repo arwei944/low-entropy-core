@@ -3,8 +3,77 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"path/filepath"
+	"sort"
 	"strings"
 )
+
+// buildImportIndex 从所有文件构建「包路径 → 文件名」的反向索引。
+//
+// 输入: []arch.FileInfo — 每个文件的解析结果（含 Path / Name / Imports）
+// 输出: pkgPathIndex   map[string][]string — 完整包路径 (如 "low-entropy-core/go-core/arch") → 文件名列表
+//       pkgBaseIndex   map[string][]string — 包基础路径 (如 "go-core/arch") → 文件名列表
+//
+// 用于在 buildArchData 的跨文件依赖分析阶段，将文件 import 路径快速映射到实际文件名。
+func buildImportIndex(files []FileInfo) (pkgPathIndex map[string][]string, pkgBaseIndex map[string][]string) {
+	pkgPathIndex = make(map[string][]string)
+	pkgBaseIndex = make(map[string][]string)
+
+	for _, f := range files {
+		// 从文件完整路径中提取「low-entropy-core/<...>/<pkg>」形式的包路径
+		// f.Path 可能是 "d:/work/.../low-entropy-core/go-core/arch/types.go"
+		// 也可能是 "low-entropy-core/go-core/arch/types.go"（相对路径）
+		dir := filepath.ToSlash(filepath.Dir(f.Path))
+
+		// 寻找 "low-entropy-core/" 作为模块根标记
+		pkgPath := ""
+		if idx := strings.Index(dir, "low-entropy-core/"); idx >= 0 {
+			pkgPath = dir[idx:]
+		} else {
+			// 找不到模块标记，退化为使用目录末两段（兼容相对路径）
+			parts := strings.Split(dir, "/")
+			if len(parts) >= 2 {
+				pkgPath = strings.Join(parts[len(parts)-2:], "/")
+			} else {
+				pkgPath = dir
+			}
+		}
+
+		// 完整包路径索引："low-entropy-core/go-core/arch" → [types.go, ...]
+		pkgPathIndex[pkgPath] = append(pkgPathIndex[pkgPath], f.Name)
+
+		// 去 low-entropy-core 前缀的基础索引："go-core/arch" → [types.go, ...]
+		if strings.HasPrefix(pkgPath, "low-entropy-core/") {
+			base := strings.TrimPrefix(pkgPath, "low-entropy-core/")
+			pkgBaseIndex[base] = append(pkgBaseIndex[base], f.Name)
+		} else {
+			pkgBaseIndex[pkgPath] = append(pkgBaseIndex[pkgPath], f.Name)
+		}
+	}
+
+	// 去重 + 排序每个索引值（保证结果稳定）
+	for k, names := range pkgPathIndex {
+		pkgPathIndex[k] = dedupAndSort(names)
+	}
+	for k, names := range pkgBaseIndex {
+		pkgBaseIndex[k] = dedupAndSort(names)
+	}
+	return pkgPathIndex, pkgBaseIndex
+}
+
+// dedupAndSort 去重并排序字符串切片（用于依赖列表/索引值稳定化）
+func dedupAndSort(xs []string) []string {
+	seen := make(map[string]bool, len(xs))
+	out := make([]string, 0, len(xs))
+	for _, x := range xs {
+		if !seen[x] {
+			seen[x] = true
+			out = append(out, x)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
 
 // parseTypeSpec 解析类型声明
 func parseTypeSpec(s *ast.TypeSpec, doc *ast.CommentGroup) Symbol {

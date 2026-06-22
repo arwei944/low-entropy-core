@@ -17,6 +17,15 @@
 // ============================================================
 function renderTopology(container) {
   container.innerHTML = '<div class="view-title">拓扑图</div><div class="view-desc">文件/模块间的依赖关系力导向图</div>';
+
+  if (!archData || !archData.files || archData.files.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = '<p style="color:var(--dim)">' + (archData === null ? '加载中...' : '暂无拓扑数据') + '</p>';
+    container.appendChild(empty);
+    return;
+  }
+
   const card = document.createElement('div');
   card.className = 'card';
   card.innerHTML = '<div class="chart-container-lg" id="topologyChart"></div>';
@@ -105,7 +114,20 @@ function renderTopology(container) {
 // 架构全景 — 健康仪表
 // ============================================================
 function renderHealth(container) {
-  container.innerHTML = '<div class="view-title">健康仪表</div><div class="view-desc">五维雷达图 + 评分仪表盘 + 趋势曲线</div>';
+  container.innerHTML = '<div class="view-title">健康仪表</div><div class="view-desc">五维雷达图 + 评分仪表盘 + 趋势曲线 + 改进建议</div>';
+
+  if (healthScore === null || healthScore === undefined) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = '<p style="color:var(--dim)">健康评分加载中...</p>';
+    container.appendChild(empty);
+    return;
+  }
+
+  if (typeof renderHealthDetail === 'function') {
+    renderHealthDetail(container, healthScore);
+  }
+
   const grid = document.createElement('div');
   grid.className = 'grid-2';
   grid.innerHTML = `
@@ -118,14 +140,25 @@ function renderHealth(container) {
   trendCard.innerHTML = '<div class="card-title">健康趋势</div><div class="chart-container" id="trendChart"></div>';
   container.appendChild(trendCard);
 
-  const factors = healthScore?.factors || { layer_balance: 70, file_granularity: 65, symbol_density: 80, dependency_depth: 60, interface_ratio: 75 };
+  const factors = healthScore.factors || { layer_balance: 70, file_granularity: 65, symbol_density: 80, dependency_depth: 60, interface_ratio: 75 };
   const names = { layer_balance: '层级平衡', file_granularity: '文件粒度', symbol_density: '符号密度', dependency_depth: '依赖深度', interface_ratio: '接口率' };
-  const indicator = Object.keys(factors).map(k => ({ name: names[k] || k, max: 100 }));
-  const values = Object.values(factors);
+  const factorKeys = Object.keys(factors);
+  const indicator = factorKeys.map(k => ({ name: names[k] || k, max: 100 }));
+  const values = factorKeys.map(k => Math.round(factors[k] || 0));
+
+  const tooltipFormatter = (typeof radarTooltipFormatter === 'function')
+    ? radarTooltipFormatter(healthScore.factor_details, factors)
+    : function(p) { return (p.name || '') + '：' + (p.value || 0); };
 
   charts.radar = echarts.init(document.getElementById('radarChart'));
   charts.radar.setOption({
     backgroundColor: 'transparent',
+    tooltip: {
+      backgroundColor: '#1c1c1e',
+      borderColor: '#2c2c2e',
+      textStyle: { color: '#f5f5f7' },
+      formatter: tooltipFormatter
+    },
     radar: {
       indicator,
       axisName: { color: '#98989d', fontSize: 11 },
@@ -140,7 +173,7 @@ function renderHealth(container) {
   });
 
   charts.gauge = echarts.init(document.getElementById('gaugeChart'));
-  const score = healthScore?.overall || 72;
+  const score = Math.round(healthScore.overall || 0);
   charts.gauge.setOption({
     backgroundColor: 'transparent',
     series: [{
@@ -170,30 +203,17 @@ function renderHealth(container) {
     }]
   });
 
-  // Trend from healthHistory API data
-  let trendData, trendLabels;
+  let trendData = [], trendLabels = [];
   if (healthHistory && healthHistory.length > 0) {
     trendData = healthHistory.map(h => {
       const s = h.score || h;
-      return s.overall ?? s.score ?? s.value ?? 0;
+      return Math.round(s.overall ?? s.score ?? s.value ?? 0);
     });
     trendLabels = healthHistory.map((_, i) => 'T-' + (healthHistory.length - i));
-  } else {
-    // Show empty state for trend
-    trendData = [];
-    trendLabels = [];
-    const trendEl = document.getElementById('trendChart');
-    if (trendEl) {
-      trendEl.innerHTML = '<div class="empty-state" style="padding:40px"><p>暂无历史数据</p></div>';
-      return;
-    }
   }
-
   if (trendData.length === 0) {
     const trendEl = document.getElementById('trendChart');
-    if (trendEl) {
-      trendEl.innerHTML = '<div class="empty-state" style="padding:40px"><p>暂无历史数据</p></div>';
-    }
+    if (trendEl) trendEl.innerHTML = '<div class="empty-state" style="padding:40px"><p>暂无历史数据</p></div>';
     return;
   }
 

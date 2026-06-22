@@ -2,22 +2,24 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"sync"
 	"time"
+
+	arch "low-entropy-core/go-core/arch"
 )
 
-// healthHistory 健康评分历史（环形缓冲区）
 var healthHistory struct {
-	mu       sync.RWMutex
-	entries  []healthHistoryEntry
-	maxSize  int
+	mu      sync.RWMutex
+	entries []healthHistoryEntry
+	maxSize int
 }
 
 type healthHistoryEntry struct {
-	Score     HealthScore `json:"score"`
-	Timestamp time.Time   `json:"timestamp"`
+	Score     arch.HealthScoreResponse `json:"score"`
+	Timestamp time.Time                `json:"timestamp"`
 }
 
 func init() {
@@ -25,8 +27,7 @@ func init() {
 	healthHistory.entries = make([]healthHistoryEntry, 0, 100)
 }
 
-// recordHealthScore 记录健康评分到历史
-func recordHealthScore(score HealthScore) {
+func recordHealthScore(score arch.HealthScoreResponse) {
 	healthHistory.mu.Lock()
 	defer healthHistory.mu.Unlock()
 	healthHistory.entries = append(healthHistory.entries, healthHistoryEntry{
@@ -38,7 +39,6 @@ func recordHealthScore(score HealthScore) {
 	}
 }
 
-// handleHealthScoreHistory 返回健康评分历史
 func handleHealthScoreHistory(w http.ResponseWriter, r *http.Request) {
 	healthHistory.mu.RLock()
 	defer healthHistory.mu.RUnlock()
@@ -47,7 +47,6 @@ func handleHealthScoreHistory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(healthHistory.entries)
 }
 
-// handleHealthScore 计算架构健康度评分
 func handleHealthScore(w http.ResponseWriter, r *http.Request) {
 	archMu.RLock()
 	defer archMu.RUnlock()
@@ -65,14 +64,17 @@ func handleHealthScore(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(score)
 }
 
-func computeHealthScore(data *ArchData) HealthScore {
-	hs := HealthScore{
-		Factors:     make(map[string]float64),
-		Suggestions: []string{},
+func computeHealthScore(data *arch.ArchData) arch.HealthScoreResponse {
+	hs := arch.HealthScoreResponse{
+		Factors:       make(map[string]float64),
+		FactorDetails: []arch.HealthFactor{},
+		Suggestions:   []string{},
 	}
 
-	// 1. 层级平衡度 (25分) — 每层是否有足够的代码量
+	// 1. 层级平衡度
+	var layerFactor arch.HealthFactor
 	layerBalance := 100.0
+	rawDeviation := "0.00"
 	if len(data.Layers) > 0 {
 		var lines []int
 		for _, l := range data.Layers {
@@ -81,54 +83,137 @@ func computeHealthScore(data *ArchData) HealthScore {
 		avg := float64(data.TotalLines) / float64(len(data.Layers))
 		deviation := 0.0
 		for _, l := range lines {
-			deviation += math.Abs(float64(l)-avg) / avg
+			if avg > 0 {
+				deviation += math.Abs(float64(l)-avg) / avg
+			}
 		}
 		deviation /= float64(len(lines))
 		layerBalance = math.Max(0, 100-deviation*30)
-		if layerBalance < 60 {
-			hs.Suggestions = append(hs.Suggestions, "层级代码量分布不均，建议均衡各层职责")
-		}
+		rawDeviation = fmt.Sprintf("%.3f", deviation)
 	}
-	hs.Factors["layer_balance"] = math.Round(layerBalance)
+	layerBalance = math.Round(layerBalance)
+	layerSuggest := ""
+	layerImpact := "low"
+	if layerBalance < 60 {
+		layerSuggest = "层级代码量分布不均，建议均衡各层职责"
+		layerImpact = "high"
+		hs.Suggestions = append(hs.Suggestions, layerSuggest)
+	} else if layerBalance < 80 {
+		layerSuggest = "层级分布略有偏差，可关注较少代码的层级"
+		layerImpact = "medium"
+	}
+	layerFactor = arch.HealthFactor{
+		Key:         "layer_balance",
+		Name:        "层级平衡度",
+		Score:       layerBalance,
+		Explanation: "衡量各层代码量分布是否均衡，避免某一层职责过重或过轻",
+		RawValue:    rawDeviation,
+		Threshold:   "偏差 < 1.3 良好",
+		Suggestion:  layerSuggest,
+		Impact:      layerImpact,
+	}
+	hs.Factors["layer_balance"] = layerBalance
+	hs.FactorDetails = append(hs.FactorDetails, layerFactor)
 
-	// 2. 文件粒度 (20分) — 平均每文件行数应在 100-500 之间
-	avgLines := float64(data.TotalLines) / float64(data.TotalFiles)
+	// 2. 文件粒度
+	avgLines := 0.0
+	if data.TotalFiles > 0 {
+		avgLines = float64(data.TotalLines) / float64(data.TotalFiles)
+	}
 	fileGranularity := 100.0
+	fileSuggest := ""
+	fileImpact := "low"
 	if avgLines < 100 {
 		fileGranularity = avgLines / 100 * 100
-		hs.Suggestions = append(hs.Suggestions, "文件粒度过细，建议合并相关文件")
+		fileSuggest = "文件粒度过细，建议合并相关文件"
+		fileImpact = "medium"
+		hs.Suggestions = append(hs.Suggestions, fileSuggest)
 	} else if avgLines > 800 {
 		fileGranularity = math.Max(0, 100-(avgLines-800)/10)
-		hs.Suggestions = append(hs.Suggestions, "部分文件过大，建议拆分")
+		fileSuggest = "部分文件过大，建议拆分"
+		fileImpact = "high"
+		hs.Suggestions = append(hs.Suggestions, fileSuggest)
 	}
-	hs.Factors["file_granularity"] = math.Round(fileGranularity)
+	fileGranularity = math.Round(fileGranularity)
+	fileFactor := arch.HealthFactor{
+		Key:         "file_granularity",
+		Name:        "文件粒度",
+		Score:       fileGranularity,
+		Explanation: "平均每文件行数，反映文件职责是否适中",
+		RawValue:    fmt.Sprintf("%.1f 行/文件", avgLines),
+		Threshold:   "100 ~ 800 行/文件",
+		Suggestion:  fileSuggest,
+		Impact:      fileImpact,
+	}
+	hs.Factors["file_granularity"] = fileGranularity
+	hs.FactorDetails = append(hs.FactorDetails, fileFactor)
 
-	// 3. 符号密度 (20分) — 每文件平均符号数
-	avgSymbols := float64(data.TotalSymbols) / float64(data.TotalFiles)
+	// 3. 符号密度
+	avgSymbols := 0.0
+	if data.TotalFiles > 0 {
+		avgSymbols = float64(data.TotalSymbols) / float64(data.TotalFiles)
+	}
 	symbolDensity := 100.0
+	symbolSuggest := ""
+	symbolImpact := "low"
 	if avgSymbols < 5 {
 		symbolDensity = avgSymbols / 5 * 100
-		hs.Suggestions = append(hs.Suggestions, "部分文件符号过少，可能存在未使用的代码")
+		symbolSuggest = "部分文件符号过少，可能存在未使用的代码"
+		symbolImpact = "medium"
+		hs.Suggestions = append(hs.Suggestions, symbolSuggest)
 	} else if avgSymbols > 50 {
 		symbolDensity = math.Max(0, 100-(avgSymbols-50)*2)
-		hs.Suggestions = append(hs.Suggestions, "部分文件符号密度过高，建议拆分")
+		symbolSuggest = "部分文件符号密度过高，建议拆分"
+		symbolImpact = "high"
+		hs.Suggestions = append(hs.Suggestions, symbolSuggest)
 	}
-	hs.Factors["symbol_density"] = math.Round(symbolDensity)
+	symbolDensity = math.Round(symbolDensity)
+	symbolFactor := arch.HealthFactor{
+		Key:         "symbol_density",
+		Name:        "符号密度",
+		Score:       symbolDensity,
+		Explanation: "每文件平均符号（类型/函数/方法等）数",
+		RawValue:    fmt.Sprintf("%.1f 符号/文件", avgSymbols),
+		Threshold:   "5 ~ 50 符号/文件",
+		Suggestion:  symbolSuggest,
+		Impact:      symbolImpact,
+	}
+	hs.Factors["symbol_density"] = symbolDensity
+	hs.FactorDetails = append(hs.FactorDetails, symbolFactor)
 
-	// 4. 依赖深度 (20分) — 平均依赖深度
+	// 4. 依赖深度
 	totalDeps := 0
 	for _, f := range data.Files {
 		totalDeps += len(f.DependsOn)
 	}
-	avgDeps := float64(totalDeps) / float64(data.TotalFiles)
+	avgDeps := 0.0
+	if data.TotalFiles > 0 {
+		avgDeps = float64(totalDeps) / float64(data.TotalFiles)
+	}
 	depDepth := 100.0
+	depSuggest := ""
+	depImpact := "low"
 	if avgDeps > 10 {
 		depDepth = math.Max(0, 100-(avgDeps-10)*5)
-		hs.Suggestions = append(hs.Suggestions, "平均依赖数偏高，建议降低耦合度")
+		depSuggest = "平均依赖数偏高，建议降低耦合度"
+		depImpact = "high"
+		hs.Suggestions = append(hs.Suggestions, depSuggest)
 	}
-	hs.Factors["dependency_depth"] = math.Round(depDepth)
+	depDepth = math.Round(depDepth)
+	depFactor := arch.HealthFactor{
+		Key:         "dependency_depth",
+		Name:        "依赖深度",
+		Score:       depDepth,
+		Explanation: "平均每个文件的依赖数，反映模块耦合程度",
+		RawValue:    fmt.Sprintf("%.1f 依赖/文件", avgDeps),
+		Threshold:   "<= 10 依赖/文件",
+		Suggestion:  depSuggest,
+		Impact:      depImpact,
+	}
+	hs.Factors["dependency_depth"] = depDepth
+	hs.FactorDetails = append(hs.FactorDetails, depFactor)
 
-	// 5. 接口率 (15分) — 接口类型占总类型的比例
+	// 5. 接口率
 	typeCount := 0
 	interfaceCount := 0
 	for _, f := range data.Files {
@@ -141,18 +226,39 @@ func computeHealthScore(data *ArchData) HealthScore {
 			}
 		}
 	}
-	interfaceRatio := 100.0
+	ratio := 0.0
 	if typeCount > 0 {
-		ratio := float64(interfaceCount) / float64(typeCount)
+		ratio = float64(interfaceCount) / float64(typeCount)
+	}
+	interfaceRatio := 100.0
+	ratioSuggest := ""
+	ratioImpact := "low"
+	if typeCount > 0 {
 		if ratio < 0.1 {
 			interfaceRatio = ratio / 0.1 * 100
-			hs.Suggestions = append(hs.Suggestions, "接口比例偏低，建议增加抽象层")
+			ratioSuggest = "接口比例偏低，建议增加抽象层"
+			ratioImpact = "high"
+			hs.Suggestions = append(hs.Suggestions, ratioSuggest)
 		} else if ratio > 0.7 {
 			interfaceRatio = 100 - (ratio-0.7)*100
-			hs.Suggestions = append(hs.Suggestions, "接口比例偏高，可能存在过度抽象")
+			ratioSuggest = "接口比例偏高，可能存在过度抽象"
+			ratioImpact = "medium"
+			hs.Suggestions = append(hs.Suggestions, ratioSuggest)
 		}
 	}
-	hs.Factors["interface_ratio"] = math.Round(interfaceRatio)
+	interfaceRatio = math.Round(interfaceRatio)
+	ratioFactor := arch.HealthFactor{
+		Key:         "interface_ratio",
+		Name:        "接口率",
+		Score:       interfaceRatio,
+		Explanation: "接口类型占总类型的比例，反映抽象程度",
+		RawValue:    fmt.Sprintf("%d/%d (%.1f%%)", interfaceCount, typeCount, ratio*100),
+		Threshold:   "10% ~ 70%",
+		Suggestion:  ratioSuggest,
+		Impact:      ratioImpact,
+	}
+	hs.Factors["interface_ratio"] = interfaceRatio
+	hs.FactorDetails = append(hs.FactorDetails, ratioFactor)
 
 	// 加权总分
 	hs.Overall = math.Round(layerBalance*0.25 + fileGranularity*0.20 + symbolDensity*0.20 + depDepth*0.20 + interfaceRatio*0.15)
@@ -169,6 +275,17 @@ func computeHealthScore(data *ArchData) HealthScore {
 		hs.Grade = "C"
 	default:
 		hs.Grade = "D"
+	}
+	hs.GradeDesc = arch.GradeDescription(hs.Grade)
+
+	// 项目统计
+	primitiveCount := len(data.Primitives)
+	hs.ProjectStats = arch.ProjectStats{
+		TotalFiles:        data.TotalFiles,
+		TotalLines:        data.TotalLines,
+		AvgLinesPerFile:   avgLines,
+		AvgSymbolsPerFile: avgSymbols,
+		PrimitiveCount:    primitiveCount,
 	}
 
 	return hs

@@ -80,16 +80,30 @@ type LayerStat struct {
 // 四原语识别信息
 // ──────────────────────────────────────────────
 
-// PrimitiveInfo 表示一个检测到的四原语接口断言。
-// 由 Analyzer Atom 从 AST 中识别 `var _ Atom[...] = (*Type)(nil)` 模式产生。
+// PrimitiveInfo 表示一个检测到的四原语。
+// 来自 interface_assert 断言、命名启发式（Naming）或目录路径推断。
 type PrimitiveInfo struct {
-	Name       string `json:"name"`        // 实现类型名（如 "ParseFileAtom"）
-	Type       string `json:"type"`        // "Atom" | "Port" | "Adapter" | "Composer"
-	File       string `json:"file"`        // 所在文件名
-	Package    string `json:"package"`     // 所在包
-	Line       int    `json:"line"`        // 行号
-	Signature  string `json:"signature"`   // 完整断言签名
-	IsExported bool   `json:"is_exported"` // 是否大写开头
+	Name          string `json:"name"`            // 实现类型名（如 "ParseFileAtom"）
+	Type          string `json:"type"`            // "Atom" | "Port" | "Adapter" | "Composer"
+	File          string `json:"file"`            // 所在文件名
+	FilePath      string `json:"file_path"`       // 完整路径
+	Package       string `json:"package"`         // 所在包
+	Line          int    `json:"line"`            // 行号
+	Signature     string `json:"signature"`       // 完整签名
+	IsExported    bool   `json:"is_exported"`     // 是否大写开头
+	Layer         string `json:"layer"`           // 层级 (L0..L7)
+	LayerName     string `json:"layer_name"`      // 层级名称
+	Description   string `json:"description"`     // 功能描述
+	DetectionMode string `json:"detection_mode"`  // interface_assert / naming / path_based
+}
+
+// PrimitiveResponse 原语检测响应包装
+type PrimitiveResponse struct {
+	Total      int             `json:"total"`
+	ByType     map[string]int  `json:"by_type"`
+	ByLayer    map[string]int  `json:"by_layer"`
+	Items      []PrimitiveInfo `json:"items"`
+	DetectedIn string          `json:"scanned_files"`
 }
 
 // ──────────────────────────────────────────────
@@ -100,10 +114,22 @@ type PrimitiveInfo struct {
 type ViolationSeverity string
 
 const (
-	SeverityInfo  ViolationSeverity = "info"   // 信息级（建议改进）
-	SeverityWarn  ViolationSeverity = "warn"   // 警告级（应修复）
-	SeverityError ViolationSeverity = "error"  // 错误级（必须修复）
+	SeverityError   ViolationSeverity = "error"   // 错误级（必须修复）
+	SeverityWarning ViolationSeverity = "warning" // 警告级（应修复）
+	SeverityWarn    ViolationSeverity = "warning" // 警告级（向后兼容别名）
+	SeverityInfo    ViolationSeverity = "info"    // 信息级（建议改进）
 )
+
+func (v Violation) SeverityIcon() string {
+	switch v.Severity {
+	case SeverityError:
+		return "🛑"
+	case SeverityWarning:
+		return "⚠️"
+	default:
+		return "ℹ️"
+	}
+}
 
 // ViolationType 表示违规的类型。
 // 严格对齐 CLAUDE.md 中禁止事项的枚举。
@@ -129,12 +155,19 @@ const (
 // Violation 表示一条架构违规记录。
 // 由 Validator Port 产生，作为分析流水线的输出之一。
 type Violation struct {
-	Type       ViolationType     `json:"type"`
-	Severity   ViolationSeverity `json:"severity"`
-	File       string            `json:"file"`
-	Message    string            `json:"message"`    // 简短描述
-	Detail     string            `json:"detail"`     // 详细说明（可含建议）
-	Suggestion string            `json:"suggestion"` // 修复建议
+	Type       ViolationType     `json:"type,omitempty"`
+	Severity    ViolationSeverity `json:"severity"`
+	RuleID      string            `json:"rule_id"`
+	File        string            `json:"file"`
+	FilePath    string            `json:"file_path,omitempty"`
+	Line        int               `json:"line,omitempty"`
+	Message     string            `json:"message"`
+	Detail      string            `json:"detail"`
+	Consequence string            `json:"consequence"`
+	Suggestion  string            `json:"suggestion"`
+	CodeSnippet string            `json:"code_snippet,omitempty"`
+	Value       int               `json:"value,omitempty"`
+	Threshold   int               `json:"threshold,omitempty"`
 }
 
 // ──────────────────────────────────────────────
@@ -249,6 +282,38 @@ type HealthScore struct {
 	Suggestions []string           `json:"suggestions,omitempty"`
 }
 
+// HealthFactor 五维评分因子
+type HealthFactor struct {
+	Key         string  `json:"key"`
+	Name        string  `json:"name"`
+	Score       float64 `json:"score"`
+	Explanation string  `json:"explanation"`
+	RawValue    string  `json:"raw_value"`
+	Threshold   string  `json:"threshold"`
+	Suggestion  string  `json:"suggestion"`
+	Impact      string  `json:"impact"`
+}
+
+// HealthScoreResponse 健康评分完整响应
+type HealthScoreResponse struct {
+	Overall       float64            `json:"overall"`
+	Grade         string             `json:"grade"`
+	GradeDesc     string             `json:"grade_description"`
+	Factors       map[string]float64 `json:"factors"`
+	FactorDetails []HealthFactor     `json:"factor_details"`
+	Suggestions   []string           `json:"suggestions"`
+	ProjectStats  ProjectStats       `json:"stats"`
+}
+
+// ProjectStats 项目统计信息
+type ProjectStats struct {
+	TotalFiles        int     `json:"total_files"`
+	TotalLines        int     `json:"total_lines"`
+	AvgLinesPerFile  float64 `json:"avg_lines_per_file"`
+	AvgSymbolsPerFile float64 `json:"avg_symbols_per_file"`
+	PrimitiveCount    int     `json:"primitive_count"`
+}
+
 // ComputeGrade 将 0~1 的总分映射到等级。
 func ComputeGrade(overall float64) string {
 	switch {
@@ -261,4 +326,31 @@ func ComputeGrade(overall float64) string {
 	default:
 		return "D"
 	}
+}
+
+// GradeDescription 返回等级的中文描述
+func GradeDescription(grade string) string {
+	switch grade {
+	case "A+":
+		return "优秀 - 架构设计良好，职责清晰，低耦合高内聚"
+	case "A":
+		return "良好 - 架构整体合理，局部可优化"
+	case "B":
+		return "中等 - 存在若干可改进点，建议关注高影响因子"
+	case "C":
+		return "较差 - 存在较明显的架构问题，建议优先修复"
+	default:
+		return "严重 - 架构存在严重问题，需立即介入整改"
+	}
+}
+
+// ViolationResponse 违规响应包装
+type ViolationResponse struct {
+	Total        int                    `json:"total"`
+	ErrorCount   int                    `json:"error_count"`
+	WarningCount int                    `json:"warning_count"`
+	InfoCount    int                    `json:"info_count"`
+	ByRule       map[string]int         `json:"by_rule"`
+	BySeverity   map[string]int         `json:"by_severity"`
+	Items        []Violation            `json:"items"`
 }

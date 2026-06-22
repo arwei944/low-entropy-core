@@ -217,10 +217,10 @@ func buildConstraintChecks(data *ArchData) []ConstraintCheck {
 		}
 
 		// 检测违规数
-		violations := detectViolations(data)
+		resp := detectViolations(data)
 		layerViolations := 0
-		for _, v := range violations {
-			if v.Type == "layer_violation" {
+		for _, v := range resp.Items {
+			if v.RuleID == "R4" {
 				layerViolations++
 			}
 		}

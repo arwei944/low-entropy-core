@@ -7,21 +7,11 @@ import (
 	"go/parser"
 	"go/token"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
-)
 
-// PrimitiveInfo 四原语信息
-type PrimitiveInfo struct {
-	Name       string `json:"name"`
-	Type       string `json:"type"`       // "Atom", "Port", "Adapter", "Composer"
-	File       string `json:"file"`
-	Package    string `json:"package"`
-	Line       int    `json:"line"`
-	Signature  string `json:"signature,omitempty"`
-	IsExported bool   `json:"is_exported"`
-}
+	arch "low-entropy-core/go-core/arch"
+)
 
 // handlePrimitives 返回所有识别到的四原语
 func handlePrimitives(w http.ResponseWriter, r *http.Request) {
@@ -34,95 +24,233 @@ func handlePrimitives(w http.ResponseWriter, r *http.Request) {
 	}
 
 	primitives := detectPrimitives(archData)
+	byType := map[string]int{}
+	byLayer := map[string]int{}
+	for _, p := range primitives {
+		byType[p.Type]++
+		if p.Layer != "" {
+			byLayer[p.Layer]++
+		}
+	}
+	resp := arch.PrimitiveResponse{
+		Total:      len(primitives),
+		ByType:     byType,
+		ByLayer:    byLayer,
+		Items:      primitives,
+		DetectedIn: fmt.Sprintf("%d files", len(archData.Files)),
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(primitives)
+	json.NewEncoder(w).Encode(resp)
 }
 
-// detectPrimitives 从架构数据中检测四原语接口断言
-func detectPrimitives(data *ArchData) []PrimitiveInfo {
-	var primitives []PrimitiveInfo
+// detectPrimitives 从架构数据中检测四原语（三种方式）
+func detectPrimitives(data *arch.ArchData) []arch.PrimitiveInfo {
+	var primitives []arch.PrimitiveInfo
+	seen := map[string]bool{}
 
 	for _, file := range data.Files {
-		path := file.Path
-		fset := token.NewFileSet()
-		f, err := parser.ParseFile(fset, path, nil, 0)
-		if err != nil {
-			continue
-		}
-
-		for _, decl := range f.Decls {
-			genDecl, ok := decl.(*ast.GenDecl)
-			if !ok || genDecl.Tok != token.VAR {
+		// 1. 接口断言检测 (type 1: interface_assert)
+		astPrimitives := detectByAST(file)
+		for _, p := range astPrimitives {
+			key := p.File + ":" + p.Name + ":" + p.Type
+			if seen[key] {
 				continue
 			}
+			seen[key] = true
+			p.Layer = file.Layer
+			p.LayerName = file.LayerName
+			primitives = append(primitives, p)
+		}
 
-			for _, spec := range genDecl.Specs {
-				valueSpec, ok := spec.(*ast.ValueSpec)
-				if !ok || len(valueSpec.Values) == 0 {
+		// 2. 命名启发式检测
+		for _, sym := range file.Symbols {
+			primType := inferPrimitiveByName(sym.Name)
+			if primType == "" {
+				continue
+			}
+			key := file.Name + ":" + sym.Name + ":" + primType + ":n"
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			desc := sym.Doc
+			if desc == "" {
+				desc = primType + ": " + sym.Name
+			}
+			sig := sym.Signature
+			if sig == "" {
+				sig = fmt.Sprintf("type %s %s", sym.Name, sym.Kind)
+			}
+			primitives = append(primitives, arch.PrimitiveInfo{
+				Name:          sym.Name,
+				Type:          primType,
+				File:          file.Name,
+				FilePath:      file.Path,
+				Package:       file.Package,
+				Line:          0,
+				Signature:     sig,
+				IsExported:    sym.IsExported,
+				Layer:         file.Layer,
+				LayerName:     file.LayerName,
+				Description:   strings.TrimSpace(desc),
+				DetectionMode: "naming",
+			})
+		}
+
+		// 3. 路径推断 (type 2: path_based)
+		primType := inferPrimitiveByPath(file.Path)
+		if primType != "" {
+			for _, sym := range file.Symbols {
+				if !sym.IsExported {
 					continue
 				}
-
-				// 检查是否是接口断言: var _ Atom[...] = (*Type)(nil)
-				for i, name := range valueSpec.Names {
-					if name.Name != "_" {
-						continue
-					}
-					if i >= len(valueSpec.Values) {
-						continue
-					}
-
-					// 检查类型是否是四原语接口
-					primType := extractPrimitiveType(valueSpec.Type)
-					if primType == "" {
-						continue
-					}
-
-					// 提取实现类型名
-					implType := extractImplType(valueSpec.Values[i])
-					if implType == "" {
-						continue
-					}
-
-					pos := fset.Position(name.Pos())
-					primitives = append(primitives, PrimitiveInfo{
-						Name:       implType,
-						Type:       primType,
-						File:       filepath.Base(path),
-						Package:    f.Name.Name,
-						Line:       pos.Line,
-						Signature:  fmt.Sprintf("var _ %s = (*%s)(nil)", typeExprToString(valueSpec.Type), implType),
-						IsExported: len(implType) > 0 && implType[0] >= 'A' && implType[0] <= 'Z',
-					})
+				key := file.Name + ":" + sym.Name + ":" + primType + ":p"
+				if seen[key] {
+					continue
 				}
+				seen[key] = true
+				desc := sym.Doc
+				if desc == "" {
+					desc = primType + ": " + sym.Name
+				}
+				sig := sym.Signature
+				if sig == "" {
+					sig = fmt.Sprintf("%s %s", sym.Name, sym.Kind)
+				}
+				primitives = append(primitives, arch.PrimitiveInfo{
+					Name:          sym.Name,
+					Type:          primType,
+					File:          file.Name,
+					FilePath:      file.Path,
+					Package:       file.Package,
+					Line:          0,
+					Signature:     sig,
+					IsExported:    sym.IsExported,
+					Layer:         file.Layer,
+					LayerName:     file.LayerName,
+					Description:   strings.TrimSpace(desc),
+					DetectionMode: "path_based",
+				})
 			}
 		}
 	}
-
 	return primitives
 }
 
-// extractPrimitiveType 从类型表达式中提取四原语类型名
-func extractPrimitiveType(expr ast.Expr) string {
-	switch e := expr.(type) {
-	case *ast.IndexExpr:
-		if ident, ok := e.X.(*ast.Ident); ok {
-			return isPrimitive(ident.Name)
+// detectByAST 扫描单个文件的 AST，提取接口断言
+func detectByAST(file arch.FileInfo) []arch.PrimitiveInfo {
+	var primitives []arch.PrimitiveInfo
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, file.Path, nil, 0)
+	if err != nil {
+		return primitives
+	}
+	for _, decl := range f.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.VAR {
+			continue
 		}
-	case *ast.IndexListExpr:
-		if ident, ok := e.X.(*ast.Ident); ok {
-			return isPrimitive(ident.Name)
+		for _, spec := range genDecl.Specs {
+			valueSpec, ok := spec.(*ast.ValueSpec)
+			if !ok || len(valueSpec.Values) == 0 {
+				continue
+			}
+			for i, name := range valueSpec.Names {
+				if name.Name != "_" || i >= len(valueSpec.Values) {
+					continue
+				}
+				primType := extractPrimitiveType(valueSpec.Type)
+				if primType == "" {
+					continue
+				}
+				implType := extractImplType(valueSpec.Values[i])
+				if implType == "" {
+					continue
+				}
+				pos := fset.Position(name.Pos())
+				primitives = append(primitives, arch.PrimitiveInfo{
+					Name:          implType,
+					Type:          primType,
+					File:          file.Name,
+					FilePath:      file.Path,
+					Package:       f.Name.Name,
+					Line:          pos.Line,
+					Signature:     fmt.Sprintf("var _ %s = (*%s)(nil)", typeExprToString(valueSpec.Type), implType),
+					IsExported:    len(implType) > 0 && implType[0] >= 'A' && implType[0] <= 'Z',
+					DetectionMode: "interface_assert",
+				})
+			}
 		}
-	case *ast.Ident:
-		return isPrimitive(e.Name)
+	}
+	return primitives
+}
+
+// inferPrimitiveByName 通过符号名称前缀或后缀推断四原语类型
+// 支持: Atom* / *Atom / Port* / *Port / Adapter* / *Adapter / Composer* / *Composer
+func inferPrimitiveByName(name string) string {
+	if len(name) < 4 {
+		return ""
+	}
+	for _, kw := range []string{"Atom", "Port", "Adapter", "Composer"} {
+		if strings.HasPrefix(name, kw) || strings.HasSuffix(name, kw) {
+			return kw
+		}
 	}
 	return ""
 }
 
-// isPrimitive 检查名称是否是四原语之一
-func isPrimitive(name string) string {
-	switch name {
+// inferPrimitiveByPath 根据目录名或文件名推断类型
+// 目录: atoms/ports/adapters/composers 目录
+// 文件: atom_*.go / adapter_*.go / port_*.go / composer_*.go
+func inferPrimitiveByPath(path string) string {
+	base := filepath.Base(path)
+	lower := strings.ToLower(base)
+	switch {
+	case strings.HasPrefix(lower, "atom"):
+		return "Atom"
+	case strings.HasPrefix(lower, "port"):
+		return "Port"
+	case strings.HasPrefix(lower, "adapter"):
+		return "Adapter"
+	case strings.HasPrefix(lower, "composer"):
+		return "Composer"
+	}
+	dir := filepath.Dir(path)
+	segments := strings.Split(dir, string(filepath.Separator))
+	for i := len(segments) - 1; i >= 0; i-- {
+		seg := strings.ToLower(segments[i])
+		switch seg {
+		case "atom", "atoms":
+			return "Atom"
+		case "port", "ports":
+			return "Port"
+		case "adapter", "adapters":
+			return "Adapter"
+		case "composer", "composers":
+			return "Composer"
+		}
+	}
+	return ""
+}
+
+// extractPrimitiveType 从类型表达式中提取四原语类型名
+func extractPrimitiveType(expr ast.Expr) string {
+	var identName string
+	switch e := expr.(type) {
+	case *ast.IndexExpr:
+		if ident, ok := e.X.(*ast.Ident); ok {
+			identName = ident.Name
+		}
+	case *ast.IndexListExpr:
+		if ident, ok := e.X.(*ast.Ident); ok {
+			identName = ident.Name
+		}
+	case *ast.Ident:
+		identName = e.Name
+	}
+	switch identName {
 	case "Atom", "Port", "Adapter", "Composer":
-		return name
+		return identName
 	}
 	return ""
 }
@@ -131,14 +259,12 @@ func isPrimitive(name string) string {
 func extractImplType(expr ast.Expr) string {
 	switch e := expr.(type) {
 	case *ast.CallExpr:
-		// (*Type)(nil)
 		if len(e.Args) == 1 {
 			if lit, ok := e.Args[0].(*ast.Ident); ok && lit.Name == "nil" {
 				return extractTypeFromParen(e.Fun)
 			}
 		}
 	case *ast.StarExpr:
-		// &Type{}
 		return typeExprToString(e.X)
 	case *ast.UnaryExpr:
 		if e.Op == token.AND {
@@ -195,68 +321,4 @@ func typeExprToString(expr ast.Expr) string {
 	default:
 		return fmt.Sprintf("<%T>", expr)
 	}
-}
-
-// scanDirForPrimitives 扫描目录查找四原语（备用方法）
-func scanDirForPrimitives(dir string) []PrimitiveInfo {
-	var primitives []PrimitiveInfo
-
-	filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
-			return nil
-		}
-		if strings.Contains(path, string(filepath.Separator)+"cmd"+string(filepath.Separator)) {
-			return nil
-		}
-
-		fset := token.NewFileSet()
-		f, err := parser.ParseFile(fset, path, nil, 0)
-		if err != nil {
-			return nil
-		}
-
-		for _, decl := range f.Decls {
-			genDecl, ok := decl.(*ast.GenDecl)
-			if !ok || genDecl.Tok != token.VAR {
-				continue
-			}
-
-			for _, spec := range genDecl.Specs {
-				valueSpec, ok := spec.(*ast.ValueSpec)
-				if !ok || len(valueSpec.Values) == 0 {
-					continue
-				}
-
-				for i, name := range valueSpec.Names {
-					if name.Name != "_" || i >= len(valueSpec.Values) {
-						continue
-					}
-
-					primType := extractPrimitiveType(valueSpec.Type)
-					if primType == "" {
-						continue
-					}
-
-					implType := extractImplType(valueSpec.Values[i])
-					if implType == "" {
-						continue
-					}
-
-					pos := fset.Position(name.Pos())
-					primitives = append(primitives, PrimitiveInfo{
-						Name:       implType,
-						Type:       primType,
-						File:       filepath.Base(path),
-						Package:    f.Name.Name,
-						Line:       pos.Line,
-						Signature:  fmt.Sprintf("var _ %s = (*%s)(nil)", typeExprToString(valueSpec.Type), implType),
-						IsExported: len(implType) > 0 && implType[0] >= 'A' && implType[0] <= 'Z',
-					})
-				}
-			}
-		}
-		return nil
-	})
-
-	return primitives
 }

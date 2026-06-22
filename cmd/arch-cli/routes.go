@@ -243,8 +243,23 @@ func registerRoutes(mux *http.ServeMux) {
 	// Health Score History
 	mux.HandleFunc("/api/health-score/history", handleHealthScoreHistory)
 
+	// Origin / Ancestry API
+	mux.HandleFunc("/api/origin", handleOrigin)
+	mux.HandleFunc("/api/origin/detail", handleOriginDetail)
+
+	// Flow / Data flow topology API
+	mux.HandleFunc("/api/flow", handleFlow)
+
+	// Observation Pipeline API
+	mux.HandleFunc("/api/observation/pipeline", handlePipeline)
+
 	// 静态文件 — 前端
-	// 优先使用本地文件，否则使用嵌入式前端
-	fileServer := http.FileServer(http.Dir("."))
-	mux.Handle("/", fileServer)
+	// 根路径自动跳转到架构管理器仪表盘
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/arch-manager.html", http.StatusFound)
+			return
+		}
+		http.FileServer(http.Dir(".")).ServeHTTP(w, r)
+	})
 }
