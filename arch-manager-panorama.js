@@ -141,6 +141,38 @@ function showFileDetail(f) {
 }
 
 // ============================================================
+// 架构全景 — 违规看板
+// ============================================================
+function renderViolationsView(container) {
+  container.innerHTML = '<div class="view-title">违规看板</div><div class="view-desc">按严重程度分组的架构违规</div>';
+  const groups = { error: [], warning: [], info: [] };
+  violations.forEach(v => {
+    const sev = v.severity || 'info';
+    if (groups[sev]) groups[sev].push(v);
+    else groups.info.push(v);
+  });
+
+  ['error', 'warning', 'info'].forEach(sev => {
+    const list = groups[sev];
+    if (list.length === 0) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    const titleColor = sev === 'error' ? 'var(--red)' : sev === 'warning' ? 'var(--orange)' : 'var(--accent)';
+    card.innerHTML = '<div class="card-title" style="color:' + titleColor + '">' + (sev === 'error' ? '严重' : sev === 'warning' ? '警告' : '提示') + ' (' + list.length + ')</div>';
+    list.forEach(v => {
+      const item = document.createElement('div');
+      item.className = 'violation-card';
+      item.innerHTML = '<span class="sev ' + sev + '"></span><div class="body"><div class="msg">' + esc(v.message) + '</div><div class="detail">' + esc(v.detail || '') + '</div></div><span class="badge">' + (v.rule || 'RULE') + '</span>';
+      card.appendChild(item);
+    });
+    container.appendChild(card);
+  });
+  if (violations.length === 0) {
+    container.innerHTML += '<div class="card" style="text-align:center;padding:60px;color:var(--dim)"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><p style="margin-top:12px;font-size:13px">架构无违规，状态良好</p></div>';
+  }
+}
+
+// ============================================================
 // 架构全景 — 原语分布
 // ============================================================
 function renderPrimitivesView(container) {

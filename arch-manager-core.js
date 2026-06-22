@@ -66,8 +66,6 @@ function updateTopBar() {
   const h = document.getElementById('topHealth');
   const e = document.getElementById('topEntropy');
   const t = document.getElementById('topTPS');
-  const p = document.getElementById('topPrim');
-  const v = document.getElementById('topViol');
   if (healthScore) {
     const s = parseFloat(healthScore.overall) || 0;
     h.textContent = s + ' (' + (healthScore.grade || '--') + ')';
@@ -83,15 +81,6 @@ function updateTopBar() {
   if (runtime && runtime.tps != null) {
     const tps = parseFloat(runtime.tps);
     if (!isNaN(tps)) t.textContent = tps.toFixed(0);
-  }
-  if (p) {
-    const primCount = (primitives && primitives.total != null) ? primitives.total : (Array.isArray(primitives) ? primitives.length : 0);
-    p.textContent = primCount;
-  }
-  if (v) {
-    const violCount = (violations && violations.total != null) ? violations.total : (Array.isArray(violations) ? violations.length : 0);
-    v.textContent = violCount;
-    v.className = 'value ' + (violCount > 0 ? 'warn' : 'good');
   }
 }
 

@@ -1,60 +1,323 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Low-Entropy Core · 架构管理器</title>
-    <link rel="stylesheet" href="arch-manager.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Dashboard — Low-Entropy Core</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<link rel="stylesheet" href="arch-manager.css">
+
+
 </head>
 <body>
-    <header class="top-header">
-        <div class="logo-area">
-            <span class="logo">🜲</span>
-            <div class="logo-text">
-                <h1>Low-Entropy Core</h1>
-                <span class="subtitle">架构管理器 · Architecture Governance</span>
-            </div>
-        </div>
-        <div class="header-right">
-            <div id="summary-stats" class="summary-stats">
-                <div class="stat-card"><div class="stat-label">加载中</div><div class="stat-value">...</div></div>
-            </div>
-        </div>
-    </header>
 
-    <nav class="side-nav">
-        <button class="nav-tab active" data-target="overview">🏛 架构全景</button>
-        <button class="nav-tab" data-target="primitives">⚛ 四原语</button>
-        <button class="nav-tab" data-target="health">📊 健康评分</button>
-        <button class="nav-tab" data-target="violations">⚠ 违规检测</button>
-        <button class="nav-tab" data-target="origin">🔍 符号溯源</button>
-        <button class="nav-tab" data-target="flow">🌊 数据流拓扑</button>
-        <button class="nav-tab" data-target="pipeline">🔬 观测管道</button>
-        <button class="nav-tab" data-target="guardian">🛡 Guardian</button>
-        <button class="nav-tab" data-target="migration">🚀 迁移引擎</button>
-        <button class="nav-tab" data-target="entropy">📈 熵与观测</button>
-    </nav>
+<!-- Top Status Bar -->
+<div class="topbar">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <rect x="3" y="3" width="7" height="7" rx="2" stroke="#0a84ff"/>
+      <rect x="14" y="3" width="7" height="7" rx="2" stroke="#30d158"/>
+      <rect x="3" y="14" width="7" height="7" rx="2" stroke="#ff9f0a"/>
+      <rect x="14" y="14" width="7" height="7" rx="2" stroke="#af52de"/>
+    </svg>
+    <span>Low-Entropy Core</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="metric">
+    <span class="label">Health</span>
+    <span class="value" id="topHealth">--</span>
+  </div>
+  <div class="metric">
+    <span class="label">Entropy</span>
+    <span class="value" id="topEntropy">--</span>
+  </div>
+  <div class="metric">
+    <span class="label">TPS</span>
+    <span class="value" id="topTPS">--</span>
+  </div>
+  <div class="time" id="topTime">--:--:--</div>
+</div>
 
-    <main class="content">
-        <div id="loading" class="loading-overlay">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <p>正在加载架构数据...</p>
-            </div>
-        </div>
+<!-- Overview Dashboard -->
+<div class="overview-dash" id="overviewDash">
+  <div class="ov-card" id="ovHealth">
+    <div class="ov-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </div>
+    <div class="ov-info">
+      <span class="ov-label">健康评分</span>
+      <span class="ov-value">--</span>
+    </div>
+  </div>
+  <div class="ov-card" id="ovFiles">
+    <div class="ov-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="ov-info">
+      <span class="ov-label">总文件数</span>
+      <span class="ov-value">--</span>
+    </div>
+  </div>
+  <div class="ov-card" id="ovLines">
+    <div class="ov-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </div>
+    <div class="ov-info">
+      <span class="ov-label">总行数</span>
+      <span class="ov-value">--</span>
+    </div>
+  </div>
+  <div class="ov-card" id="ovSymbols">
+    <div class="ov-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </div>
+    <div class="ov-info">
+      <span class="ov-label">总符号数</span>
+      <span class="ov-value">--</span>
+    </div>
+  </div>
+  <div class="ov-card" id="ovViolations">
+    <div class="ov-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div class="ov-info">
+      <span class="ov-label">违规数</span>
+      <span class="ov-value">--</span>
+    </div>
+  </div>
+  <div class="ov-card" id="ovPrimitives">
+    <div class="ov-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    </div>
+    <div class="ov-info">
+      <span class="ov-label">原语数</span>
+      <span class="ov-value">--</span>
+    </div>
+  </div>
+</div>
 
-        <section id="overview" class="panel active"></section>
-        <section id="primitives" class="panel"></section>
-        <section id="health" class="panel"></section>
-        <section id="violations" class="panel"></section>
-        <section id="origin" class="panel"></section>
-        <section id="flow" class="panel"></section>
-        <section id="pipeline" class="panel"></section>
-        <section id="guardian" class="panel"></section>
-        <section id="migration" class="panel"></section>
-        <section id="entropy" class="panel"></section>
-    </main>
+<!-- Layout -->
+<div class="layout">
 
-    <script src="arch-manager-dashboard.js"></script>
+<!-- Left Navigation -->
+<aside class="sidebar" id="sidebar">
+  <!-- 架构全景 -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-title" onclick="toggleSection('panorama')">
+      <svg class="chevron open" id="chev-panorama" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>架构全景</span>
+    </div>
+    <div class="sidebar-section-files" id="sec-panorama" style="max-height:500px">
+      <div class="sidebar-item" onclick="switchView('fileTree')" data-view="fileTree">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        文件树
+      </div>
+      <div class="sidebar-item active" onclick="switchView('topology')" data-view="topology">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="12" y2="10"/><line x1="7" y1="12" x2="9.5" y2="15.5"/><line x1="17" y1="12" x2="14.5" y2="15.5"/></svg>
+        拓扑图
+      </div>
+      <div class="sidebar-item" onclick="switchView('health')" data-view="health">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        健康仪表
+      </div>
+      <div class="sidebar-item" onclick="switchView('violations')" data-view="violations">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        违规看板
+      </div>
+      <div class="sidebar-item" onclick="switchView('primitives')" data-view="primitives">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        原语分布
+      </div>
+      <div class="sidebar-item" onclick="switchView('layerMatrix')" data-view="layerMatrix">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        层级矩阵
+      </div>
+    </div>
+  </div>
+
+  <!-- 动态运行 -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-title" onclick="toggleSection('runtime')">
+      <svg class="chevron open" id="chev-runtime" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>动态运行</span>
+    </div>
+    <div class="sidebar-section-files" id="sec-runtime" style="max-height:400px">
+      <div class="sidebar-item" onclick="switchView('heartbeat')" data-view="heartbeat">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        心跳
+      </div>
+      <div class="sidebar-item" onclick="switchView('entropyHeatmap')" data-view="entropyHeatmap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        熵值热力图
+      </div>
+      <div class="sidebar-item" onclick="switchView('errorBP')" data-view="errorBP">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        错误血压计
+      </div>
+      <div class="sidebar-item" onclick="switchView('neuralTrace')" data-view="neuralTrace">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Trace神经传导
+      </div>
+      <div class="sidebar-item" onclick="switchView('dataFlow')" data-view="dataFlow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        数据流拓扑
+      </div>
+    </div>
+  </div>
+
+  <!-- 可观测性 -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-title" onclick="toggleSection('observability')">
+      <svg class="chevron open" id="chev-observability" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>可观测性</span>
+    </div>
+    <div class="sidebar-section-files" id="sec-observability" style="max-height:400px">
+      <div class="sidebar-item" onclick="switchView('obsSteps')" data-view="obsSteps">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        执行步骤
+      </div>
+      <div class="sidebar-item" onclick="switchView('obsAggregates')" data-view="obsAggregates">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        聚合指标
+      </div>
+      <div class="sidebar-item" onclick="switchView('obsPipelines')" data-view="obsPipelines">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        Pipeline状态
+      </div>
+      <div class="sidebar-item" onclick="switchView('obsArch')" data-view="obsArch">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        架构快照
+      </div>
+      <div class="sidebar-item" onclick="switchView('devProgress')" data-view="devProgress" style="border-top:1px solid var(--rule);margin-top:4px;padding-top:8px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        开发进度 <span id="devEventBadge" style="display:none;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:auto">0</span>
+      </div>
+      <div class="sidebar-item" onclick="switchView('archChangelog')" data-view="archChangelog">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        架构变动日志 <span id="changelogBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:auto">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 控制面板 -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-title" onclick="toggleSection('control')">
+      <svg class="chevron open" id="chev-control" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>控制面板</span>
+    </div>
+    <div class="sidebar-section-files" id="sec-control" style="max-height:400px">
+      <div class="sidebar-item" onclick="switchView('sampling')" data-view="sampling">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+        采样率控制
+      </div>
+      <div class="sidebar-item" onclick="switchView('threshold')" data-view="threshold">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        阈值覆盖
+      </div>
+      <div class="sidebar-item" onclick="switchView('whatif')" data-view="whatif">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        What-If推演
+      </div>
+    </div>
+  </div>
+
+  <!-- 溯源面板 -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-title" onclick="toggleSection('traceability')">
+      <svg class="chevron open" id="chev-traceability" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>溯源面板</span>
+    </div>
+    <div class="sidebar-section-files" id="sec-traceability" style="max-height:400px">
+      <div class="sidebar-item" onclick="switchView('causation')" data-view="causation">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        因果链
+      </div>
+      <div class="sidebar-item" onclick="switchView('timetravel')" data-view="timetravel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        时间旅行
+      </div>
+      <div class="sidebar-item" onclick="switchView('attribution')" data-view="attribution">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        变更归因
+      </div>
+    </div>
+  </div>
+
+  <!-- 迁移引擎 -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-title" onclick="toggleSection('migration')">
+      <svg class="chevron open" id="chev-migration" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>迁移引擎</span>
+    </div>
+    <div class="sidebar-section-files" id="sec-migration" style="max-height:400px">
+      <div class="sidebar-item" onclick="switchView('migStatus')" data-view="migStatus">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        引擎状态
+      </div>
+      <div class="sidebar-item" onclick="switchView('migPatternMap')" data-view="migPatternMap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        模式分类
+      </div>
+      <div class="sidebar-item" onclick="switchView('migGateChain')" data-view="migGateChain">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        约束门链
+      </div>
+      <div class="sidebar-item" onclick="switchView('migLog')" data-view="migLog">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        迁移日志
+      </div>
+      <div class="sidebar-item" onclick="switchView('migSessions')" data-view="migSessions">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        会话历史
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="main" id="main">
+  <div class="main-content" id="mainContent">
+    <!-- Views injected by JS -->
+  </div>
+</main>
+
+<!-- Right Detail Panel -->
+<aside class="right-panel" id="rightPanel">
+  <div class="right-panel-head">
+    <span class="title">详情面板</span>
+  </div>
+  <div class="right-panel-body" id="rightPanelBody">
+    <div class="detail-empty">选择一个项目查看详情</div>
+  </div>
+</aside>
+
+</div><!-- /layout -->
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Core -->
+<script src="arch-manager-core.js"></script>
+<!-- Data -->
+<script src="arch-manager-data.js"></script>
+<!-- Panorama: file tree, topology, health, violations, primitives, layer matrix -->
+<script src="arch-manager-panorama.js"></script>
+<!-- Panorama: topology chart, health gauge (ECharts) -->
+<script src="arch-manager-panorama-charts.js"></script>
+<!-- Runtime: heartbeat, entropy heatmap -->
+<script src="arch-manager-runtime.js"></script>
+<!-- Runtime: error BP, neural trace, data flow -->
+<script src="arch-manager-runtime2.js"></script>
+<!-- Observation: steps, trace detail, aggregates, pipelines, arch snapshot -->
+<script src="arch-manager-observation.js"></script>
+<!-- Dev progress -->
+<script src="arch-manager-dev-progress.js"></script>
+<!-- Control: sampling, threshold, what-if -->
+<script src="arch-manager-control.js"></script>
+<!-- Trace: causation, time travel, attribution -->
+<script src="arch-manager-trace.js"></script>
+<!-- Migration: status, pattern map, gate chain, log, sessions -->
+<script src="arch-manager-migration.js"></script>
+<!-- Arch changelog -->
+<script src="arch-manager-changelog.js"></script>
+
 </body>
 </html>
