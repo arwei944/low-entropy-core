@@ -65,6 +65,7 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("X-Accel-Buffering", "no")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -72,7 +73,16 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticker := time.NewTicker(30 * time.Second)
+	// 立即发送一个初始事件，防止浏览器判定超时
+	initMsg, _ := json.Marshal(map[string]interface{}{
+		"type":      "connected",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"message":   "架构数据事件流已连接",
+	})
+	fmt.Fprintf(w, "event: connected\ndata: %s\n\n", initMsg)
+	flusher.Flush()
+
+	ticker := time.NewTicker(20 * time.Second)
 	defer ticker.Stop()
 
 	for {

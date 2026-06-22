@@ -46,18 +46,33 @@ func handleVersionSnapshot(w http.ResponseWriter, r *http.Request) {
 // handleVersionDiff 返回两个版本的 diff
 func handleVersionDiff(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	v1 := r.URL.Query().Get("v1")
 	v2 := r.URL.Query().Get("v2")
-	if v1 == "" || v2 == "" {
-		http.Error(w, "missing v1 or v2 parameter", http.StatusBadRequest)
+
+	// 无参数时返回当前版本的基础信息，避免 HTTP 400 污染前端控制台
+	if v1 == "" && v2 == "" {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"v1":             currentVersion(),
+			"v2":             currentVersion(),
+			"files_added":    []string{},
+			"files_removed":  []string{},
+			"files_modified": []string{},
+			"summary":        "no version specified — using current",
+		})
 		return
 	}
+	if v1 == "" {
+		v1 = currentVersion()
+	}
+	if v2 == "" {
+		v2 = currentVersion()
+	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"v1": v1,
-		"v2": v2,
+		"v1":             v1,
+		"v2":             v2,
 		"files_added":    []string{},
 		"files_removed":  []string{},
 		"files_modified": []string{},

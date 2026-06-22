@@ -77,6 +77,7 @@ func handleGuardianSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("X-Accel-Buffering", "no")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -84,9 +85,18 @@ func handleGuardianSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 初始连接事件，防止浏览器过早关闭连接
+	initMsg, _ := json.Marshal(map[string]interface{}{
+		"type":      "connected",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"message":   "Guardian 事件流已连接",
+	})
+	fmt.Fprintf(w, "event: connected\ndata: %s\n\n", initMsg)
+	flusher.Flush()
+
 	dataTicker := time.NewTicker(5 * time.Second)
 	defer dataTicker.Stop()
-	pingTicker := time.NewTicker(30 * time.Second)
+	pingTicker := time.NewTicker(20 * time.Second)
 	defer pingTicker.Stop()
 
 	for {

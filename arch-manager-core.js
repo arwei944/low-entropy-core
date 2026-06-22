@@ -8,6 +8,7 @@ let guardian = { snapshot: null, thresholds: [], drift: 0, history: [] };
 let traceTree = null, versionDiff = null, changelog = [];
 let healthHistory = [];
 let obsSteps = [], obsAggregates = [], obsPipelines = [], obsArch = null, obsErrors = [];
+let flowData = null, originData = null, obsPipelineData = null;
 let obsTraceDetail = null;
 let obsStepsQuery = { pattern: '', unit: '', error_only: false, limit: 50 };
 let obsAggQuery = { window: '', unit: '', pattern: '', limit: 20 };
