@@ -198,13 +198,115 @@ function renderObsAggregates(container) {
 // 可观测性 — Pipeline 状态
 // ============================================================
 function renderObsPipelines(container) {
-  container.innerHTML = '<div class="view-title">Pipeline 状态</div><div class="view-desc">Observation Pipeline 注册表及运行状态</div>';
+  container.innerHTML = '<div class="view-title">Pipeline 状态</div><div class="view-desc">Observation Pipeline 注册表及运行状态 — 来自 /api/observation/pipeline</div>';
+
+  // === 优先: 使用 obsPipelineData (来自 /api/observation/pipeline) ===
+  if (obsPipelineData && obsPipelineData.snapshot) {
+    const snap = obsPipelineData.snapshot;
+    const stats = obsPipelineData.aggregate_stats || {};
+    const stepSumm = obsPipelineData.step_summary || {};
+
+    // 1. 顶部: Pipeline 元信息卡片
+    const metaGrid = document.createElement('div');
+    metaGrid.className = 'grid-4';
+    metaGrid.innerHTML = `
+      <div class="stat-card"><div class="label">架构</div><div class="value" style="font-size:14px">${esc(snap.architecture || '--')}</div></div>
+      <div class="stat-card"><div class="label">版本</div><div class="value" style="font-size:14px">${esc(snap.version || '--')}</div></div>
+      <div class="stat-card"><div class="label">总步骤</div><div class="value">${snap.total_steps || 0}</div></div>
+      <div class="stat-card"><div class="label">完成/进行/待定</div><div class="value" style="font-size:14px">${stepSumm.completed || 0} / ${stepSumm.in_progress || 0} / ${stepSumm.pending || 0}</div></div>
+    `;
+    container.appendChild(metaGrid);
+
+    // 2. 8层 Pipeline 步骤详细图
+    const stepCard = document.createElement('div');
+    stepCard.className = 'card';
+    stepCard.innerHTML = '<div class="card-title">8层 Pipeline 执行步骤</div><div class="chart-container" id="obsPipelineStepsChart"></div>';
+    container.appendChild(stepCard);
+
+    const steps = snap.steps || [];
+    const labels = steps.map(s => `${s.layer} · ${s.name}`);
+    const durations = steps.map(s => s.duration_ms || 0);
+    const colors = steps.map(s => {
+      if (s.status === 'completed') return '#48bb78';
+      if (s.status === 'in_progress') return '#ecc94b';
+      if (s.status === 'failed') return '#f56565';
+      return '#4a5568';
+    });
+
+    charts.obsPipelineSteps = echarts.init(document.getElementById('obsPipelineStepsChart'));
+    charts.obsPipelineSteps.setOption({
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: '#1c1c1e', borderColor: '#2c2c2e', textStyle: { color: '#f5f5f7' },
+        formatter: function(params) {
+          const p = params[0];
+          const s = steps[p.dataIndex];
+          let html = `<b>${s.layer} · ${esc(s.name || 'n/a')}</b><br/>状态: ${s.status}<br/>耗时: ${s.duration_ms || 0}ms`;
+          if (s.input) html += `<br/>输入: ${esc(String(s.input).substring(0, 80))}`;
+          if (s.output) html += `<br/>输出: ${esc(String(s.output).substring(0, 80))}`;
+          if (s.source) html += `<br/>来源: ${esc(String(s.source).substring(0, 80))}`;
+          return html;
+        }
+      },
+      grid: { left: 130, right: 80, top: 20, bottom: 40 },
+      xAxis: { type: 'value', axisLabel: { color: '#6e6e73', fontSize: 10 }, splitLine: { lineStyle: { color: '#2c2c2e' } } },
+      yAxis: { type: 'category', data: labels, axisLabel: { color: '#f5f5f7', fontSize: 11 } },
+      series: [{
+        type: 'bar',
+        data: steps.map((s, i) => ({ value: s.duration_ms || 0, itemStyle: { color: colors[i] } })),
+        label: { show: true, position: 'right', color: '#f5f5f7', fontSize: 11, formatter: (p) => `${p.value}ms [${steps[p.dataIndex].status}]` }
+      }]
+    });
+
+    // 3. Pipeline Trace 记录（如果有）
+    if (obsPipelineData.recent_traces && obsPipelineData.recent_traces.length > 0) {
+      const traceCard = document.createElement('div');
+      traceCard.className = 'card';
+      traceCard.innerHTML = '<div class="card-title">Recent Pipeline Traces</div>';
+      let traceHtml = '<table class="data-table"><thead><tr><th>Trace ID</th><th style="width:120px">耗时</th><th style="width:100px">步骤数</th><th style="width:100px">状态</th><th style="width:200px">开始时间</th></tr></thead><tbody>';
+      obsPipelineData.recent_traces.slice(0, 20).forEach(t => {
+        const statusColor = t.status === 'completed' ? 'var(--green)' : t.status === 'in_progress' ? 'var(--orange)' : 'var(--red)';
+        traceHtml += `<tr><td class="mono" style="font-size:11px;color:#4299e1">${esc(t.trace_id || 'n/a')}</td><td>${(t.total_time_ms || 0).toLocaleString()} ms</td><td>${(t.steps || []).length}</td><td style="color:${statusColor};font-size:11px">${t.status || '-'}</td><td class="mono" style="font-size:11px;color:#a0aec0">${esc(t.start_time || '-')}</td></tr>`;
+      });
+      traceHtml += '</tbody></table>';
+      const body = document.createElement('div');
+      body.style.padding = '0 20px 20px';
+      body.innerHTML = traceHtml;
+      traceCard.appendChild(body);
+      container.appendChild(traceCard);
+    }
+
+    // === 附带: 原有的 obsPipelines 数据 ===
+    if (obsPipelines && obsPipelines.length > 0) {
+      const pipeCard = document.createElement('div');
+      pipeCard.className = 'card';
+      pipeCard.innerHTML = '<div class="card-title">Pipeline Registry</div>';
+      let tbl = '<table class="data-table"><thead><tr><th>名称</th><th>状态</th><th>缓冲区</th><th>采样率</th><th>步骤数</th><th>丢弃数</th></tr></thead><tbody>';
+      obsPipelines.forEach(p => {
+        const status = p.running ? '<span style="color:var(--green)">运行中</span>' : '<span style="color:var(--dim)">已停止</span>';
+        const buf = p.buffer_size || p.buffer || '--';
+        const rate = p.sampling_rate != null ? (p.sampling_rate * 100).toFixed(0) + '%' : '--';
+        const stepCount = p.total_steps || p.steps || 0;
+        const dropped = p.dropped || p.sampler_dropped || 0;
+        tbl += `<tr><td class="mono">${esc(p.name || p.id || '--')}</td><td>${status}</td><td>${buf}</td><td>${rate}</td><td>${stepCount}</td><td>${dropped}</td></tr>`;
+      });
+      tbl += '</tbody></table>';
+      const body = document.createElement('div');
+      body.style.padding = '0 20px 20px';
+      body.innerHTML = tbl;
+      pipeCard.appendChild(body);
+      container.appendChild(pipeCard);
+    }
+    return;
+  }
+
+  // === Fallback: 原有的 obsPipelines 数据 ===
   const pipes = obsPipelines || [];
   const card = document.createElement('div');
   card.className = 'card';
   card.style.padding = '0';
   card.style.overflow = 'auto';
-
   if (pipes.length === 0) {
     card.innerHTML = '<div style="padding:40px;text-align:center;color:var(--dim)">暂无 Pipeline 数据（需要启动 Observation Pipeline）</div>';
   } else {
@@ -213,9 +315,9 @@ function renderObsPipelines(container) {
       const status = p.running ? '<span style="color:var(--green)">运行中</span>' : '<span style="color:var(--dim)">已停止</span>';
       const buf = p.buffer_size || p.buffer || '--';
       const rate = p.sampling_rate != null ? (p.sampling_rate * 100).toFixed(0) + '%' : '--';
-      const steps = p.total_steps || p.steps || 0;
+      const stepCount = p.total_steps || p.steps || 0;
       const dropped = p.dropped || p.sampler_dropped || 0;
-      tbl += `<tr><td class="mono">${esc(p.name || p.id || '--')}</td><td>${status}</td><td>${buf}</td><td>${rate}</td><td>${steps}</td><td>${dropped}</td></tr>`;
+      tbl += `<tr><td class="mono">${esc(p.name || p.id || '--')}</td><td>${status}</td><td>${buf}</td><td>${rate}</td><td>${stepCount}</td><td>${dropped}</td></tr>`;
     });
     tbl += '</tbody></table>';
     card.innerHTML = tbl;

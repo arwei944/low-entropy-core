@@ -11,22 +11,154 @@
 // 溯源面板 — 因果链
 // ============================================================
 function renderCausationView(container) {
-  container.innerHTML = '<div class="view-title">因果链</div><div class="view-desc">事件因果关系链式追踪</div>';
+  container.innerHTML = '<div class="view-title">因果链 & 符号溯源</div><div class="view-desc">基于 /api/origin 的符号定义与依赖关系追踪</div>';
+
+  // === 0. Origin 统计卡片 ===
+  if (originData && (originData.by_layer || originData.total)) {
+    const statsGrid = document.createElement('div');
+    statsGrid.className = 'grid-4';
+    let html = '';
+    html += `<div class="stat-card"><div class="label">总符号数</div><div class="value">${originData.total || 0}</div></div>`;
+    html += `<div class="stat-card"><div class="label">层类型数</div><div class="value">${Object.keys(originData.by_layer || {}).length}</div></div>`;
+    html += `<div class="stat-card"><div class="label">Kind 类型</div><div class="value">${Object.keys(originData.by_kind || {}).length}</div></div>`;
+    html += `<div class="stat-card"><div class="label">有依赖记录</div><div class="value">${(originData.symbols || []).filter(s => (s.depends_on || []).length > 0).length}</div></div>`;
+    statsGrid.innerHTML = html;
+    container.appendChild(statsGrid);
+
+    // === 0a. 按层/Kind 柱状图 ===
+    const layerChartCard = document.createElement('div');
+    layerChartCard.className = 'card';
+    layerChartCard.innerHTML = '<div class="card-title">符号按层分布</div><div class="chart-container" id="originLayerChart"></div>';
+    container.appendChild(layerChartCard);
+
+    const layers = Object.keys(originData.by_layer || {}).sort();
+    const layerCounts = layers.map(l => originData.by_layer[l]);
+    const layerColors = layers.map(l => {
+      const lm = { L0: '#f44336', L1: '#ff9800', L2: '#ffc107', L3: '#4caf50', L4: '#00bcd4', L5: '#2196f3', L6: '#9c27b0', L7: '#607d8b' };
+      return lm[l] || '#888';
+    });
+
+    charts.originLayer = echarts.init(document.getElementById('originLayerChart'));
+    charts.originLayer.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis', backgroundColor: '#1c1c1e', borderColor: '#2c2c2e', textStyle: { color: '#f5f5f7' } },
+      grid: { left: 60, right: 20, top: 20, bottom: 40 },
+      xAxis: { type: 'category', data: layers, axisLabel: { color: '#6e6e73', fontSize: 11 } },
+      yAxis: { type: 'value', axisLabel: { color: '#6e6e73', fontSize: 10 }, splitLine: { lineStyle: { color: '#2c2c2e' } } },
+      series: [{
+        type: 'bar',
+        data: layers.map((l, i) => ({ value: layerCounts[i], itemStyle: { color: layerColors[i] } })),
+        label: { show: true, position: 'top', color: '#f5f5f7', fontSize: 11 }
+      }]
+    });
+
+    // === 1. 符号溯源表（按层过滤） ===
+    const symCard = document.createElement('div');
+    symCard.className = 'card';
+    symCard.innerHTML = '<div class="card-title">符号起源 / Symbol Origin</div><div style="padding:12px 20px"><div class="control-group" style="margin-bottom:12px"><select id="originLayerFilter" style="padding:6px 10px;background:var(--bg2);border:1px solid var(--rule);border-radius:8px;color:var(--ink);font-size:12px"><option value="">全部层</option>' + layers.map(l => `<option value="${l}">${l}</option>`).join('') + '</select><input id="originSearch" type="text" placeholder="搜索符号名..." style="margin-left:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--rule);border-radius:8px;color:var(--ink);font-size:12px;width:300px"></div><div id="originTableContainer" style="max-height:600px;overflow-y:auto"></div></div>';
+    container.appendChild(symCard);
+
+    // 渲染表格函数
+    const renderOriginTable = () => {
+      const layerFilter = document.getElementById('originLayerFilter')?.value || '';
+      const searchStr = (document.getElementById('originSearch')?.value || '').toLowerCase();
+      let symbols = originData.symbols || [];
+      if (layerFilter) symbols = symbols.filter(s => s.layer === layerFilter);
+      if (searchStr) symbols = symbols.filter(s => (s.name || '').toLowerCase().includes(searchStr));
+
+      let html = '<table class="data-table"><thead><tr><th style="width:80px">层</th><th style="width:120px">Kind</th><th>符号名</th><th style="width:180px">文件</th><th style="width:200px">Package</th><th style="width:120px">原语类型</th><th>依赖</th></tr></thead><tbody>';
+      symbols.slice(0, 200).forEach(s => {
+        const deps = (s.depends_on || []).length;
+        const primColor = s.primitive ? '#4299e1' : '#718096';
+        html += `<tr><td class="mono"><span style="color:var(--layer-${s.layer || 'L0'})">${s.layer}</span></td><td class="mono" style="font-size:11px">${esc(s.kind || '')}</td><td class="mono" style="font-size:12px;color:#f5f5f7">${esc(s.name || '')}</td><td class="mono" style="font-size:11px;color:#a0aec0">${esc((s.file || '').replace(/^.*[\\\/]/, ''))}</td><td class="mono" style="font-size:11px;color:#a0aec0">${esc(s.package || '')}</td><td class="mono" style="color:${primColor};font-size:11px">${s.primitive ? s.primitive : '-'}</td><td style="font-size:11px;color:#a0aec0">${deps > 0 ? deps + ' 个依赖' : '-'}</td></tr>`;
+        if (s.doc && s.doc.length > 5) {
+          html += `<tr style="background:rgba(255,255,255,0.02)"><td colspan="7" style="padding:4px 16px 16px;font-size:11px;color:#a0aec0;line-height:1.6;font-family:system-ui">${esc(s.doc.substring(0, 200))}${s.doc.length > 200 ? '...' : ''}</td></tr>`;
+        }
+      });
+      html += '</tbody></table>';
+      if (symbols.length > 200) html += `<div style="padding:12px;color:#718096;text-align:center;font-size:11px">仅显示前 200 条，共 ${symbols.length} 条符号</div>`;
+      if (symbols.length === 0) html = '<div style="padding:40px;text-align:center;color:#718096">没有匹配的符号</div>';
+      document.getElementById('originTableContainer').innerHTML = html;
+    };
+    renderOriginTable();
+
+    setTimeout(() => {
+      const filter = document.getElementById('originLayerFilter');
+      const search = document.getElementById('originSearch');
+      if (filter) filter.addEventListener('change', renderOriginTable);
+      if (search) search.addEventListener('input', renderOriginTable);
+    }, 0);
+
+    // === 2. 符号依赖图（Graph） ===
+    if ((originData.symbols || []).filter(s => (s.depends_on || []).length > 0).length > 0) {
+      const graphCard = document.createElement('div');
+      graphCard.className = 'card';
+      graphCard.innerHTML = '<div class="card-title">符号依赖图 (Symbol Dependencies)</div><div class="chart-container-lg" id="originGraphChart"></div>';
+      container.appendChild(graphCard);
+
+      const nodes = [];
+      const links = [];
+      const nodeSet = new Set();
+      const symbolMap = {};
+      (originData.symbols || []).forEach(s => { symbolMap[s.name] = s; });
+
+      // 只取有依赖的前 60 个符号，避免图太大
+      const targetSyms = (originData.symbols || []).filter(s => (s.depends_on || []).length > 0).slice(0, 60);
+      targetSyms.forEach(s => {
+        if (!nodeSet.has(s.name)) {
+          nodeSet.add(s.name);
+          const colorMap = { L0: '#f44336', L1: '#ff9800', L2: '#ffc107', L3: '#4caf50', L4: '#00bcd4', L5: '#2196f3', L6: '#9c27b0', L7: '#607d8b' };
+          nodes.push({ name: s.name, id: s.name, itemStyle: { color: colorMap[s.layer] || '#888' }, symbolSize: Math.max(14, Math.min(30, 12 + (s.depends_on || []).length * 2)) });
+        }
+        (s.depends_on || []).forEach(dep => {
+          const depName = dep.replace(/\.[^.]+$/, '');
+          if (!nodeSet.has(depName)) {
+            nodeSet.add(depName);
+            const depS = symbolMap[depName];
+            const colorMap = { L0: '#f44336', L1: '#ff9800', L2: '#ffc107', L3: '#4caf50', L4: '#00bcd4', L5: '#2196f3', L6: '#9c27b0', L7: '#607d8b' };
+            nodes.push({ name: depName, id: depName, itemStyle: { color: depS ? colorMap[depS.layer] : '#555' }, symbolSize: 12 });
+          }
+          links.push({ source: s.name, target: depName });
+        });
+      });
+
+      if (nodes.length > 0) {
+        charts.originGraph = echarts.init(document.getElementById('originGraphChart'));
+        charts.originGraph.setOption({
+          backgroundColor: 'transparent',
+          tooltip: { backgroundColor: '#1c1c1e', borderColor: '#2c2c2e', textStyle: { color: '#f5f5f7' } },
+          legend: { show: false },
+          series: [{
+            type: 'graph',
+            layout: 'force',
+            roam: true,
+            draggable: true,
+            label: { show: true, fontSize: 9, color: '#f5f5f7', fontFamily: 'system-ui' },
+            edgeSymbol: ['none', 'arrow'],
+            edgeSymbolSize: [0, 6],
+            data: nodes,
+            links: links,
+            force: { repulsion: 250, edgeLength: 60, gravity: 0.1, layoutAnimation: true },
+            lineStyle: { color: '#2c2c2e', width: 1, curveness: 0.1, opacity: 0.5 },
+            emphasis: { focus: 'adjacency', lineStyle: { width: 2, color: '#0a84ff', opacity: 1 } }
+          }]
+        });
+      }
+    }
+    return;
+  }
+
+  // === Fallback: 原来的因果链逻辑 ===
   const card = document.createElement('div');
   card.className = 'card';
   card.innerHTML = '<div class="chart-container-lg" id="causationChart"></div>';
   container.appendChild(card);
 
-  // Build causation graph from traceTree spans
   let data = [];
   let links = [];
-
   if (traceTree && traceTree.spans && traceTree.spans.length > 0) {
     const spanMap = {};
-    traceTree.spans.forEach(span => {
-      spanMap[span.id] = span;
-    });
-
+    traceTree.spans.forEach(span => { spanMap[span.id] = span; });
     const nodeSet = new Set();
     traceTree.spans.forEach(span => {
       const name = span.name || span.id;
@@ -39,34 +171,22 @@ function renderCausationView(container) {
         links.push({ source: span.parentId, target: span.id });
       }
     });
-
-    // Assign positions
-    data.forEach((d, i) => {
-      const span = spanMap[d.id];
-      d.x = (span.depth || 0) * 150;
-      d.y = i * 50 + 50;
-    });
+    data.forEach((d, i) => { const span = spanMap[d.id]; d.x = (span.depth || 0) * 150; d.y = i * 50 + 50; });
   }
 
   if (data.length === 0) {
     document.getElementById('causationChart').innerHTML = '<div class="empty-state" style="padding:40px"><p>暂无因果关系数据</p></div>';
     return;
   }
-
   charts.causation = echarts.init(document.getElementById('causationChart'));
   charts.causation.setOption({
     backgroundColor: 'transparent',
     tooltip: { backgroundColor: '#1c1c1e', borderColor: '#2c2c2e', textStyle: { color: '#f5f5f7' } },
     series: [{
-      type: 'graph',
-      layout: 'none',
-      roam: true,
-      animation: false,
+      type: 'graph', layout: 'none', roam: true, animation: false,
       label: { show: true, fontSize: 12, color: '#f5f5f7' },
-      edgeSymbol: ['none', 'arrow'],
-      edgeSymbolSize: [0, 10],
-      data: data,
-      links: links,
+      edgeSymbol: ['none', 'arrow'], edgeSymbolSize: [0, 10],
+      data: data, links: links,
       lineStyle: { color: '#2c2c2e', width: 2, curveness: 0.2 },
       emphasis: { focus: 'adjacency', lineStyle: { color: '#0a84ff', width: 3 } }
     }]

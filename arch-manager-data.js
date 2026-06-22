@@ -4,7 +4,7 @@
 
 async function fetchAll() {
   try {
-    const [arch, health, vio, prim, hhist, gsnap, gthresh, gdrift, ghist, tps, errs, lat, sr, trace, vdiff, clog, osteps, oaggs, opipes, oarch, oerrs, mstatus, msessions, mlogs, achangelog, achangelogstats] = await Promise.all([
+    const [arch, health, vio, prim, hhist, gsnap, gthresh, gdrift, ghist, tps, errs, lat, sr, trace, vdiff, clog, osteps, oaggs, opipes, oarch, oerrs, mstatus, msessions, mlogs, achangelog, achangelogstats, flow, origin, obsPipeline] = await Promise.all([
       api('/api/arch').catch(() => null),
       api('/api/health-score').catch(() => null),
       api('/api/violations').catch(() => []),
@@ -30,7 +30,11 @@ async function fetchAll() {
       api('/api/migrate/sessions').catch(() => []),
       api('/api/migrate/logs?limit=100').catch(() => []),
       api('/api/arch-changelog?limit=100').catch(() => []),
-      api('/api/arch-changelog/stats').catch(() => null)
+      api('/api/arch-changelog/stats').catch(() => null),
+      // === Phase B 新增 API ===
+      api('/api/flow').catch(() => null),
+      api('/api/origin?limit=50').catch(() => null),
+      api('/api/observation/pipeline').catch(() => null)
     ]);
     archData = arch;
     healthScore = health;
@@ -52,6 +56,10 @@ async function fetchAll() {
     migLogs = Array.isArray(mlogs) ? mlogs : [];
     archChangelog = Array.isArray(achangelog) ? achangelog : [];
     archChangelogStats = achangelogstats;
+    // === Phase B 新增数据 ===
+    flowData = flow;
+    originData = origin;
+    obsPipelineData = obsPipeline;
     updateTopBar();
     updateOverviewDash();
     toast('数据已刷新', 'ok');
