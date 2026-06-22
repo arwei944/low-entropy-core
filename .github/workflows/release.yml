@@ -1,0 +1,211 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.2.3)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.22']
+        target:
+          - os: windows
+            arch: amd64
+            ext: '.exe'
+          - os: linux
+            arch: amd64
+            ext: ''
+          - os: darwin
+            arch: amd64
+            ext: ''
+          - os: darwin
+            arch: arm64
+            ext: ''
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+          VERSION=${{ github.ref_name }}
+        else
+          VERSION=${{ inputs.version }}
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "VERSION=${VERSION}" >> $GITHUB_ENV
+        echo "Building ${VERSION} for ${{ matrix.target.os }}/${{ matrix.target.arch }}"
+
+    - name: Build arch-cli
+      run: |
+        GOOS=${{ matrix.target.os }}
+        GOARCH=${{ matrix.target.arch }}
+        EXT=${{ matrix.target.ext }}
+        VERSION=${{ env.VERSION }}
+        OUTPUT_NAME="arch-cli-${VERSION}-${GOOS}-${GOARCH}${EXT}"
+        
+        cd cmd/arch-cli
+        CGO_ENABLED=0 go build -tags lecore_tier4 -ldflags="-X main.version=${VERSION#v} -s -w" -o ../../${OUTPUT_NAME} .
+        cd ../..
+        
+        ls -la ${OUTPUT_NAME}
+        echo "OUTPUT_NAME=${OUTPUT_NAME}" >> $GITHUB_ENV
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.OUTPUT_NAME }}
+        path: ${{ env.OUTPUT_NAME }}
+        if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+          VERSION=${{ github.ref_name }}
+        else
+          VERSION=${{ inputs.version }}
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: List artifacts
+      run: ls -la artifacts/
+
+    - name: Generate checksums
+      run: |
+        cd artifacts
+        for dir in */; do
+          cd "$dir"
+          for file in *; do
+            sha256sum "$file" >> "../${file}.sha256"
+          done
+          cd ..
+        done
+        cat *.sha256
+        mv *.sha256 ../
+        cd ..
+
+    - name: Create Release Notes
+      run: |
+        cat > RELEASE_NOTES.md << 'EOF'
+        # ${{ steps.version.outputs.version }}
+        
+        ## What's New
+        
+        ### Features
+        - Auto-upgrade support: `arch upgrade` for seamless updates
+        - Multi-platform builds: Windows, Linux, macOS (amd64/arm64)
+        
+        ### Improvements
+        - Consolidated arch-cli as single entry point
+        - All go-core modules unified
+        - Architecture constraints enforced
+        
+        ### Installation
+        
+        #### Linux/macOS
+        \`\`\`bash
+        # Download
+        curl -L -o arch-cli https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/arch-cli-${{ steps.version.outputs.version }}-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64
+        
+        # Make executable
+        chmod +x arch-cli
+        
+        # Move to PATH
+        sudo mv arch-cli /usr/local/bin/
+        
+        # Verify
+        arch-cli version
+        \`\`\`
+        
+        #### Windows (PowerShell)
+        \`\`\`powershell
+        # Download
+        Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/arch-cli-${{ steps.version.outputs.version }}-windows-amd64.exe" -OutFile "arch-cli.exe"
+        
+        # Move to PATH (e.g., C:\Windows\System32)
+        Move-Item arch-cli.exe C:\Windows\System32\
+        
+        # Verify
+        arch-cli version
+        \`\`\`
+        
+        ## Usage
+        
+        \`\`\`bash
+        # Check for updates
+        arch-cli upgrade check
+        
+        # Full upgrade
+        arch-cli upgrade
+        
+        # Analyze architecture
+        arch-cli analyze --dir .
+        
+        # Check for violations
+        arch-cli check --dir .
+        
+        # Start web UI
+        arch-cli serve --port 8090
+        \`\`\`
+        
+        ## Assets
+        
+        | Platform | Architecture | Download |
+        |----------|-------------|----------|
+        | Windows | amd64 | arch-cli-${{ steps.version.outputs.version }}-windows-amd64.exe |
+        | Linux | amd64 | arch-cli-${{ steps.version.outputs.version }}-linux-amd64 |
+        | macOS | amd64 | arch-cli-${{ steps.version.outputs.version }}-darwin-amd64 |
+        | macOS | arm64 | arch-cli-${{ steps.version.outputs.version }}-darwin-arm64 |
+        
+        ## Verifying
+        
+        All binaries are signed with SHA-256 checksums.
+        
+        EOF
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          artifacts/*/*
+          *.sha256
+        tag_name: ${{ steps.version.outputs.version }}
+        name: ${{ steps.version.outputs.version }}
+        body_path: RELEASE_NOTES.md
+        draft: false
+        prerelease: false
+

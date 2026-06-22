@@ -2,6 +2,22 @@
 
 **由最基本的 4 个原语组成的极简后端架构**，目标是让复杂度和熵值在百万行甚至亿行代码规模下保持恒定。
 
+## 快速安装
+
+### Windows (一条命令)
+
+```powershell
+irm https://raw.githubusercontent.com/USERNAME/REPO/main/install.ps1 | iex
+```
+
+### Linux/macOS (一条命令)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/USERNAME/REPO/main/install.sh | bash
+```
+
+安装完成后，运行 `arch-cli version` 验证！
+
 人类作为**纯旁观监督者**，通过仪表盘观察系统运行，不参与任何代码编写。所有开发由多智能体完全自主完成，并支持无缝交接。
 
 ## 核心理念

@@ -26,7 +26,9 @@ import (
 	"low-entropy-core/go-core/arch"
 )
 
-const version = "1.0.0"
+var (
+	version = "1.0.0"
+)
 
 var (
 	archData    *ArchData
@@ -47,6 +49,11 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
+
+	// 非 serve 命令时自动检查升级
+	if cmd != "serve" {
+		autoCheckUpgrade()
+	}
 
 	switch cmd {
 	case "analyze":
@@ -69,6 +76,8 @@ func main() {
 		cmdAdd(subArgs)
 	case "serve":
 		cmdServe(subArgs)
+	case "upgrade":
+		cmdUpgrade(subArgs)
 	case "version", "--version", "-v":
 		fmt.Println("arch-cli", version)
 	case "help", "--help", "-h":
@@ -88,12 +97,16 @@ func printUsage() {
 	fmt.Println("  arch check --dir <path>       检查架构违规")
 	fmt.Println("  arch guardian --dir <path>    Guardian 决策分析")
 	fmt.Println("  arch entropy --dir <path>     计算代码熵值")
-	fmt.Println("  arch agent list               列出 Agent")
+	fmt.Println("  arch agent list              列出 Agent")
 	fmt.Println("  arch migrate --dir <path>     迁移分析")
 	fmt.Println("  arch init <name> [--tier ...] 初始化新项目")
 	fmt.Println("  arch new --project <path>     创建新模块")
 	fmt.Println("  arch add --feature <name>     添加新功能")
 	fmt.Println("  arch serve [--port 8090]      启动 Web UI")
+	fmt.Println("  arch upgrade                  完整升级流程")
+	fmt.Println("  arch upgrade check            检查更新")
+	fmt.Println("  arch upgrade download         下载新版本")
+	fmt.Println("  arch upgrade install          安装已下载的版本")
 	fmt.Println("  arch version                  版本信息")
 	fmt.Println("  arch help                     帮助")
 }
